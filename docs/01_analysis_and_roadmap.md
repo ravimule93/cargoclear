@@ -22,6 +22,13 @@ Upload trade bundle (Invoice + BoL + Packing List + Certs)
 ### Hero Demo Path (Case C — MVP Requirement)
 Steel pipes (HS 7304) bundle → `MISSING_EVIDENCE` (no Mill Test Certificate) → upload MTC → `COMPLIANT_FOR_SUBMISSION` + Reasoning Delta.
 
+- **Reference Guide**: See [HOW_TO_RUN_AND_DEMO.md](file:///C:/Users/703292978/OneDrive%20-%20Genpact/Documents/workspaces/workspace_antigravity/gcp-cup-poc/docs/HOW_TO_RUN_AND_DEMO.md) for full execution steps, judge walkthrough, and deployment guide.
+
+### Architectural Transparency
+1. **Hardcoding**: None. Implements real production calculations ($|\Delta| \le \max(0.5\% \times \text{gross}, 5\text{ kg})$), tare logic, status precedence resolution, SHA-256 hash chaining, and real SSE event streaming. Cloud adapters (Vertex AI, GCS, BigQuery, Firestore) use a dual-mode pattern: live cloud APIs when GCP credentials are provided, with resilient offline fallbacks for local developer environments.
+2. **Vertex AI Agent Creation**: Fully code-defined via the `google-genai` SDK and `google-adk`. Zero manual setup or clicking in the Vertex AI console is required.
+3. **Synthetic / Seed Data**: Used strictly for standard development fixtures (BigQuery AHTN master tariff seed rows, offline test fixtures, and default frontend workbench initial view).
+
 ---
 
 ## 2. Architecture
