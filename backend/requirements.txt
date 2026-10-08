@@ -1,0 +1,26 @@
+# Core framework
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.7.0
+
+# SSE
+sse-starlette==2.2.1
+
+# Google Cloud
+google-cloud-storage==2.19.0
+google-cloud-firestore==2.19.0
+google-cloud-bigquery==3.27.0
+google-genai==1.11.0
+google-adk>=0.3.0
+
+# PDF processing
+pdf2image==1.17.0
+opencv-python-headless==4.10.0.84
+numpy==2.2.0
+Pillow==11.1.0
+
+# Utilities
+python-multipart==0.0.20
+httpx==0.28.1
+structlog==24.4.0

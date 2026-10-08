@@ -1,0 +1,25 @@
+steps:
+  - id: test-backend
+    name: python:3.12
+    dir: backend
+    entrypoint: bash
+    args: ["-c", "pip install -r requirements.txt && pytest -q"]
+
+  - id: test-frontend
+    name: node:22
+    dir: frontend
+    entrypoint: bash
+    args: ["-c", "npm ci && npm run lint && npm run typecheck"]
+
+  - id: deploy-api
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    args: ["./infra/deploy_api.sh"]
+
+  - id: deploy-ui
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    args: ["./infra/deploy_ui.sh"]
+
+options:
+  logging: CLOUD_LOGGING_ONLY

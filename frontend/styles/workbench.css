@@ -1,0 +1,85 @@
+/* =============================================================================
+   Workbench grid layout
+   Three-column investigator layout (not a chat UI):
+     [DocumentRail | DocumentViewer | AssessmentPanel]
+     [          DeltaDrawer / AuditTimeline          ]
+   ============================================================================= */
+
+.cc-workbench {
+  display: grid;
+  height: 100dvh;
+  grid-template-columns: 280px minmax(0, 1fr) 400px;
+  grid-template-rows: 56px minmax(0, 1fr) 280px;
+  grid-template-areas:
+    "top    top    top"
+    "rail   viewer assess"
+    "drawer drawer drawer";
+  background: var(--cc-bg);
+  color: var(--cc-text);
+}
+
+.cc-top {
+  grid-area: top;
+  border-bottom: 1px solid var(--cc-border);
+  background: var(--cc-surface);
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  gap: 1rem;
+}
+
+.cc-rail {
+  grid-area: rail;
+  border-right: 1px solid var(--cc-border);
+  overflow-y: auto;
+  background: var(--cc-surface);
+}
+
+.cc-viewer {
+  grid-area: viewer;
+  overflow: auto;
+  background: var(--cc-surface-2);
+  position: relative;
+}
+
+.cc-assess {
+  grid-area: assess;
+  border-left: 1px solid var(--cc-border);
+  overflow-y: auto;
+  background: var(--cc-surface);
+}
+
+.cc-drawer {
+  grid-area: drawer;
+  border-top: 1px solid var(--cc-border);
+  background: var(--cc-surface);
+  overflow: hidden;
+}
+
+/* =============================================================================
+   Responsive: below 1280px → collapse to tabbed single column
+   ============================================================================= */
+
+@media (max-width: 1279px) {
+  .cc-workbench {
+    grid-template-columns: 1fr;
+    grid-template-rows: 56px 44px minmax(0, 1fr);
+    grid-template-areas:
+      "top"
+      "tabs"
+      "main";
+  }
+
+  .cc-rail,
+  .cc-viewer,
+  .cc-assess,
+  .cc-drawer {
+    display: none;
+    grid-area: main;
+  }
+
+  .cc-workbench[data-tab="rail"]   .cc-rail   { display: block; }
+  .cc-workbench[data-tab="viewer"] .cc-viewer { display: block; }
+  .cc-workbench[data-tab="assess"] .cc-assess { display: block; }
+  .cc-workbench[data-tab="drawer"] .cc-drawer { display: block; }
+}

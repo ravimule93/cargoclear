@@ -1,0 +1,32 @@
+[
+  {
+    "name": "hs_code",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "8-digit Harmonized System / AHTN tariff classification code"
+  },
+  {
+    "name": "description",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "Official tariff line item description"
+  },
+  {
+    "name": "destination_country",
+    "type": "STRING",
+    "mode": "REQUIRED",
+    "description": "ISO 3166-1 alpha-2 destination country code (e.g. SG, IN)"
+  },
+  {
+    "name": "required_documents",
+    "type": "STRING",
+    "mode": "REPEATED",
+    "description": "List of mandatory regulatory certificates or permits"
+  },
+  {
+    "name": "description_embedding",
+    "type": "FLOAT64",
+    "mode": "REPEATED",
+    "description": "768-dimensional multimodal text embedding generated via ML.GENERATE_EMBEDDING"
+  }
+]

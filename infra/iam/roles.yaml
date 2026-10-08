@@ -1,0 +1,6 @@
+service_account: cargoclear-sa@cargoclear-hackathon.iam.gserviceaccount.com
+roles:
+  - roles/aiplatform.user       # Vertex AI multimodal extraction + ADK
+  - roles/storage.objectAdmin   # GCS raw PDF and transform storage
+  - roles/bigquery.dataViewer   # BigQuery AHTN master tariff lookup
+  - roles/run.invoker           # Cloud Run service-to-service communication
