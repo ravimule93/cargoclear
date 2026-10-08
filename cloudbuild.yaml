@@ -9,8 +9,8 @@ steps:
     args:
       - -c
       - |
-        pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
-        pytest tests/unit tests/integration -q
+        pip install --no-cache-dir -r requirements-dev.txt
+        python -m pytest tests/unit tests/integration -q
 
   # =========================================================================
   # Step 2: Frontend Linting, Typecheck & Production Build
