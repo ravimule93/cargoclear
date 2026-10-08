@@ -1,11 +1,11 @@
 """Assessment router — analyze, reassess, get assessment, list iterations."""
 
-import uuid
-
-from fastapi import APIRouter, BackgroundTasks, Path
+from fastapi import APIRouter, Path
 
 from app.domain.schemas import AssessmentIteration, RunResponse
 from app.gateway.errors import NotFoundError
+from app.repo import firestore
+from app.services import orchestrator
 
 router = APIRouter(tags=["assessment"])
 
@@ -14,27 +14,27 @@ router = APIRouter(tags=["assessment"])
     "/bundles/{bundle_id}/analyze",
     response_model=RunResponse,
     status_code=202,
-    summary="Start a full assessment pipeline run",
+    summary="Start full assessment pipeline run",
 )
 async def analyze(
-    bundle_id: str = Path(...),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
+    bundle_id: str = Path(..., description="Target bundle ID"),
 ) -> RunResponse:
-    """Trigger the full pipeline: preprocess → extract → discrepancy → ground →
-    confidence → synthesize → audit.
+    """Initiates the 7-stage assessment pipeline in the background.
 
-    Returns immediately with a run_id; progress is streamed via SSE.
-
-    Phase 2: Wires to services.orchestrator.start_run(mode='full').
-    Skeleton: Returns a stub 202.
+    Returns run_id immediately with 202 Accepted.
+    Progress is streamed via SSE on /bundles/{id}/stream.
     """
-    # TODO(Phase 2): await orchestrator.start_run(bundle_id, mode="full")
-    run_id = str(uuid.uuid4())
+    bundle = await firestore.get_bundle(bundle_id)
+    if bundle is None:
+        raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
+
+    run_id = await orchestrator.start_run(bundle_id, mode="full")
+
     return RunResponse(
         run_id=run_id,
         bundle_id=bundle_id,
-        state="QUEUED",
-        message="Analysis queued. Subscribe to /stream for progress.",
+        state="RUNNING",
+        message="Full analysis pipeline initiated. Subscribe to /stream for real-time progress.",
     )
 
 
@@ -42,26 +42,27 @@ async def analyze(
     "/bundles/{bundle_id}/reassess",
     response_model=RunResponse,
     status_code=202,
-    summary="Reassess after a new document has been uploaded",
+    summary="Reassess after new evidence document is uploaded",
 )
 async def reassess(
-    bundle_id: str = Path(...),
+    bundle_id: str = Path(..., description="Target bundle ID"),
 ) -> RunResponse:
-    """Re-run the full pipeline on the updated document set.
+    """Reruns the assessment pipeline against updated documents.
 
-    Produces a new AssessmentIteration and a Reasoning Delta comparing
-    it to the previous iteration.
-
-    Phase 2: Wires to services.orchestrator.start_run(mode='reassess').
-    Skeleton: Returns a stub 202.
+    Generates a new AssessmentIteration and computes the Reasoning Delta
+    diff against the previous iteration.
     """
-    # TODO(Phase 2): await orchestrator.start_run(bundle_id, mode="reassess")
-    run_id = str(uuid.uuid4())
+    bundle = await firestore.get_bundle(bundle_id)
+    if bundle is None:
+        raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
+
+    run_id = await orchestrator.start_run(bundle_id, mode="reassess")
+
     return RunResponse(
         run_id=run_id,
         bundle_id=bundle_id,
-        state="QUEUED",
-        message="Reassessment queued. Subscribe to /stream for progress.",
+        state="RUNNING",
+        message="Reassessment initiated. Subscribe to /stream for updated findings.",
     )
 
 
@@ -71,16 +72,14 @@ async def reassess(
     summary="Get the latest validated compliance assessment",
 )
 async def get_assessment(bundle_id: str = Path(...)) -> AssessmentIteration:
-    """Return the most recent AssessmentIteration for the bundle.
-
-    Phase 1: Reads from Firestore via repo.firestore.latest_iteration().
-    Skeleton: Returns 404.
-    """
-    # TODO(Phase 1): return await repo.firestore.latest_iteration(bundle_id)
-    raise NotFoundError(
-        f"No assessment found for bundle '{bundle_id}'.",
-        detail={"bundle_id": bundle_id},
-    )
+    """Return the most recent AssessmentIteration for the bundle."""
+    iter_data = await firestore.latest_iteration(bundle_id)
+    if iter_data is None:
+        raise NotFoundError(
+            f"No assessment iteration found for bundle '{bundle_id}'. Run /analyze first.",
+            detail={"bundle_id": bundle_id},
+        )
+    return AssessmentIteration(**iter_data)
 
 
 @router.get(
@@ -89,12 +88,6 @@ async def get_assessment(bundle_id: str = Path(...)) -> AssessmentIteration:
     summary="List all assessment iterations for the Reasoning Delta view",
 )
 async def list_iterations(bundle_id: str = Path(...)) -> list[AssessmentIteration]:
-    """Return all AssessmentIterations in chronological order.
-
-    Used by the frontend DeltaDrawer to render the full reasoning delta history.
-
-    Phase 1: Reads from Firestore via repo.firestore.list_iterations().
-    Skeleton: Returns empty list.
-    """
-    # TODO(Phase 1): return await repo.firestore.list_iterations(bundle_id)
-    return []
+    """Return all AssessmentIterations in chronological order."""
+    iterations = await firestore.list_iterations(bundle_id)
+    return [AssessmentIteration(**it) for it in iterations]

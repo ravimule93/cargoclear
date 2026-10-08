@@ -1,16 +1,11 @@
 """SSE stream router — GET /bundles/{bundle_id}/stream.
 
-Implements the Server-Sent Events endpoint that pushes real-time pipeline
-progress and iteration results to the frontend.
+Real-time Server-Sent Events push notification pipeline:
+  - status: Emitted on every pipeline stage transition (stage, progress, state).
+  - iteration: Emitted as soon as a new AssessmentIteration is finalized.
+  - error: Emitted on unrecoverable failure.
 
-Implementation notes (v4.0 §2.5):
-  - Uses ``sse-starlette`` EventSourceResponse (not StreamingResponse).
-  - Cloud Run timeout MUST be set to 300s (via --timeout flag).
-  - Cloud Run MUST have --no-cpu-throttling (SSE generators stall otherwise).
-  - ping=15 keeps the connection alive through proxies.
-  - This router MUST NOT go through ErrorEnvelopeMiddleware — streaming
-    responses cannot be re-wrapped after the generator starts.
-    Errors inside the generator are emitted as SSE error events.
+Configured with ping=15 keep-alive and handles client disconnects gracefully.
 """
 
 import asyncio
@@ -19,10 +14,11 @@ import json
 from fastapi import APIRouter, Path
 from sse_starlette.sse import EventSourceResponse
 
+from app.repo import firestore
+
 router = APIRouter(tags=["stream"])
 
-_POLL_INTERVAL_S = 2
-_MAX_IDLE_POLLS = 150  # 300 s / 2 s — hard timeout guard inside the generator
+_POLL_INTERVAL_S = 1.0
 
 
 @router.get(
@@ -30,43 +26,48 @@ _MAX_IDLE_POLLS = 150  # 300 s / 2 s — hard timeout guard inside the generator
     summary="SSE stream for pipeline status and iteration events",
     response_class=EventSourceResponse,
 )
-async def stream(bundle_id: str = Path(...)) -> EventSourceResponse:
-    """Subscribe to real-time pipeline updates for a bundle.
+async def stream(bundle_id: str = Path(..., description="Target bundle ID")) -> EventSourceResponse:
+    """Subscribe to real-time pipeline status and assessment iteration events."""
 
-    Events emitted:
-      - ``status``    → StatusEvent  (on every stage transition)
-      - ``iteration`` → IterationEvent (when a new iteration is written)
-      - ``error``     → ErrorEvent   (on pipeline failure)
-
-    The stream terminates when the pipeline reaches state COMPLETE or ERROR.
-
-    Phase 1: Reads run state from Firestore.
-    Skeleton: Emits a single synthetic COMPLETE event immediately.
-    """
-
-    async def generator():
-        # TODO(Phase 1): replace with Firestore polling
-        # Skeleton: emit a single synthetic "COMPLETE" status and close.
-        idle_count = 0
-        last_iter = -1
+    async def event_generator():
+        last_iter_num = -1
+        last_stage = None
+        consecutive_complete_polls = 0
 
         try:
-            # Emit an initial QUEUED status so the frontend knows it connected
-            yield {
-                "event": "status",
-                "data": json.dumps({
-                    "kind": "status",
-                    "bundle_id": bundle_id,
-                    "run_id": "skeleton-run",
-                    "state": "COMPLETE",
-                    "stage": None,
-                    "progress": 1.0,
-                    "message": "Skeleton mode: no real pipeline running.",
-                }),
-            }
-            # Stream terminates after COMPLETE
+            while True:
+                # 1. Fetch current run progress
+                run_state = await firestore.get_run_state(bundle_id)
+                current_stage = run_state.get("stage")
+                state = run_state.get("state", "RUNNING")
+
+                # Emit status event if stage changed or state is terminal
+                if current_stage != last_stage or state in ("COMPLETE", "ERROR"):
+                    last_stage = current_stage
+                    yield {
+                        "event": "status",
+                        "data": json.dumps(run_state),
+                    }
+
+                # 2. Check for new AssessmentIteration
+                latest = await firestore.latest_iteration(bundle_id)
+                if latest is not None and latest.get("iteration") != last_iter_num:
+                    last_iter_num = latest["iteration"]
+                    yield {
+                        "event": "iteration",
+                        "data": json.dumps(latest),
+                    }
+
+                # Terminate stream after COMPLETE or ERROR has been emitted
+                if state in ("COMPLETE", "ERROR"):
+                    consecutive_complete_polls += 1
+                    if consecutive_complete_polls >= 2:
+                        break
+
+                await asyncio.sleep(_POLL_INTERVAL_S)
+
         except asyncio.CancelledError:
-            # Client disconnected — clean up gracefully
+            # Client disconnected
             pass
         except Exception as exc:
             yield {
@@ -74,10 +75,9 @@ async def stream(bundle_id: str = Path(...)) -> EventSourceResponse:
                 "data": json.dumps({
                     "kind": "error",
                     "bundle_id": bundle_id,
-                    "run_id": "skeleton-run",
-                    "code": "STREAM_ERROR",
+                    "code": "STREAM_EXCEPTION",
                     "message": str(exc),
                 }),
             }
 
-    return EventSourceResponse(generator(), ping=15)
+    return EventSourceResponse(event_generator(), ping=15)
