@@ -1,25 +1,62 @@
 steps:
+  # =========================================================================
+  # Step 1: Backend Unit Tests & Deterministic Engine Validation
+  # =========================================================================
   - id: test-backend
-    name: python:3.12
+    name: python:3.12-slim
     dir: backend
     entrypoint: bash
-    args: ["-c", "pip install -r requirements.txt && pytest -q"]
+    args:
+      - -c
+      - |
+        pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+        pytest tests/unit tests/integration -q
 
-  - id: test-frontend
-    name: node:22
+  # =========================================================================
+  # Step 2: Frontend Linting, Typecheck & Production Build
+  # =========================================================================
+  - id: build-frontend
+    name: node:22-slim
     dir: frontend
     entrypoint: bash
-    args: ["-c", "npm ci && npm run lint && npm run typecheck"]
+    args:
+      - -c
+      - |
+        npm ci
+        npm run lint
+        npm run typecheck
+        npm run build
 
-  - id: deploy-api
+  # =========================================================================
+  # Step 3: Build & Deploy Backend Container to Cloud Run (asia-south1)
+  # =========================================================================
+  - id: deploy-backend
     name: gcr.io/google.com/cloudsdktool/cloud-sdk
     entrypoint: bash
-    args: ["./infra/deploy_api.sh"]
+    args:
+      - -c
+      - |
+        bash ./infra/deploy_api.sh
+    env:
+      - 'PROJECT_ID=$PROJECT_ID'
+      - 'REGION=asia-south1'
 
-  - id: deploy-ui
+  # =========================================================================
+  # Step 4: Build & Deploy Frontend UI to Cloud Run
+  # =========================================================================
+  - id: deploy-frontend
     name: gcr.io/google.com/cloudsdktool/cloud-sdk
     entrypoint: bash
-    args: ["./infra/deploy_ui.sh"]
+    args:
+      - -c
+      - |
+        bash ./infra/deploy_ui.sh
+    env:
+      - 'PROJECT_ID=$PROJECT_ID'
+      - 'REGION=asia-south1'
+
+substitutions:
+  _REGION: asia-south1
 
 options:
   logging: CLOUD_LOGGING_ONLY
