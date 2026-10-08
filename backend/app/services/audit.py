@@ -69,6 +69,11 @@ def compute_hash(prev_hash: str, seq: int, ts: str, payload: dict[str, Any]) -> 
     return h.hexdigest()
 
 
+# Backward compatibility aliases
+_canonical = canonical_json
+_compute_hash = compute_hash
+
+
 async def record(ctx: dict[str, Any]) -> dict[str, Any]:
     """Append a tamper-evident AuditEvent to the Firestore hash chain.
 

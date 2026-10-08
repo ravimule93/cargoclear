@@ -1,36 +1,37 @@
 """Unit tests for the audit hash-chain service."""
 
 import pytest
-from app.services.audit import _compute_hash, _canonical
+from app.services.audit import compute_hash, canonical_json
 
 
 def test_canonical_is_deterministic():
     payload = {"z": 3, "a": 1, "m": 2}
-    assert _canonical(payload) == _canonical(payload)
+    assert canonical_json(payload) == canonical_json(payload)
 
 
 def test_canonical_sorts_keys():
     p1 = {"z": 1, "a": 2}
     p2 = {"a": 2, "z": 1}
-    assert _canonical(p1) == _canonical(p2)
+    assert canonical_json(p1) == canonical_json(p2)
 
 
 def test_hash_changes_with_seq():
-    h1 = _compute_hash("GENESIS", 1, "2024-01-01T00:00:00", {"x": 1})
-    h2 = _compute_hash("GENESIS", 2, "2024-01-01T00:00:00", {"x": 1})
+    h1 = compute_hash("GENESIS", 1, "2024-01-01T00:00:00", {"x": 1})
+    h2 = compute_hash("GENESIS", 2, "2024-01-01T00:00:00", {"x": 1})
     assert h1 != h2
 
 
 def test_hash_changes_with_payload():
-    h1 = _compute_hash("GENESIS", 1, "2024-01-01T00:00:00", {"x": 1})
-    h2 = _compute_hash("GENESIS", 1, "2024-01-01T00:00:00", {"x": 2})
+    h1 = compute_hash("GENESIS", 1, "2024-01-01T00:00:00", {"x": 1})
+    h2 = compute_hash("GENESIS", 1, "2024-01-01T00:00:00", {"x": 2})
     assert h1 != h2
 
 
 def test_hash_is_sha256_hex():
-    h = _compute_hash("GENESIS", 1, "2024-01-01T00:00:00", {})
+    h = compute_hash("GENESIS", 1, "2024-01-01T00:00:00", {})
     assert len(h) == 64
     assert all(c in "0123456789abcdef" for c in h)
+
 
 
 @pytest.mark.asyncio
