@@ -1,48 +1,46 @@
-"""Documents router — PDF upload and file retrieval."""
-
-import hashlib
-import uuid
-from datetime import datetime, timezone
+"""Documents router — PDF upload, file retrieval, and metadata registration."""
 
 from fastapi import APIRouter, File, Path, UploadFile
 from fastapi.responses import Response
 
 from app.domain.schemas import DocumentResponse
 from app.gateway.errors import NotFoundError, ValidationError
+from app.repo import firestore
+from app.services import audit, storage
 
 router = APIRouter(tags=["documents"])
 
-_ALLOWED_MIME = {"application/pdf"}
-_MAX_BYTES = 50 * 1024 * 1024  # 50 MB hard limit (well above e-SANCHIT 1 MB per-page limit)
+_ALLOWED_MIME = {"application/pdf", "application/octet-stream"}
+_MAX_BYTES = 50 * 1024 * 1024  # 50 MB hard limit
 
 
 @router.post(
     "/bundles/{bundle_id}/documents",
     response_model=DocumentResponse,
     status_code=201,
-    summary="Upload a PDF document to a bundle",
+    summary="Upload a PDF trade document into a bundle",
 )
 async def upload_document(
     bundle_id: str = Path(..., description="Target bundle ID"),
     file: UploadFile = File(..., description="PDF file to upload"),
 ) -> DocumentResponse:
-    """Upload a raw PDF to GCS and register it in Firestore.
+    """Accepts PDF document, verifies size/MIME, stores to GCS, and registers in Firestore."""
+    # Verify bundle exists
+    bundle = await firestore.get_bundle(bundle_id)
+    if bundle is None:
+        raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
 
-    Accepts: application/pdf only.
-    Max size: 50 MB (the preprocessing service splits files >1 MB / >13 pages
-    per e-SANCHIT constraints).
-
-    Phase 1: Stores to GCS + Firestore.
-    Skeleton: Validates, returns a stub response.
-    """
-    # Validate MIME
-    if file.content_type not in _ALLOWED_MIME:
+    # Validate MIME type
+    content_type = file.content_type or "application/pdf"
+    if content_type not in _ALLOWED_MIME and not (file.filename and file.filename.lower().endswith(".pdf")):
         raise ValidationError(
-            f"Only PDF files are accepted. Got: {file.content_type}",
-            detail={"content_type": file.content_type},
+            f"Only PDF files are accepted. Received: {content_type}",
+            detail={"content_type": content_type, "filename": file.filename},
         )
 
     data = await file.read()
+    if len(data) == 0:
+        raise ValidationError("Uploaded file is empty (0 bytes).")
 
     if len(data) > _MAX_BYTES:
         raise ValidationError(
@@ -50,41 +48,77 @@ async def upload_document(
             detail={"bytes": len(data), "max_bytes": _MAX_BYTES},
         )
 
-    # TODO(Phase 1): services.storage.upload_raw(bundle_id, document_id, data, mime)
-    # TODO(Phase 1): repo.firestore.create_evidence_document(...)
-    # TODO(Phase 1): services.audit.record("DOCUMENT_UPLOADED", ...)
+    filename = file.filename or "document.pdf"
 
-    document_id = hashlib.sha256(data).hexdigest()[:16]
-    now = datetime.now(timezone.utc).isoformat()
+    # Upload to storage (GCS or local cache)
+    meta = await storage.upload_raw(
+        bundle_id=bundle_id,
+        data=data,
+        mime="application/pdf",
+        filename=filename,
+    )
+
+    doc_data = {
+        "document_id": meta["document_id"],
+        "bundle_id": bundle_id,
+        "filename": filename,
+        "doc_type": "UNKNOWN",  # Will be classified by Extraction Agent in Stage 1
+        "gcs_uri": meta["gcs_uri"],
+        "sha256": meta["sha256"],
+        "bytes": meta["bytes"],
+        "uploaded_at": meta["uploaded_at"],
+    }
+
+    # Register document in Firestore
+    await firestore.create_evidence_document(bundle_id, doc_data)
+
+    # Append-only audit record
+    await audit.record({
+        "bundle_id": bundle_id,
+        "iteration": bundle.get("current_iteration", 0),
+        "audit_event_type": "DOCUMENT_UPLOADED",
+        "audit_payload": {
+            "document_id": meta["document_id"],
+            "filename": filename,
+            "sha256": meta["sha256"],
+            "bytes": meta["bytes"],
+        },
+        "actor": "user",
+    })
 
     return DocumentResponse(
-        document_id=document_id,
+        document_id=meta["document_id"],
         bundle_id=bundle_id,
-        filename=file.filename or "unknown.pdf",
+        filename=filename,
         doc_type="UNKNOWN",
-        gcs_uri=f"gs://cargoclear-raw-pdfs/bundles/{bundle_id}/raw/{document_id}/original.pdf",
-        sha256=hashlib.sha256(data).hexdigest(),
-        bytes=len(data),
-        uploaded_at=now,
+        gcs_uri=meta["gcs_uri"],
+        sha256=meta["sha256"],
+        bytes=meta["bytes"],
+        uploaded_at=meta["uploaded_at"],
     )
 
 
 @router.get(
     "/documents/{document_id}/file",
-    summary="Retrieve the raw PDF file for a document",
+    summary="Download or stream the raw PDF file",
     response_class=Response,
 )
 async def get_document_file(
     document_id: str = Path(..., description="Document ID"),
 ) -> Response:
-    """Stream the raw PDF bytes from GCS.
+    """Stream raw PDF bytes back to the client or frontend canvas viewer."""
+    doc_meta = await firestore.get_evidence_document(document_id)
+    if doc_meta is None:
+        raise NotFoundError(f"Document '{document_id}' not found.", detail={"document_id": document_id})
 
-    Used by the frontend PDF viewer (pdfjs-dist).
-    Phase 1: Fetches from GCS.
-    Skeleton: Returns 404.
-    """
-    # TODO(Phase 1): services.storage.download_raw(document_id)
-    raise NotFoundError(
-        f"Document '{document_id}' not found.",
-        detail={"document_id": document_id},
+    bundle_id = doc_meta["bundle_id"]
+    pdf_bytes = await storage.download_raw(bundle_id, document_id)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{doc_meta.get("filename", "document.pdf")}"',
+            "Cache-Control": "public, max-age=3600",
+        },
     )
