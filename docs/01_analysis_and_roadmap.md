@@ -417,6 +417,6 @@ cargoclear/
 - AHTN seed data sourcing (requires public AHTN tables download)
 
 ### ❓ Open Questions for User
-1. **GCP Project ID:** Is `cargoclear-hackathon` confirmed, or should a different project ID be used?
+1. **GCP Project ID:** ✅ Confirmed as `cargoclear-hackathon`.
 2. **ADK version:** Has `google-adk >= 2.6.3` been verified installable in your environment?
-3. **AHTN Data:** Do you have the AHTN master tariff data ready for BigQuery loading?
+3. **AHTN Data:** Seed data prepared in `infra/bigquery/seed/sample_tariff.json` for initial bootstrap. Ready to ingest full master tariff whenever available.
