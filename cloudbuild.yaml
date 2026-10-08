@@ -39,7 +39,7 @@ steps:
         bash ./infra/deploy_api.sh
     env:
       - 'PROJECT_ID=$PROJECT_ID'
-      - 'REGION=asia-south1'
+      - 'REGION=$_REGION'
 
   # =========================================================================
   # Step 4: Build & Deploy Frontend UI to Cloud Run
@@ -53,10 +53,12 @@ steps:
         bash ./infra/deploy_ui.sh
     env:
       - 'PROJECT_ID=$PROJECT_ID'
-      - 'REGION=asia-south1'
+      - 'REGION=$_REGION'
 
 substitutions:
   _REGION: asia-south1
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  substitution_option: 'ALLOW_LOOSE'
+
