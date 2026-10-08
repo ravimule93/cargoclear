@@ -391,13 +391,16 @@ cargoclear/
 - P1-1: BigQuery AHTN Grounding (TREE_AH Cosine Vector Search, distance ambiguity threshold, official required documents lookup)
 - P1-2: Firestore append-only hash-chained audit trail & security rules (SHA-256 cryptographic chaining, tamper verification, firestore.rules)
 - P1-4: Confidence routing engine (4-tier routing table: auto-accept, auto-flag, interactive review, manual entry)
+- P1-5: WCAG 2.2 AA accessibility & Playwright E2E test suite (axe-core audit with 0 critical violations, Hero Case C journey test)
+- P1-6: Automated CI/CD Cloud Build pipeline (multi-step backend test, frontend typecheck/build, and Cloud Run deployments)
 
 ### 🔄 In Progress
-- Phase 6: Cloud Build automated CI/CD pipeline (P1-6)
-- Phase 7: Hardening, Playwright E2E & WCAG 2.2 AA axe-core automated audit tests (P1-5)
+- Production GCP project bootstrap execution (`infra/bootstrap.sh`) when user supplies active project credentials
 
-### ⬜ Remaining
-- Production Cloud Run deployment verification with real GCP project credentials
+### ⬜ Remaining / Post-MVP (P2)
+- Vertex AI Batch API for 50+ document bundles
+- Authentication / SSO for CHAs
+- Real-time ASW / ICEGATE government portal submission integration
 
 ### 🚫 Blocked
 - GCP bootstrap (needs project creation by user)
