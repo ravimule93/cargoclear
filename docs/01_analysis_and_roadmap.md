@@ -388,13 +388,13 @@ cargoclear/
 - P0-13: Assessment panel & StatusPill live binding (rule checklist, missing evidence cards)
 - P0-14: Real-time SSE stream listener & Reassess action triggers
 - P0-15: Reasoning Delta drawer & ARIA accessibility live regions (WCAG 2.2 AA compliant announcements & focus management)
+- P1-1: BigQuery AHTN Grounding (TREE_AH Cosine Vector Search, distance ambiguity threshold, official required documents lookup)
 
 ### 🔄 In Progress
-- Phase 3: BigQuery AHTN Grounding (P1-1: TreeAH Vector Search & live DDL integration)
-
-### ⬜ Remaining
 - Phase 4: Firestore append-only hash-chained audit trail & security rules (P1-2)
 - Phase 5: Confidence routing queue (P1-4: auto-accept vs specialist review)
+
+### ⬜ Remaining
 - Phase 6: Cloud Build automated CI/CD pipeline (P1-6)
 - Phase 7: Hardening, Playwright E2E & WCAG 2.2 AA axe-core automated audit tests (P1-5)
 
