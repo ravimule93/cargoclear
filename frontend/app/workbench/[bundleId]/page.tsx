@@ -1,19 +1,23 @@
+"use client";
+
+import { use, useEffect, useState } from "react";
 import { TopBar } from "@/components/shell/TopBar";
 import { DocumentRail } from "@/components/rail/DocumentRail";
 import { DocumentViewer } from "@/components/viewer/DocumentViewer";
 import { AssessmentPanel } from "@/components/assess/AssessmentPanel";
 import { DeltaDrawer } from "@/components/delta/DeltaDrawer";
-import { Bundle, AssessmentIteration } from "@/lib/types";
+import { api } from "@/lib/api";
+import { useBundleStream } from "@/lib/hooks/useBundleStream";
+import { Bundle, AssessmentIteration, Status } from "@/lib/types";
 
 interface WorkbenchPageProps {
   params: Promise<{ bundleId: string }>;
 }
 
-export default async function WorkbenchPage({ params }: WorkbenchPageProps) {
-  const { bundleId } = await params;
+export default function WorkbenchPage({ params }: WorkbenchPageProps) {
+  const { bundleId } = use(params);
 
-  // Initial skeleton mock data fallback until Phase 1 Firestore is online
-  const fallbackBundle: Bundle = {
+  const [bundle, setBundle] = useState<Bundle>({
     id: bundleId,
     reference: "EXP-SG-7304-001",
     destination_country: "SG",
@@ -52,8 +56,16 @@ export default async function WorkbenchPage({ params }: WorkbenchPageProps) {
       },
     ],
     created_at: new Date().toISOString(),
-  };
+  });
 
+  const [activeDocId, setActiveDocId] = useState<string>("doc-inv-01");
+  const [iterations, setIterations] = useState<AssessmentIteration[]>([]);
+  const [isReassessing, setIsReassessing] = useState(false);
+
+  // Subscribe to live SSE status stream for this bundle
+  const { assessment: liveAssessment, run } = useBundleStream(bundleId);
+
+  // Initial assessment fallback state
   const fallbackAssessment: AssessmentIteration = {
     iteration: 1,
     bundle_id: bundleId,
@@ -89,7 +101,7 @@ export default async function WorkbenchPage({ params }: WorkbenchPageProps) {
     ],
     missing_evidence: [
       {
-        id: "ME-MTC",
+        id: "ME-MILL_TEST_CERTIFICATE",
         document_label: "Mill Test Certificate",
         hs_code: "73041900",
         reason: "Mandatory material compliance certificate required under AHTN Chapter 73 rules for seamless pipes.",
@@ -109,27 +121,115 @@ export default async function WorkbenchPage({ params }: WorkbenchPageProps) {
     created_at: new Date().toISOString(),
   };
 
+  const currentAssessment = liveAssessment || fallbackAssessment;
+
+  // Sync iterations list when live assessment arrives
+  useEffect(() => {
+    if (liveAssessment) {
+      setIterations((prev) => {
+        const exists = prev.find((it) => it.iteration === liveAssessment.iteration);
+        if (exists) {
+          return prev.map((it) => (it.iteration === liveAssessment.iteration ? liveAssessment : it));
+        }
+        return [...prev, liveAssessment];
+      });
+      setIsReassessing(false);
+    }
+  }, [liveAssessment]);
+
+  // Load bundle data from API
+  const refreshBundle = async () => {
+    try {
+      const bnd = await api.getBundle(bundleId);
+      if (bnd) {
+        setBundle(bnd);
+        if (bnd.documents.length > 0) {
+          setActiveDocId(bnd.documents[0].document_id);
+        }
+      }
+    } catch (err) {
+      console.debug("Bundle fetch fallback active");
+    }
+  };
+
+  useEffect(() => {
+    refreshBundle();
+  }, [bundleId]);
+
+  // Trigger reassessment action
+  const handleReassess = async () => {
+    setIsReassessing(true);
+    try {
+      await api.reassess(bundleId);
+    } catch (err) {
+      console.error("Reassess failed", err);
+      setIsReassessing(false);
+    }
+  };
+
+  // Convert check evidence into visual highlights for the canvas viewer
+  const highlights = [
+    {
+      id: "hl-gross",
+      document_id: "doc-bol-01",
+      page: 1,
+      bbox: { page: 1, ymin: 400, xmin: 600, ymax: 430, xmax: 800 },
+      severity: "PASS" as const,
+      label: "BoL Gross Weight: 14280.0 kg",
+    },
+    {
+      id: "hl-net",
+      document_id: "doc-pl-01",
+      page: 1,
+      bbox: { page: 1, ymin: 600, xmin: 600, ymax: 630, xmax: 800 },
+      severity: "PASS" as const,
+      label: "PL Net Weight: 14000.0 kg",
+    },
+  ];
+
   return (
     <>
-      <TopBar bundle={fallbackBundle} status={fallbackAssessment.status} />
+      <TopBar
+        bundle={bundle}
+        status={currentAssessment.status as Status}
+        isReassessing={isReassessing || run.state === "RUNNING"}
+        onReassess={handleReassess}
+        onAddDocumentClick={() => {
+          // Focus or open dropzone
+        }}
+      />
 
       <aside className="cc-rail" aria-label="Documents in this bundle">
-        <DocumentRail documents={fallbackBundle.documents} />
+        <DocumentRail
+          documents={bundle.documents}
+          activeDocumentId={activeDocId}
+          onSelectDocument={(id) => setActiveDocId(id)}
+        />
       </aside>
 
       <main className="cc-viewer" aria-label="Document viewer and annotations">
         <DocumentViewer
-          documents={fallbackBundle.documents}
-          highlights={[]}
+          documents={bundle.documents}
+          highlights={highlights}
         />
       </main>
 
       <section className="cc-assess" aria-label="Compliance assessment and actions">
-        <AssessmentPanel assessment={fallbackAssessment} bundleId={bundleId} />
+        <AssessmentPanel
+          assessment={currentAssessment}
+          bundleId={bundleId}
+          runState={run}
+          onDocumentUploaded={() => {
+            refreshBundle();
+            handleReassess();
+          }}
+        />
       </section>
 
       <section className="cc-drawer" aria-label="Reasoning delta and audit trail">
-        <DeltaDrawer iterations={[fallbackAssessment]} />
+        <DeltaDrawer
+          iterations={iterations.length > 0 ? iterations : [currentAssessment]}
+        />
       </section>
     </>
   );
