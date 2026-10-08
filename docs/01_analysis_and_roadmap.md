@@ -389,14 +389,15 @@ cargoclear/
 - P0-14: Real-time SSE stream listener & Reassess action triggers
 - P0-15: Reasoning Delta drawer & ARIA accessibility live regions (WCAG 2.2 AA compliant announcements & focus management)
 - P1-1: BigQuery AHTN Grounding (TREE_AH Cosine Vector Search, distance ambiguity threshold, official required documents lookup)
+- P1-2: Firestore append-only hash-chained audit trail & security rules (SHA-256 cryptographic chaining, tamper verification, firestore.rules)
+- P1-4: Confidence routing engine (4-tier routing table: auto-accept, auto-flag, interactive review, manual entry)
 
 ### 🔄 In Progress
-- Phase 4: Firestore append-only hash-chained audit trail & security rules (P1-2)
-- Phase 5: Confidence routing queue (P1-4: auto-accept vs specialist review)
-
-### ⬜ Remaining
 - Phase 6: Cloud Build automated CI/CD pipeline (P1-6)
 - Phase 7: Hardening, Playwright E2E & WCAG 2.2 AA axe-core automated audit tests (P1-5)
+
+### ⬜ Remaining
+- Production Cloud Run deployment verification with real GCP project credentials
 
 ### 🚫 Blocked
 - GCP bootstrap (needs project creation by user)
