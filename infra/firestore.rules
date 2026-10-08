@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // TradeBundle collections
+    match /bundles/{bundleId} {
+      allow read, write: if true; // Internal service account / Cloud Run invocation
+
+      // Evidence documents
+      match /documents/{documentId} {
+        allow read, create: if true;
+        allow update, delete: if false; // Immutable raw documents
+      }
+
+      // Assessment iteration snapshots
+      match /iterations/{iterationId} {
+        allow read, create: if true;
+        allow update, delete: if false; // Immutable point-in-time assessment snapshots
+      }
+
+      // Audit trail — strictly append-only, tamper-evident
+      match /audit/{eventId} {
+        allow read: if true;
+        allow create: if true;
+        allow update, delete: if false; // Cryptographic tamper-evidence: mutations prohibited
+      }
+
+      // Execution run states
+      match /runs/{runId} {
+        allow read, write: if true;
+      }
+    }
+  }
+}
