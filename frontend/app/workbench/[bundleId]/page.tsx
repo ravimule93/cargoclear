@@ -140,7 +140,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
   useEffect(() => {
     let isMounted = true;
     api.getBundle(bundleId)
-      .then((bnd) => {
+      .then((bnd: Bundle) => {
         if (isMounted && bnd) {
           setBundle(bnd);
           if (bnd.documents.length > 0) {
