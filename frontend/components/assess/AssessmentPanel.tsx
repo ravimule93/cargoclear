@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { AssessmentIteration, StatusEvent } from "@/lib/types";
+import { AssessmentIteration, MissingEvidence, StatusEvent } from "@/lib/types";
+
 import { CheckList } from "./CheckList";
 import { MissingEvidenceCard } from "./MissingEvidenceCard";
 import { UploadDropzone } from "../upload/UploadDropzone";
@@ -104,9 +105,10 @@ export function AssessmentPanel({
             <span>Mandatory Trade Documents Required</span>
           </h3>
           <div className="flex flex-col gap-2">
-            {assessment.missing_evidence.map((item) => (
+            {assessment.missing_evidence.map((item: MissingEvidence) => (
               <MissingEvidenceCard key={item.id} item={item} />
             ))}
+
           </div>
 
           <div className="mt-2">

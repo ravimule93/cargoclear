@@ -137,7 +137,25 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
     }
   }, [liveAssessment]);
 
-  // Load bundle data from API
+  useEffect(() => {
+    let isMounted = true;
+    api.getBundle(bundleId)
+      .then((bnd) => {
+        if (isMounted && bnd) {
+          setBundle(bnd);
+          if (bnd.documents.length > 0) {
+            setActiveDocId(bnd.documents[0].document_id);
+          }
+        }
+      })
+      .catch(() => {
+        console.debug("Bundle fetch fallback active");
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [bundleId]);
+
   const refreshBundle = async () => {
     try {
       const bnd = await api.getBundle(bundleId);
@@ -152,9 +170,6 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
     }
   };
 
-  useEffect(() => {
-    refreshBundle();
-  }, [bundleId]);
 
   // Trigger reassessment action
   const handleReassess = async () => {

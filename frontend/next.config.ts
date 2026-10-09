@@ -3,13 +3,15 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Allow cross-origin requests to the Cloud Run API during development
   async rewrites() {
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
     return [
       {
         source: "/api/proxy/:path*",
-        destination: `${process.env.NEXT_PUBLIC_API_BASE}/api/v1/:path*`,
+        destination: `${apiBase}/api/v1/:path*`,
       },
     ];
   },
+
   // Required for pdfjs-dist worker file serving
   webpack: (config) => {
     config.resolve.alias.canvas = false;

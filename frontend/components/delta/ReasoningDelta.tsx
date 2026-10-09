@@ -4,6 +4,13 @@ interface ReasoningDeltaProps {
   delta?: ReasoningDeltaType | null;
 }
 
+interface DeltaChange {
+  field: string;
+  from: string;
+  to: string;
+  because: string;
+}
+
 export function ReasoningDelta({ delta }: ReasoningDeltaProps) {
   if (!delta) {
     return (
@@ -28,7 +35,7 @@ export function ReasoningDelta({ delta }: ReasoningDeltaProps) {
         {delta.narrative}
       </div>
 
-      {delta.changes.length > 0 && (
+      {delta.changes && delta.changes.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
@@ -40,7 +47,8 @@ export function ReasoningDelta({ delta }: ReasoningDeltaProps) {
               </tr>
             </thead>
             <tbody>
-              {delta.changes.map((change, idx) => (
+              {delta.changes.map((change: DeltaChange, idx: number) => (
+
                 <tr key={idx} className="border-b border-[var(--cc-border)] hover:bg-[var(--cc-surface-2)]">
                   <td className="py-1.5 px-2 font-mono text-[var(--cc-text)]">{change.field}</td>
                   <td className="py-1.5 px-2 text-[var(--cc-err)] font-semibold">{change.from}</td>
