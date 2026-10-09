@@ -18,6 +18,7 @@ gcloud run deploy cargoclear-ui \
   --project "${PROJECT_ID}" \
   --region "${REGION}" \
   --allow-unauthenticated \
+  --quiet \
   --set-env-vars NEXT_PUBLIC_API_BASE="${API_URL}"
 
 echo "cargoclear-ui deployment completed successfully."

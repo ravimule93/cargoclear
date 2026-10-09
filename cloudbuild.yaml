@@ -27,7 +27,6 @@ steps:
         npm run typecheck
         npm run build
 
-
   # =========================================================================
   # Step 3: Build & Deploy Backend Container to Cloud Run (asia-south1)
   # =========================================================================
