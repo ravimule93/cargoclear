@@ -9,7 +9,7 @@ OpenAPI schema, so these types are the authoritative source.
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class StatusEvent(BaseModel):
@@ -31,16 +31,18 @@ class IterationEvent(BaseModel):
     """Emitted when a new AssessmentIteration is written to Firestore.
 
     Frontend uses this to update the assessment panel without a full page reload.
+    confidence and reasoning_delta are optional because early iterations may
+    not yet have these computed.
     """
 
     kind: Literal["iteration"] = "iteration"
     bundle_id: str
     iteration: int
     status: str  # One of the 4 Status values
-    confidence: dict
-    checks: list[dict]
-    missing_evidence: list[dict]
-    reasoning_delta: dict
+    confidence: dict | None = None
+    checks: list[dict] = Field(default_factory=list)
+    missing_evidence: list[dict] = Field(default_factory=list)
+    reasoning_delta: dict | None = None
 
 
 class ErrorEvent(BaseModel):
@@ -52,8 +54,3 @@ class ErrorEvent(BaseModel):
     code: str
     message: str
 
-
-# Fix forward reference in StatusEvent
-from pydantic import Field  # noqa: E402 (must be after model definitions)
-
-StatusEvent.model_rebuild()

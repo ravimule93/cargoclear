@@ -197,10 +197,10 @@ export interface IterationEvent {
   bundle_id: string;
   iteration: number;
   status: Status;
-  confidence: ConfidenceResult;
+  confidence: ConfidenceResult | null;
   checks: CheckResult[];
   missing_evidence: MissingEvidence[];
-  reasoning_delta: ReasoningDelta;
+  reasoning_delta: ReasoningDelta | null;
 }
 
 export interface ErrorEvent {
