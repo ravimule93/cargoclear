@@ -7,9 +7,19 @@ export interface SSEHandlers {
 }
 
 export function subscribeToBundle(bundleId: string, handlers: SSEHandlers): () => void {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
-  const url = `${apiBase}/api/v1/bundles/${bundleId}/stream`;
-  const es = new EventSource(url);
+  if (!bundleId) return () => {};
+
+  // Route through Next.js proxy route (/api/proxy/...) so it works identically
+  // in local dev, Docker, and Cloud Run without hardcoded origins or CORS issues.
+  const url = `/api/proxy/bundles/${bundleId}/stream`;
+  let es: EventSource;
+
+  try {
+    es = new EventSource(url);
+  } catch (err) {
+    console.debug("SSE EventSource init failed", err);
+    return () => {};
+  }
 
   es.addEventListener("status", (e: MessageEvent) => {
     try {
@@ -36,10 +46,20 @@ export function subscribeToBundle(bundleId: string, handlers: SSEHandlers): () =
         const data = JSON.parse(msgEvent.data) as ErrorEvent;
         handlers.onError?.(data);
       }
-    } catch (err) {
-      console.error("SSE stream connection error", err);
+    } catch {
+      // Silent error fallback
     }
   });
+
+  es.onerror = () => {
+    handlers.onError?.({
+      kind: "error",
+      bundle_id: bundleId,
+      run_id: "",
+      code: "STREAM_UNAVAILABLE",
+      message: "Live stream unavailable. Fallback polling active.",
+    });
+  };
 
   return () => {
     es.close();

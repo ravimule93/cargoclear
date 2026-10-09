@@ -60,8 +60,7 @@ async function handleProxy(
       body: body as any,
     });
 
-    const responseBody = await response.blob();
-    return new NextResponse(responseBody, {
+    return new NextResponse(response.body, {
       status: response.status,
       headers: response.headers,
     });
