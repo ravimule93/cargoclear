@@ -3,10 +3,10 @@ FROM python:3.12-slim
 # Install system dependencies for pdf2image (Poppler)
 # Phase 1: Add poppler-utils when PDF processing is enabled
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # poppler-utils \   # Phase 1: uncomment
-    # libgl1 \          # Phase 1: uncomment (for OpenCV)
+    poppler-utils \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
 
 WORKDIR /app
 

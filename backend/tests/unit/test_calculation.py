@@ -173,9 +173,10 @@ class TestWeightParity:
     def test_boundary_just_over_tolerance(self):
         """Delta just above tolerance → MATERIAL."""
         net = 14000.0
-        tol = _tolerance(14280.0)
         expected = net + DEFAULT_TARE_RATIO * net
-        gross_over = expected + tol + 0.01
+        # bol gross is higher than expected; tol is max(0.005 * gross, 5.0)
+        # Solve gross - expected > 0.005 * gross => 0.995 * gross > expected => gross > expected / 0.995
+        gross_over = (expected / 0.995) + 0.1
         packing = make_packing(net=net)
         bol = make_bol(gross=gross_over)
         result = check_weight_parity(packing, bol)
@@ -239,21 +240,21 @@ class TestRollUp:
     def test_compliant_when_all_pass(self):
         from app.services.calculation import CheckResult
         results = [
-            CheckResult("W-001", "PASS", "ok"),
-            CheckResult("H-002", "PASS", "ok"),
+            CheckResult(check_id="W-001", severity="PASS", message="ok"),
+            CheckResult(check_id="H-002", severity="PASS", message="ok"),
         ]
         assert _roll_up(results) == "COMPLIANT_FOR_SUBMISSION"
 
     def test_specialist_when_only_warn(self):
         from app.services.calculation import CheckResult
-        results = [CheckResult("W-001", "WARN", "missing data")]
+        results = [CheckResult(check_id="W-001", severity="WARN", message="missing data")]
         assert _roll_up(results) == "SPECIALIST_REVIEW_REQUIRED"
 
     def test_material_wins_over_warn(self):
         from app.services.calculation import CheckResult
         results = [
-            CheckResult("W-001", "WARN", "missing data"),
-            CheckResult("H-002", "MATERIAL", "hs mismatch"),
+            CheckResult(check_id="W-001", severity="WARN", message="missing data"),
+            CheckResult(check_id="H-002", severity="MATERIAL", message="hs mismatch"),
         ]
         assert _roll_up(results) == "MATERIAL_CONTRADICTION"
 

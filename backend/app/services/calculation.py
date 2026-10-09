@@ -17,7 +17,6 @@ This module has a ≥95% unit test coverage requirement (see §11 of the tech pl
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
 
 from app.domain.schemas import ExtractedDocument, CheckResult
 
@@ -227,6 +226,6 @@ async def run(ctx: dict) -> dict:
     # Entity alignment across all documents
     results.extend(check_entity_alignment(docs))
 
-    ctx["checks"] = [asdict(r) for r in results]
+    ctx["checks"] = [r.model_dump() for r in results]
     ctx["math_status"] = _roll_up(results)
     return ctx
