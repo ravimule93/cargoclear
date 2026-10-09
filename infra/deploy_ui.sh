@@ -17,6 +17,7 @@ gcloud run deploy cargoclear-ui \
   --source ./frontend \
   --project "${PROJECT_ID}" \
   --region "${REGION}" \
+  --port 8080 \
   --allow-unauthenticated \
   --quiet \
   --set-env-vars NEXT_PUBLIC_API_BASE="${API_URL}"
