@@ -14,14 +14,13 @@ Design rules:
   - Re-uploading the same bytes is a no-op (same sha256 -> same ID).
   - Uploading different bytes under the same logical document creates a
     new document_id and a new AuditEvent.
-  - Supports local disk cache fallback when GCP storage credentials are not provided.
+  - Supports local disk cache fallback when in demo mode.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
-import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -29,14 +28,20 @@ from typing import Any
 import structlog
 
 from app.core.config import settings
+from app.core.mode import no_credentials_message, use_live_gcp
 from app.gateway.errors import NotFoundError, UpstreamError
 
 logger = structlog.get_logger(__name__)
 
-# Local filesystem storage cache directory for offline dev & tests
-_LOCAL_STORAGE_DIR = Path(os.getenv("LOCAL_STORAGE_PATH", "./.storage_cache"))
-
 _gcs_client = None
+
+
+def _get_local_storage_dir() -> Path:
+    """Return local storage cache directory Path."""
+    path_str = getattr(settings, "local_storage_path", "./.storage_cache")
+    p = Path(path_str)
+    p.mkdir(parents=True, exist_ok=True)
+    return p
 
 
 def _get_gcs_client():
@@ -45,9 +50,10 @@ def _get_gcs_client():
     if _gcs_client is not None:
         return _gcs_client
 
-    has_creds = bool(os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or os.getenv("K_SERVICE"))
-    if not has_creds and os.getenv("USE_GCS_EMULATOR") != "true":
-        logger.info("gcs_local_mode", reason="No GCP credentials found, storing artifacts in local cache directory")
+    if not use_live_gcp():
+        if settings.app_mode == "live":
+            raise UpstreamError(no_credentials_message())
+        logger.info("gcs_local_mode", reason="Running in demo mode without GCP credentials")
         return None
 
     try:
@@ -56,6 +62,8 @@ def _get_gcs_client():
         _gcs_client = gcs_lib.Client(project=settings.project_id)
         return _gcs_client
     except Exception as exc:
+        if settings.app_mode == "live":
+            raise UpstreamError(f"GCS client init failed in live mode: {type(exc).__name__}") from exc
         logger.warning("gcs_client_init_failed", error=str(exc), fallback="local_disk")
         return None
 
@@ -117,10 +125,10 @@ async def upload_raw(
             logger.info("gcs_raw_uploaded", gcs_uri=gcs_uri, size_bytes=len(data))
         except Exception as exc:
             logger.error("gcs_upload_failed", error=str(exc))
-            raise UpstreamError(f"Failed to upload PDF to Cloud Storage: {exc}") from exc
+            raise UpstreamError(f"Failed to upload PDF to Cloud Storage: {type(exc).__name__}") from exc
     else:
         # Local cache path
-        doc_dir = _LOCAL_STORAGE_DIR / "bundles" / bundle_id / "raw" / document_id
+        doc_dir = _get_local_storage_dir() / "bundles" / bundle_id / "raw" / document_id
         doc_dir.mkdir(parents=True, exist_ok=True)
         (doc_dir / "original.pdf").write_bytes(data)
         (doc_dir / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
@@ -145,10 +153,10 @@ async def download_raw(bundle_id: str, document_id: str) -> bytes:
             raise
         except Exception as exc:
             logger.error("gcs_download_failed", error=str(exc))
-            raise UpstreamError(f"Failed to retrieve PDF from Cloud Storage: {exc}") from exc
+            raise UpstreamError(f"Failed to retrieve PDF from Cloud Storage: {type(exc).__name__}") from exc
 
     # Local cache fallback
-    local_path = _LOCAL_STORAGE_DIR / "bundles" / bundle_id / "raw" / document_id / "original.pdf"
+    local_path = _get_local_storage_dir() / "bundles" / bundle_id / "raw" / document_id / "original.pdf"
     if not local_path.exists():
         raise NotFoundError(f"Document '{document_id}' not found in local cache.")
 
@@ -173,7 +181,7 @@ async def upload_transform_meta(
         except Exception as exc:
             logger.warning("transform_meta_upload_failed", error=str(exc))
     else:
-        local_file = _LOCAL_STORAGE_DIR / path
+        local_file = _get_local_storage_dir() / path
         local_file.parent.mkdir(parents=True, exist_ok=True)
         local_file.write_text(data_str, encoding="utf-8")
 

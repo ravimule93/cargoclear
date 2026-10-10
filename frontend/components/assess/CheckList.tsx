@@ -15,7 +15,7 @@ export function CheckList({ checks }: CheckListProps) {
 
   return (
     <ul className="flex flex-col gap-2" aria-label="Validation checks">
-      {checks.map((check) => {
+      {checks.map((check, index) => {
         const isPass = check.severity === "PASS";
         const isMaterial = check.severity === "MATERIAL";
 
@@ -27,7 +27,8 @@ export function CheckList({ checks }: CheckListProps) {
 
         return (
           <li
-            key={check.check_id}
+            // check_id is not unique: the engine emits one D-DUP-TYPE per duplicated document type
+            key={`${check.check_id}:${index}`}
             className="p-2.5 rounded-[var(--cc-radius)] border border-[var(--cc-border)] bg-[var(--cc-surface-2)] flex flex-col gap-1 text-xs"
           >
             <div className="flex items-center justify-between">

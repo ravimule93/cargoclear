@@ -53,4 +53,3 @@ class ErrorEvent(BaseModel):
     run_id: str
     code: str
     message: str
-

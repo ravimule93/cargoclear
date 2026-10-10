@@ -9,13 +9,39 @@
   display: grid;
   height: 100dvh;
   grid-template-columns: 280px minmax(0, 1fr) 400px;
-  grid-template-rows: 56px minmax(0, 1fr) 280px;
+  /* The banner row is `auto`: it collapses to 0 height when no banner is rendered. */
+  grid-template-rows: auto 56px minmax(0, 1fr) 280px;
   grid-template-areas:
+    "banner banner banner"
     "top    top    top"
     "rail   viewer assess"
     "drawer drawer drawer";
   background: var(--cc-bg);
   color: var(--cc-text);
+}
+
+.cc-banner {
+  grid-area: banner;
+  padding: 0.375rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-align: center;
+  color: var(--cc-warn);
+  background: var(--cc-warn-bg);
+  border-bottom: 1px solid var(--cc-warn-bd);
+}
+
+/* Full-grid container for the loading / not-found / error states of the workbench page. */
+.cc-state {
+  grid-area: 1 / 1 / -1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  text-align: center;
 }
 
 .cc-top {
@@ -38,6 +64,7 @@
 .cc-viewer {
   grid-area: viewer;
   overflow: auto;
+  scrollbar-gutter: stable;
   background: var(--cc-surface-2);
   position: relative;
 }
@@ -63,8 +90,9 @@
 @media (max-width: 1279px) {
   .cc-workbench {
     grid-template-columns: 1fr;
-    grid-template-rows: 56px 44px minmax(0, 1fr);
+    grid-template-rows: auto 56px 44px minmax(0, 1fr);
     grid-template-areas:
+      "banner"
       "top"
       "tabs"
       "main";

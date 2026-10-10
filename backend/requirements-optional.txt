@@ -1,0 +1,3 @@
+# Optional agent framework (agents/workflow.py stub)
+# Moved from requirements.txt due to pip dependency resolution conflicts.
+google-adk>=0.3.0

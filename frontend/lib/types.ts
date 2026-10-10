@@ -1,75 +1,7 @@
 /**
- * Shared TypeScript domain types.
- * In production these would be generated from the FastAPI OpenAPI schema
- * using `openapi-typescript`. For the skeleton, they are manually authored
- * to match `backend/app/domain/schemas.py` exactly.
- *
- * Generation command (Phase 1):
- *   npx openapi-typescript http://localhost:8080/openapi.json -o lib/types.ts
+ * Domain types for CargoClear-JAPAC frontend.
+ * Mirrors backend/app/domain/schemas.py and backend/app/domain/events.py.
  */
-
-// ---------------------------------------------------------------------------
-// Primitive types
-// ---------------------------------------------------------------------------
-
-export interface BBox {
-  page: number;      // 1-indexed
-  ymin: number;      // 0–1000
-  xmin: number;
-  ymax: number;
-  xmax: number;
-}
-
-export interface FieldRef {
-  value: string | number | null;
-  confidence: number;  // 0.0–1.0
-  bbox: BBox | null;
-}
-
-// ---------------------------------------------------------------------------
-// Document types
-// ---------------------------------------------------------------------------
-
-export type DocType =
-  | "COMMERCIAL_INVOICE"
-  | "BILL_OF_LADING"
-  | "PACKING_LIST"
-  | "CERTIFICATE_OF_ORIGIN"
-  | "PHYTOSANITARY"
-  | "MILL_TEST_CERTIFICATE"
-  | "UNKNOWN";
-
-export interface LineItem {
-  description: FieldRef;
-  quantity: FieldRef;
-  net_weight_kg: FieldRef;
-  gross_weight_kg: FieldRef;
-  hs_code_declared: FieldRef;
-  unit_price?: FieldRef | null;
-  total_value?: FieldRef | null;
-  currency?: FieldRef | null;
-}
-
-export interface ExtractedDocument {
-  document_id: string;
-  doc_type: DocType;
-  doc_type_confidence: number;
-  document_number?: FieldRef | null;
-  consignee?: FieldRef | null;
-  consignor?: FieldRef | null;
-  vessel_or_flight?: FieldRef | null;
-  invoice_value?: FieldRef | null;
-  invoice_currency?: FieldRef | null;
-  total_net_weight_kg?: FieldRef | null;
-  total_gross_weight_kg?: FieldRef | null;
-  tare_weight_kg?: FieldRef | null;
-  package_count?: FieldRef | null;
-  line_items: LineItem[];
-}
-
-// ---------------------------------------------------------------------------
-// Compliance status
-// ---------------------------------------------------------------------------
 
 export type Status =
   | "COMPLIANT_FOR_SUBMISSION"
@@ -77,9 +9,29 @@ export type Status =
   | "MATERIAL_CONTRADICTION"
   | "SPECIALIST_REVIEW_REQUIRED";
 
-// ---------------------------------------------------------------------------
-// Assessment types
-// ---------------------------------------------------------------------------
+export interface BBox {
+  page: number;
+  ymin: number;
+  xmin: number;
+  ymax: number;
+  xmax: number;
+}
+
+export interface FieldRef {
+  value?: string | number | null;
+  confidence: number;
+  bbox?: BBox | null;
+}
+
+export interface EvidenceRef {
+  /** document_id of the document the evidence points into */
+  doc: string;
+  field: string;
+  page?: number | null;
+  /** 0-1000 normalised, top-left origin; the backend sends null when a field has no box */
+  bbox?: BBox | null;
+  raw_value?: string | number | null;
+}
 
 export interface CheckResult {
   check_id: string;
@@ -87,16 +39,17 @@ export interface CheckResult {
   message: string;
   delta?: number | null;
   tolerance?: number | null;
-  evidence?: Array<{ doc: string; field?: string; bbox?: BBox }> | null;
+  evidence?: EvidenceRef[] | null;
 }
 
 export interface GroundingFinding {
   document_id: string;
-  declared_hs: string | null;
-  top_candidate_hs: string | null;
-  top_candidate_description: string | null;
-  distance: number | null;
+  declared_hs?: string | null;
+  top_candidate_hs?: string | null;
+  top_candidate_description?: string | null;
+  distance?: number | null;
   ambiguous: boolean;
+  hs_mismatch: boolean;
   required_documents: string[];
 }
 
@@ -108,14 +61,17 @@ export interface MissingEvidence {
   regulation_ref?: string | null;
 }
 
+export interface ReasoningDeltaChange {
+  field?: string;
+  from?: string;
+  to?: string;
+  because?: string;
+  [key: string]: unknown;
+}
+
 export interface ReasoningDelta {
   kind: "INITIAL" | "REASSESSMENT";
-  changes: Array<{
-    field: string;
-    from: string;
-    to: string;
-    because: string;
-  }>;
+  changes?: ReasoningDeltaChange[];
   narrative: string;
 }
 
@@ -131,21 +87,18 @@ export interface AssessmentIteration {
   checks: CheckResult[];
   grounding: GroundingFinding[];
   missing_evidence: MissingEvidence[];
-  confidence: ConfidenceResult | null;
-  reasoning_delta: ReasoningDelta | null;
+  confidence?: ConfidenceResult | null;
+  reasoning_delta?: ReasoningDelta | null;
   documents: string[];
-  created_at: string | null;
+  created_at?: string | null;
+  data_source?: "fixture" | "live";
 }
-
-// ---------------------------------------------------------------------------
-// Bundle / Document types
-// ---------------------------------------------------------------------------
 
 export interface DocumentRecord {
   document_id: string;
   bundle_id: string;
   filename: string;
-  doc_type: DocType;
+  doc_type: string;
   gcs_uri: string;
   sha256: string;
   bytes: number;
@@ -154,21 +107,30 @@ export interface DocumentRecord {
 
 export interface Bundle {
   id: string;
-  reference: string | null;
+  reference?: string | null;
   destination_country: string;
-  status: string;
+  status: Status;
   current_iteration: number;
   documents: DocumentRecord[];
   created_at: string;
 }
 
-// ---------------------------------------------------------------------------
-// API request/response types
-// ---------------------------------------------------------------------------
+export interface StatusEvent {
+  kind: "status";
+  bundle_id: string;
+  run_id: string;
+  state: "QUEUED" | "RUNNING" | "COMPLETE" | "ERROR";
+  stage?: string | null;
+  progress: number;
+  message?: string | null;
+}
 
-export interface CreateBundleBody {
-  reference?: string | null;
-  destination_country?: string;
+/** Payload of the SSE `error` event (server-side stream failure). */
+export interface StreamErrorEvent {
+  kind: "error";
+  bundle_id: string;
+  code: string;
+  message: string;
 }
 
 export interface RunResponse {
@@ -178,50 +140,36 @@ export interface RunResponse {
   message?: string | null;
 }
 
-// ---------------------------------------------------------------------------
-// SSE event types
-// ---------------------------------------------------------------------------
+export type AppMode = "demo" | "live";
 
-export interface StatusEvent {
-  kind: "status";
-  bundle_id: string;
-  run_id: string;
-  state: "QUEUED" | "RUNNING" | "COMPLETE" | "ERROR";
-  stage: string | null;
-  progress: number;   // 0.0–1.0
-  message: string | null;
+export interface Meta {
+  app_mode: AppMode;
+  data_source_policy: string;
 }
 
-export interface IterationEvent {
-  kind: "iteration";
-  bundle_id: string;
-  iteration: number;
-  status: Status;
-  confidence: ConfidenceResult | null;
-  checks: CheckResult[];
-  missing_evidence: MissingEvidence[];
-  reasoning_delta: ReasoningDelta | null;
-}
-
-export interface ErrorEvent {
-  kind: "error";
-  bundle_id: string;
-  run_id: string;
+export interface ErrorEnvelope {
   code: string;
   message: string;
+  detail?: unknown;
+  request_id?: string;
 }
 
-// ---------------------------------------------------------------------------
-// API error type
-// ---------------------------------------------------------------------------
+export interface AuditEvent {
+  event_id: string;
+  bundle_id: string;
+  iteration: number;
+  seq: number;
+  /** ISO-8601 timestamp (note: `ts`, not `timestamp`) */
+  ts: string;
+  actor: string;
+  event_type: string;
+  payload: Record<string, unknown>;
+  prev_hash: string;
+  hash: string;
+}
 
-export class ApiError extends Error {
-  constructor(
-    public readonly code: string,
-    message: string,
-    public readonly requestId?: string,
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
+export interface AuditResponse {
+  events: AuditEvent[];
+  verified: boolean;
+  error: string | null;
 }

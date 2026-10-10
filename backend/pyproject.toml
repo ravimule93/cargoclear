@@ -2,6 +2,9 @@
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "--cov=app --cov-report=term-missing -q"
+markers = [
+    "live: calls the real Gemini endpoint (needs credentials, APP_MODE=live and RUN_LIVE_SMOKE=1); see tests/live",
+]
 
 [tool.ruff]
 target-version = "py312"

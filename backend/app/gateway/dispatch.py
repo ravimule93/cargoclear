@@ -24,7 +24,7 @@ def _get_handlers() -> dict[Stage, Handler]:
     if _handlers is not None:
         return _handlers
 
-    from app.services import preprocess, calculation, reasoning, confidence, audit
+    from app.services import preprocess, calculation, reasoning, confidence
     from app.agents.extraction import run_extraction_agent
     from app.agents.grounding import run_grounding_agent
 
@@ -35,7 +35,6 @@ def _get_handlers() -> dict[Stage, Handler]:
         "ground": run_grounding_agent,
         "confidence": confidence.route,
         "synthesize": reasoning.build,
-        "audit": audit.record,
     }
     return _handlers
 

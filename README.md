@@ -37,7 +37,7 @@ cargoclear/
 ### 1. Backend Setup
 ```bash
 cd backend
-python -m venv venv
+python3 -m venv venv
 # Linux / macOS
 source venv/bin/activate
 # Windows PowerShell

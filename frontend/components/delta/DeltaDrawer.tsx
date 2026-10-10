@@ -6,7 +6,10 @@ import { ReasoningDelta } from "./ReasoningDelta";
 import { AuditTimeline } from "../audit/AuditTimeline";
 
 interface DeltaDrawerProps {
+  bundleId: string;
   iterations: AssessmentIteration[];
+  /** Changing this value refetches the audit chain (new iteration, run state change, upload). */
+  auditRefreshKey?: string | number;
 }
 
 const TABS = [
@@ -14,7 +17,7 @@ const TABS = [
   { id: "audit", label: "Audit Chain Timeline" },
 ] as const;
 
-export function DeltaDrawer({ iterations }: DeltaDrawerProps) {
+export function DeltaDrawer({ bundleId, iterations, auditRefreshKey }: DeltaDrawerProps) {
   const [activeTab, setActiveTab] = useState<"delta" | "audit">("delta");
   const latestIteration = iterations[iterations.length - 1];
 
@@ -68,7 +71,7 @@ export function DeltaDrawer({ iterations }: DeltaDrawerProps) {
         {activeTab === "delta" ? (
           <ReasoningDelta delta={latestIteration?.reasoning_delta} />
         ) : (
-          <AuditTimeline />
+          <AuditTimeline bundleId={bundleId} refreshKey={auditRefreshKey} />
         )}
       </div>
     </div>

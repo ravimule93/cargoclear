@@ -1,0 +1,4 @@
+# Environment with google-adk: the ADK lock plus the same dev tools. Used for backend/.venv-adk.
+# Do not combine with requirements.txt: the two locks pin different fastapi versions.
+-r requirements-adk.txt
+-r requirements-dev-tools.txt

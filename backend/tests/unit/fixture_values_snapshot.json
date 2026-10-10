@@ -1,0 +1,64 @@
+{
+  "bill_of_lading.pdf": {
+    "doc_type": "BILL_OF_LADING",
+    "fields": {
+      "consignee": ["SINGAPORE PRECISION PIPING PTE LTD", 0.98, [1, 200.0, 100.0, 240.0, 500.0]],
+      "consignor": ["BHARAT SEAMLESS PIPES LTD", 0.98, [1, 260.0, 100.0, 300.0, 480.0]],
+      "document_number": ["BL-SG-2024-8941", 0.99, [1, 100.0, 100.0, 130.0, 350.0]],
+      "port_of_discharge": ["SGSIN - SINGAPORE", 0.97, [1, 450.0, 500.0, 480.0, 750.0]],
+      "port_of_loading": ["INNSA - NHAVA SHEVA", 0.97, [1, 450.0, 100.0, 480.0, 350.0]],
+      "total_gross_weight_kg": [14280.0, 0.99, [1, 400.0, 600.0, 430.0, 800.0]],
+      "vessel_or_flight": ["EVER GIVEN V-104E", 0.96, [1, 320.0, 100.0, 350.0, 320.0]]
+    }
+  },
+  "commercial_invoice.pdf": {
+    "doc_type": "COMMERCIAL_INVOICE",
+    "fields": {
+      "consignee": ["SINGAPORE PRECISION PIPING PTE LTD", 0.98, [1, 180.0, 100.0, 220.0, 500.0]],
+      "consignor": ["BHARAT SEAMLESS PIPES LTD", 0.98, [1, 240.0, 100.0, 280.0, 480.0]],
+      "document_number": ["INV-2024-001", 0.99, [1, 100.0, 100.0, 130.0, 350.0]],
+      "invoice_currency": ["USD", 0.99, [1, 300.0, 550.0, 330.0, 590.0]],
+      "invoice_value": [84000.0, 0.99, [1, 300.0, 600.0, 330.0, 800.0]],
+      "line_items[0].currency": ["USD", 0.99, [1, 500.0, 260.0, 530.0, 290.0]],
+      "line_items[0].description": ["Seamless carbon steel pipes API 5L Grade B", 0.98, [1, 450.0, 100.0, 480.0, 500.0]],
+      "line_items[0].gross_weight_kg": [14280.0, 0.98, [1, 500.0, 730.0, 530.0, 840.0]],
+      "line_items[0].hs_code_declared": ["73041900", 0.99, [1, 500.0, 850.0, 530.0, 950.0]],
+      "line_items[0].net_weight_kg": [14000.0, 0.99, [1, 500.0, 610.0, 530.0, 720.0]],
+      "line_items[0].quantity": ["120 LENGTHS", 0.96, [1, 500.0, 520.0, 530.0, 600.0]],
+      "line_items[0].total_value": [84000.0, 0.99, [1, 500.0, 410.0, 530.0, 510.0]],
+      "line_items[0].unit_price": [700.0, 0.97, [1, 500.0, 300.0, 530.0, 400.0]],
+      "total_gross_weight_kg": [14280.0, 0.98, [1, 390.0, 600.0, 420.0, 800.0]],
+      "total_net_weight_kg": [14000.0, 0.98, [1, 350.0, 600.0, 380.0, 800.0]]
+    }
+  },
+  "mtc_pipe_test_cert.pdf": {
+    "doc_type": "MILL_TEST_CERTIFICATE",
+    "fields": {
+      "consignee": ["SINGAPORE PRECISION PIPING PTE LTD", 0.98, [1, 180.0, 100.0, 220.0, 500.0]],
+      "consignor": ["BHARAT SEAMLESS PIPES LTD", 0.98, [1, 240.0, 100.0, 280.0, 480.0]],
+      "document_number": ["MTC-2024-7712", 0.99, [1, 100.0, 100.0, 130.0, 350.0]],
+      "hs_code_header": ["73041900", 0.97, [1, 300.0, 100.0, 330.0, 300.0]],
+      "line_items[0].description": ["Chemical & mechanical test report API 5L PSL2", 0.97, [1, 400.0, 100.0, 430.0, 500.0]],
+      "line_items[0].gross_weight_kg": [14280.0, 0.97, [1, 400.0, 730.0, 430.0, 840.0]],
+      "line_items[0].hs_code_declared": ["73041900", 0.99, [1, 400.0, 850.0, 430.0, 950.0]],
+      "line_items[0].net_weight_kg": [14000.0, 0.98, [1, 400.0, 610.0, 430.0, 720.0]],
+      "line_items[0].quantity": ["120 LENGTHS", 0.95, [1, 400.0, 520.0, 430.0, 600.0]]
+    }
+  },
+  "packing_list.pdf": {
+    "doc_type": "PACKING_LIST",
+    "fields": {
+      "consignee": ["SINGAPORE PRECISION PIPING PTE LTD", 0.98, [1, 180.0, 100.0, 220.0, 500.0]],
+      "consignor": ["BHARAT SEAMLESS PIPES LTD", 0.98, [1, 240.0, 100.0, 280.0, 480.0]],
+      "document_number": ["PL-2024-001", 0.99, [1, 100.0, 100.0, 130.0, 350.0]],
+      "line_items[0].description": ["Seamless carbon steel pipes API 5L Grade B", 0.98, [1, 650.0, 100.0, 680.0, 500.0]],
+      "line_items[0].gross_weight_kg": [14280.0, 0.98, [1, 650.0, 730.0, 680.0, 840.0]],
+      "line_items[0].hs_code_declared": ["73041900", 0.99, [1, 650.0, 850.0, 680.0, 950.0]],
+      "line_items[0].net_weight_kg": [14000.0, 0.99, [1, 650.0, 610.0, 680.0, 720.0]],
+      "line_items[0].quantity": ["120 LENGTHS", 0.96, [1, 650.0, 520.0, 680.0, 600.0]],
+      "tare_weight_kg": [280.0, 0.97, [1, 580.0, 600.0, 610.0, 800.0]],
+      "total_gross_weight_kg": [14280.0, 0.98, [1, 540.0, 600.0, 570.0, 800.0]],
+      "total_net_weight_kg": [14000.0, 0.99, [1, 500.0, 600.0, 530.0, 800.0]]
+    }
+  }
+}

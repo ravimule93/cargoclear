@@ -28,6 +28,8 @@ venv/lib64/
 .venv/lib/
 .venv/lib64/
 !frontend/lib/
+/backend/lib/
+/backend/lib64/
 parts/
 sdist/
 var/
@@ -62,3 +64,31 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+.venv/
+.venv-adk/
+.hypothesis/
+.storage_cache/
+backend/data/
+*.tsbuildinfo
+frontend/next-env.d.ts
+frontend/public/pdf.worker.min.mjs
+
+# Secrets and credentials (broader net; .env.example stays tracked)
+.env.*
+!.env.example
+application_default_credentials.json
+
+# Test and coverage output
+.coverage.*
+coverage.xml
+frontend/playwright-report/
+frontend/test-results/
+frontend/blob-report/
+frontend/playwright/.cache/
+
+# Logs
+*.log
+
+# Claude Code: personal settings stay local (a shared .claude/launch.json may be committed)
+.claude/settings.local.json

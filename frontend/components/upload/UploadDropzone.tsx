@@ -2,6 +2,7 @@
 
 import { DragEvent, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import { toErrorEnvelope } from "@/lib/errors";
 
 interface UploadDropzoneProps {
   bundleId: string;
@@ -24,17 +25,20 @@ export function UploadDropzone({
     setUploading(true);
     setErrorMessage(null);
 
+    let uploaded = 0;
     try {
       for (let i = 0; i < files.length; i++) {
         await api.uploadDocument(bundleId, files[i]);
+        uploaded += 1;
       }
-      onUploaded?.();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Upload error", err);
-      setErrorMessage(err.message || "Failed to upload file");
+      setErrorMessage(toErrorEnvelope(err).message || "Failed to upload file");
     } finally {
       setUploading(false);
     }
+    // One callback per batch, even after a partial failure, so the page refreshes what did land.
+    if (uploaded > 0) onUploaded?.();
   };
 
   const onDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -70,6 +74,7 @@ export function UploadDropzone({
         multiple
         accept="application/pdf"
         className="hidden"
+        data-testid="upload-input"
         onChange={(e) => handleFiles(e.target.files)}
       />
 

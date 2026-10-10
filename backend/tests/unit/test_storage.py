@@ -57,8 +57,10 @@ async def test_upload_document_endpoint_success():
         assert doc_data["bundle_id"] == bundle_id
         assert doc_data["bytes"] == len(fake_pdf)
 
-        # Retrieve file
-        file_resp = await client.get(f"/api/v1/documents/{doc_data['document_id']}/file")
+        # Retrieve file using bundle-scoped route
+        file_resp = await client.get(
+            f"/api/v1/bundles/{bundle_id}/documents/{doc_data['document_id']}/file"
+        )
         assert file_resp.status_code == 200
         assert file_resp.content == fake_pdf
 

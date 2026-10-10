@@ -7,7 +7,14 @@ from app.domain.schemas import ExtractedDocument
 
 @pytest.mark.asyncio
 async def test_extraction_default_fixture():
-    ctx = {"bundle_id": "bnd-hero-case-c"}
+    ctx = {
+        "bundle_id": "bnd-hero-case-c",
+        "documents": [
+            {"document_id": "doc-inv-001", "filename": "Commercial_Invoice.pdf"},
+            {"document_id": "doc-bol-001", "filename": "Bill_of_Lading_ocean.pdf"},
+            {"document_id": "doc-pl-001", "filename": "Packing_List.pdf"},
+        ],
+    }
     result_ctx = await run_extraction_agent(ctx)
 
     assert "extracted" in result_ctx

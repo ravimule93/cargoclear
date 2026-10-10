@@ -1,0 +1,19 @@
+# Dev/test tools, shared by requirements-dev.txt and requirements-adk-dev.txt (single place to bump them).
+# Pins were resolved together with BOTH locks (requirements.txt and requirements-adk.txt) and agree.
+# Transitive tool dependencies (coverage, pluggy, ...) are intentionally not pinned here.
+
+# Testing (pytest-asyncio must keep working with `asyncio_mode = "auto"` in pyproject.toml)
+pytest==9.1.1
+pytest-asyncio==1.4.0
+pytest-cov==7.1.0
+hypothesis==6.168.5
+
+# Linting / formatting
+ruff==0.17.0
+
+# Type checking
+mypy==2.4.0
+
+# Case C sample PDF generator (scripts/generate_case_c_pdfs.py). KEEP EXACT: the drift-guard test
+# tests/unit/test_case_c_pdfs.py compares generated PDFs byte-for-byte with fixtures/case_c/*.pdf.
+reportlab==5.0.1

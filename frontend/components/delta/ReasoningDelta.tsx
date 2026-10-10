@@ -50,10 +50,10 @@ export function ReasoningDelta({ delta }: ReasoningDeltaProps) {
               {delta.changes.map((change: DeltaChange, idx: number) => (
 
                 <tr key={idx} className="border-b border-[var(--cc-border)] hover:bg-[var(--cc-surface-2)]">
-                  <td className="py-1.5 px-2 font-mono text-[var(--cc-text)]">{change.field}</td>
-                  <td className="py-1.5 px-2 text-[var(--cc-err)] font-semibold">{change.from}</td>
-                  <td className="py-1.5 px-2 text-[var(--cc-ok)] font-semibold">{change.to}</td>
-                  <td className="py-1.5 px-2 text-[var(--cc-text-muted)]">{change.because}</td>
+                  <td className="py-1.5 px-2 font-mono text-[var(--cc-text)]">{change.field || ""}</td>
+                  <td className="py-1.5 px-2 text-[var(--cc-err)] font-semibold">{String(change.from ?? "")}</td>
+                  <td className="py-1.5 px-2 text-[var(--cc-ok)] font-semibold">{String(change.to ?? "")}</td>
+                  <td className="py-1.5 px-2 text-[var(--cc-text-muted)]">{String(change.because ?? "")}</td>
                 </tr>
               ))}
             </tbody>

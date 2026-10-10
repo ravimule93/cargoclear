@@ -1,0 +1,4 @@
+# Runtime set + google-adk (agent framework; NOT imported by the app yet, see agents/workflow.py).
+# Kept in a separate lock because google-adk pins its own fastapi/starlette ranges and re-resolves them.
+-r requirements.in
+google-adk>=2.6.3,<3

@@ -1,0 +1,1964 @@
+{
+  "description": "Structured extraction output for one trade document.\n\nProduced by the Extraction Agent (Gemini 2.5 Flash) and consumed by\nthe Discrepancy Agent (pure Python math engine) and Grounding Agent.",
+  "properties": {
+    "consignee": {
+      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
+      "nullable": true,
+      "properties": {
+        "bbox": {
+          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+          "nullable": true,
+          "properties": {
+            "page": {
+              "description": "1-indexed page number within the processed document",
+              "minimum": 1.0,
+              "title": "Page",
+              "type": "INTEGER"
+            },
+            "xmax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmax",
+              "type": "NUMBER"
+            },
+            "xmin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmin",
+              "type": "NUMBER"
+            },
+            "ymax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymax",
+              "type": "NUMBER"
+            },
+            "ymin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymin",
+              "type": "NUMBER"
+            }
+          },
+          "property_ordering": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "required": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "title": "BBox",
+          "type": "OBJECT"
+        },
+        "confidence": {
+          "description": "Extraction confidence 0.0\u20131.0",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "NUMBER"
+        },
+        "value": {
+          "nullable": true,
+          "title": "Value",
+          "type": "STRING"
+        }
+      },
+      "property_ordering": [
+        "value",
+        "confidence",
+        "bbox"
+      ],
+      "required": [
+        "confidence"
+      ],
+      "title": "TextRef",
+      "type": "OBJECT"
+    },
+    "consignor": {
+      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
+      "nullable": true,
+      "properties": {
+        "bbox": {
+          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+          "nullable": true,
+          "properties": {
+            "page": {
+              "description": "1-indexed page number within the processed document",
+              "minimum": 1.0,
+              "title": "Page",
+              "type": "INTEGER"
+            },
+            "xmax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmax",
+              "type": "NUMBER"
+            },
+            "xmin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmin",
+              "type": "NUMBER"
+            },
+            "ymax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymax",
+              "type": "NUMBER"
+            },
+            "ymin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymin",
+              "type": "NUMBER"
+            }
+          },
+          "property_ordering": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "required": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "title": "BBox",
+          "type": "OBJECT"
+        },
+        "confidence": {
+          "description": "Extraction confidence 0.0\u20131.0",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "NUMBER"
+        },
+        "value": {
+          "nullable": true,
+          "title": "Value",
+          "type": "STRING"
+        }
+      },
+      "property_ordering": [
+        "value",
+        "confidence",
+        "bbox"
+      ],
+      "required": [
+        "confidence"
+      ],
+      "title": "TextRef",
+      "type": "OBJECT"
+    },
+    "doc_type": {
+      "enum": [
+        "COMMERCIAL_INVOICE",
+        "BILL_OF_LADING",
+        "PACKING_LIST",
+        "CERTIFICATE_OF_ORIGIN",
+        "PHYTOSANITARY",
+        "MILL_TEST_CERTIFICATE",
+        "UNKNOWN"
+      ],
+      "title": "Doc Type",
+      "type": "STRING"
+    },
+    "doc_type_confidence": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Doc Type Confidence",
+      "type": "NUMBER"
+    },
+    "document_id": {
+      "description": "Matches the EvidenceDocument.document_id in Firestore",
+      "title": "Document Id",
+      "type": "STRING"
+    },
+    "document_number": {
+      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
+      "nullable": true,
+      "properties": {
+        "bbox": {
+          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+          "nullable": true,
+          "properties": {
+            "page": {
+              "description": "1-indexed page number within the processed document",
+              "minimum": 1.0,
+              "title": "Page",
+              "type": "INTEGER"
+            },
+            "xmax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmax",
+              "type": "NUMBER"
+            },
+            "xmin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmin",
+              "type": "NUMBER"
+            },
+            "ymax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymax",
+              "type": "NUMBER"
+            },
+            "ymin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymin",
+              "type": "NUMBER"
+            }
+          },
+          "property_ordering": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "required": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "title": "BBox",
+          "type": "OBJECT"
+        },
+        "confidence": {
+          "description": "Extraction confidence 0.0\u20131.0",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "NUMBER"
+        },
+        "value": {
+          "nullable": true,
+          "title": "Value",
+          "type": "STRING"
+        }
+      },
+      "property_ordering": [
+        "value",
+        "confidence",
+        "bbox"
+      ],
+      "required": [
+        "confidence"
+      ],
+      "title": "TextRef",
+      "type": "OBJECT"
+    },
+    "hs_code_header": {
+      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
+      "nullable": true,
+      "properties": {
+        "bbox": {
+          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+          "nullable": true,
+          "properties": {
+            "page": {
+              "description": "1-indexed page number within the processed document",
+              "minimum": 1.0,
+              "title": "Page",
+              "type": "INTEGER"
+            },
+            "xmax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmax",
+              "type": "NUMBER"
+            },
+            "xmin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmin",
+              "type": "NUMBER"
+            },
+            "ymax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymax",
+              "type": "NUMBER"
+            },
+            "ymin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymin",
+              "type": "NUMBER"
+            }
+          },
+          "property_ordering": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "required": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "title": "BBox",
+          "type": "OBJECT"
+        },
+        "confidence": {
+          "description": "Extraction confidence 0.0\u20131.0",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "NUMBER"
+        },
+        "value": {
+          "nullable": true,
+          "title": "Value",
+          "type": "STRING"
+        }
+      },
+      "property_ordering": [
+        "value",
+        "confidence",
+        "bbox"
+      ],
+      "required": [
+        "confidence"
+      ],
+      "title": "TextRef",
+      "type": "OBJECT"
+    },
+    "invoice_currency": {
+      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
+      "nullable": true,
+      "properties": {
+        "bbox": {
+          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+          "nullable": true,
+          "properties": {
+            "page": {
+              "description": "1-indexed page number within the processed document",
+              "minimum": 1.0,
+              "title": "Page",
+              "type": "INTEGER"
+            },
+            "xmax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmax",
+              "type": "NUMBER"
+            },
+            "xmin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmin",
+              "type": "NUMBER"
+            },
+            "ymax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymax",
+              "type": "NUMBER"
+            },
+            "ymin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymin",
+              "type": "NUMBER"
+            }
+          },
+          "property_ordering": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "required": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "title": "BBox",
+          "type": "OBJECT"
+        },
+        "confidence": {
+          "description": "Extraction confidence 0.0\u20131.0",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "NUMBER"
+        },
+        "value": {
+          "nullable": true,
+          "title": "Value",
+          "type": "STRING"
+        }
+      },
+      "property_ordering": [
+        "value",
+        "confidence",
+        "bbox"
+      ],
+      "required": [
+        "confidence"
+      ],
+      "title": "TextRef",
+      "type": "OBJECT"
+    },
+    "invoice_value": {
+      "description": "A single extracted scalar value with its provenance (confidence + bounding box).\n\nUsed for every field that Gemini extracts so we can:\n1. Apply confidence-based routing per field.\n2. Render bounding-box highlights on the correct page.",
+      "nullable": true,
+      "properties": {
+        "bbox": {
+          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+          "nullable": true,
+          "properties": {
+            "page": {
+              "description": "1-indexed page number within the processed document",
+              "minimum": 1.0,
+              "title": "Page",
+              "type": "INTEGER"
+            },
+            "xmax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmax",
+              "type": "NUMBER"
+            },
+            "xmin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmin",
+              "type": "NUMBER"
+            },
+            "ymax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymax",
+              "type": "NUMBER"
+            },
+            "ymin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymin",
+              "type": "NUMBER"
+            }
+          },
+          "property_ordering": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "required": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "title": "BBox",
+          "type": "OBJECT"
+        },
+        "confidence": {
+          "description": "Extraction confidence 0.0\u20131.0",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "NUMBER"
+        },
+        "value": {
+          "any_of": [
+            {
+              "type": "STRING"
+            },
+            {
+              "type": "NUMBER"
+            },
+            {
+              "type": "INTEGER"
+            }
+          ],
+          "nullable": true,
+          "title": "Value"
+        }
+      },
+      "property_ordering": [
+        "value",
+        "confidence",
+        "bbox"
+      ],
+      "required": [
+        "confidence"
+      ],
+      "title": "FieldRef",
+      "type": "OBJECT"
+    },
+    "line_items": {
+      "items": {
+        "description": "A single commodity line from an invoice, packing list, etc.",
+        "properties": {
+          "currency": {
+            "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
+            "nullable": true,
+            "properties": {
+              "bbox": {
+                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+                "nullable": true,
+                "properties": {
+                  "page": {
+                    "description": "1-indexed page number within the processed document",
+                    "minimum": 1.0,
+                    "title": "Page",
+                    "type": "INTEGER"
+                  },
+                  "xmax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmax",
+                    "type": "NUMBER"
+                  },
+                  "xmin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmin",
+                    "type": "NUMBER"
+                  },
+                  "ymax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymax",
+                    "type": "NUMBER"
+                  },
+                  "ymin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymin",
+                    "type": "NUMBER"
+                  }
+                },
+                "property_ordering": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "required": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "title": "BBox",
+                "type": "OBJECT"
+              },
+              "confidence": {
+                "description": "Extraction confidence 0.0\u20131.0",
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "title": "Confidence",
+                "type": "NUMBER"
+              },
+              "value": {
+                "nullable": true,
+                "title": "Value",
+                "type": "STRING"
+              }
+            },
+            "property_ordering": [
+              "value",
+              "confidence",
+              "bbox"
+            ],
+            "required": [
+              "confidence"
+            ],
+            "title": "TextRef",
+            "type": "OBJECT"
+          },
+          "description": {
+            "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
+            "properties": {
+              "bbox": {
+                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+                "nullable": true,
+                "properties": {
+                  "page": {
+                    "description": "1-indexed page number within the processed document",
+                    "minimum": 1.0,
+                    "title": "Page",
+                    "type": "INTEGER"
+                  },
+                  "xmax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmax",
+                    "type": "NUMBER"
+                  },
+                  "xmin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmin",
+                    "type": "NUMBER"
+                  },
+                  "ymax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymax",
+                    "type": "NUMBER"
+                  },
+                  "ymin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymin",
+                    "type": "NUMBER"
+                  }
+                },
+                "property_ordering": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "required": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "title": "BBox",
+                "type": "OBJECT"
+              },
+              "confidence": {
+                "description": "Extraction confidence 0.0\u20131.0",
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "title": "Confidence",
+                "type": "NUMBER"
+              },
+              "value": {
+                "nullable": true,
+                "title": "Value",
+                "type": "STRING"
+              }
+            },
+            "property_ordering": [
+              "value",
+              "confidence",
+              "bbox"
+            ],
+            "required": [
+              "confidence"
+            ],
+            "title": "TextRef",
+            "type": "OBJECT"
+          },
+          "gross_weight_kg": {
+            "description": "A FieldRef for a measured quantity (a weight): the number as printed plus the unit as printed.\n\n``value`` stays exactly as printed (\"14,280.50\", 14280.5, ...) and ``unit`` is what the document says\n(\"KGS\", \"MT\", \"LBS\", ...). Nothing is converted at extraction time; the deterministic engine converts\nwith app.domain.units and reports every assumption it had to make.",
+            "properties": {
+              "bbox": {
+                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+                "nullable": true,
+                "properties": {
+                  "page": {
+                    "description": "1-indexed page number within the processed document",
+                    "minimum": 1.0,
+                    "title": "Page",
+                    "type": "INTEGER"
+                  },
+                  "xmax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmax",
+                    "type": "NUMBER"
+                  },
+                  "xmin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmin",
+                    "type": "NUMBER"
+                  },
+                  "ymax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymax",
+                    "type": "NUMBER"
+                  },
+                  "ymin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymin",
+                    "type": "NUMBER"
+                  }
+                },
+                "property_ordering": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "required": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "title": "BBox",
+                "type": "OBJECT"
+              },
+              "confidence": {
+                "description": "Extraction confidence 0.0\u20131.0",
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "title": "Confidence",
+                "type": "NUMBER"
+              },
+              "unit": {
+                "description": "unit exactly as printed, e.g. KGS, MT, LBS; never converted",
+                "nullable": true,
+                "title": "Unit",
+                "type": "STRING"
+              },
+              "value": {
+                "any_of": [
+                  {
+                    "type": "STRING"
+                  },
+                  {
+                    "type": "NUMBER"
+                  },
+                  {
+                    "type": "INTEGER"
+                  }
+                ],
+                "nullable": true,
+                "title": "Value"
+              }
+            },
+            "property_ordering": [
+              "value",
+              "confidence",
+              "bbox",
+              "unit"
+            ],
+            "required": [
+              "confidence"
+            ],
+            "title": "QuantityRef",
+            "type": "OBJECT"
+          },
+          "hs_code_declared": {
+            "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
+            "properties": {
+              "bbox": {
+                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+                "nullable": true,
+                "properties": {
+                  "page": {
+                    "description": "1-indexed page number within the processed document",
+                    "minimum": 1.0,
+                    "title": "Page",
+                    "type": "INTEGER"
+                  },
+                  "xmax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmax",
+                    "type": "NUMBER"
+                  },
+                  "xmin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmin",
+                    "type": "NUMBER"
+                  },
+                  "ymax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymax",
+                    "type": "NUMBER"
+                  },
+                  "ymin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymin",
+                    "type": "NUMBER"
+                  }
+                },
+                "property_ordering": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "required": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "title": "BBox",
+                "type": "OBJECT"
+              },
+              "confidence": {
+                "description": "Extraction confidence 0.0\u20131.0",
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "title": "Confidence",
+                "type": "NUMBER"
+              },
+              "value": {
+                "nullable": true,
+                "title": "Value",
+                "type": "STRING"
+              }
+            },
+            "property_ordering": [
+              "value",
+              "confidence",
+              "bbox"
+            ],
+            "required": [
+              "confidence"
+            ],
+            "title": "TextRef",
+            "type": "OBJECT"
+          },
+          "net_weight_kg": {
+            "description": "A FieldRef for a measured quantity (a weight): the number as printed plus the unit as printed.\n\n``value`` stays exactly as printed (\"14,280.50\", 14280.5, ...) and ``unit`` is what the document says\n(\"KGS\", \"MT\", \"LBS\", ...). Nothing is converted at extraction time; the deterministic engine converts\nwith app.domain.units and reports every assumption it had to make.",
+            "properties": {
+              "bbox": {
+                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+                "nullable": true,
+                "properties": {
+                  "page": {
+                    "description": "1-indexed page number within the processed document",
+                    "minimum": 1.0,
+                    "title": "Page",
+                    "type": "INTEGER"
+                  },
+                  "xmax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmax",
+                    "type": "NUMBER"
+                  },
+                  "xmin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmin",
+                    "type": "NUMBER"
+                  },
+                  "ymax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymax",
+                    "type": "NUMBER"
+                  },
+                  "ymin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymin",
+                    "type": "NUMBER"
+                  }
+                },
+                "property_ordering": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "required": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "title": "BBox",
+                "type": "OBJECT"
+              },
+              "confidence": {
+                "description": "Extraction confidence 0.0\u20131.0",
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "title": "Confidence",
+                "type": "NUMBER"
+              },
+              "unit": {
+                "description": "unit exactly as printed, e.g. KGS, MT, LBS; never converted",
+                "nullable": true,
+                "title": "Unit",
+                "type": "STRING"
+              },
+              "value": {
+                "any_of": [
+                  {
+                    "type": "STRING"
+                  },
+                  {
+                    "type": "NUMBER"
+                  },
+                  {
+                    "type": "INTEGER"
+                  }
+                ],
+                "nullable": true,
+                "title": "Value"
+              }
+            },
+            "property_ordering": [
+              "value",
+              "confidence",
+              "bbox",
+              "unit"
+            ],
+            "required": [
+              "confidence"
+            ],
+            "title": "QuantityRef",
+            "type": "OBJECT"
+          },
+          "quantity": {
+            "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
+            "properties": {
+              "bbox": {
+                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+                "nullable": true,
+                "properties": {
+                  "page": {
+                    "description": "1-indexed page number within the processed document",
+                    "minimum": 1.0,
+                    "title": "Page",
+                    "type": "INTEGER"
+                  },
+                  "xmax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmax",
+                    "type": "NUMBER"
+                  },
+                  "xmin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmin",
+                    "type": "NUMBER"
+                  },
+                  "ymax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymax",
+                    "type": "NUMBER"
+                  },
+                  "ymin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymin",
+                    "type": "NUMBER"
+                  }
+                },
+                "property_ordering": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "required": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "title": "BBox",
+                "type": "OBJECT"
+              },
+              "confidence": {
+                "description": "Extraction confidence 0.0\u20131.0",
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "title": "Confidence",
+                "type": "NUMBER"
+              },
+              "value": {
+                "nullable": true,
+                "title": "Value",
+                "type": "STRING"
+              }
+            },
+            "property_ordering": [
+              "value",
+              "confidence",
+              "bbox"
+            ],
+            "required": [
+              "confidence"
+            ],
+            "title": "TextRef",
+            "type": "OBJECT"
+          },
+          "total_value": {
+            "description": "A single extracted scalar value with its provenance (confidence + bounding box).\n\nUsed for every field that Gemini extracts so we can:\n1. Apply confidence-based routing per field.\n2. Render bounding-box highlights on the correct page.",
+            "nullable": true,
+            "properties": {
+              "bbox": {
+                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+                "nullable": true,
+                "properties": {
+                  "page": {
+                    "description": "1-indexed page number within the processed document",
+                    "minimum": 1.0,
+                    "title": "Page",
+                    "type": "INTEGER"
+                  },
+                  "xmax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmax",
+                    "type": "NUMBER"
+                  },
+                  "xmin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmin",
+                    "type": "NUMBER"
+                  },
+                  "ymax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymax",
+                    "type": "NUMBER"
+                  },
+                  "ymin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymin",
+                    "type": "NUMBER"
+                  }
+                },
+                "property_ordering": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "required": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "title": "BBox",
+                "type": "OBJECT"
+              },
+              "confidence": {
+                "description": "Extraction confidence 0.0\u20131.0",
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "title": "Confidence",
+                "type": "NUMBER"
+              },
+              "value": {
+                "any_of": [
+                  {
+                    "type": "STRING"
+                  },
+                  {
+                    "type": "NUMBER"
+                  },
+                  {
+                    "type": "INTEGER"
+                  }
+                ],
+                "nullable": true,
+                "title": "Value"
+              }
+            },
+            "property_ordering": [
+              "value",
+              "confidence",
+              "bbox"
+            ],
+            "required": [
+              "confidence"
+            ],
+            "title": "FieldRef",
+            "type": "OBJECT"
+          },
+          "unit_price": {
+            "description": "A single extracted scalar value with its provenance (confidence + bounding box).\n\nUsed for every field that Gemini extracts so we can:\n1. Apply confidence-based routing per field.\n2. Render bounding-box highlights on the correct page.",
+            "nullable": true,
+            "properties": {
+              "bbox": {
+                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+                "nullable": true,
+                "properties": {
+                  "page": {
+                    "description": "1-indexed page number within the processed document",
+                    "minimum": 1.0,
+                    "title": "Page",
+                    "type": "INTEGER"
+                  },
+                  "xmax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmax",
+                    "type": "NUMBER"
+                  },
+                  "xmin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Xmin",
+                    "type": "NUMBER"
+                  },
+                  "ymax": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymax",
+                    "type": "NUMBER"
+                  },
+                  "ymin": {
+                    "maximum": 1000.0,
+                    "minimum": 0.0,
+                    "title": "Ymin",
+                    "type": "NUMBER"
+                  }
+                },
+                "property_ordering": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "required": [
+                  "page",
+                  "ymin",
+                  "xmin",
+                  "ymax",
+                  "xmax"
+                ],
+                "title": "BBox",
+                "type": "OBJECT"
+              },
+              "confidence": {
+                "description": "Extraction confidence 0.0\u20131.0",
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "title": "Confidence",
+                "type": "NUMBER"
+              },
+              "value": {
+                "any_of": [
+                  {
+                    "type": "STRING"
+                  },
+                  {
+                    "type": "NUMBER"
+                  },
+                  {
+                    "type": "INTEGER"
+                  }
+                ],
+                "nullable": true,
+                "title": "Value"
+              }
+            },
+            "property_ordering": [
+              "value",
+              "confidence",
+              "bbox"
+            ],
+            "required": [
+              "confidence"
+            ],
+            "title": "FieldRef",
+            "type": "OBJECT"
+          }
+        },
+        "property_ordering": [
+          "description",
+          "quantity",
+          "net_weight_kg",
+          "gross_weight_kg",
+          "hs_code_declared",
+          "unit_price",
+          "total_value",
+          "currency"
+        ],
+        "required": [
+          "description",
+          "quantity",
+          "net_weight_kg",
+          "gross_weight_kg",
+          "hs_code_declared"
+        ],
+        "title": "LineItem",
+        "type": "OBJECT"
+      },
+      "title": "Line Items",
+      "type": "ARRAY"
+    },
+    "package_count": {
+      "description": "A single extracted scalar value with its provenance (confidence + bounding box).\n\nUsed for every field that Gemini extracts so we can:\n1. Apply confidence-based routing per field.\n2. Render bounding-box highlights on the correct page.",
+      "nullable": true,
+      "properties": {
+        "bbox": {
+          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+          "nullable": true,
+          "properties": {
+            "page": {
+              "description": "1-indexed page number within the processed document",
+              "minimum": 1.0,
+              "title": "Page",
+              "type": "INTEGER"
+            },
+            "xmax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmax",
+              "type": "NUMBER"
+            },
+            "xmin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmin",
+              "type": "NUMBER"
+            },
+            "ymax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymax",
+              "type": "NUMBER"
+            },
+            "ymin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymin",
+              "type": "NUMBER"
+            }
+          },
+          "property_ordering": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "required": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "title": "BBox",
+          "type": "OBJECT"
+        },
+        "confidence": {
+          "description": "Extraction confidence 0.0\u20131.0",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "NUMBER"
+        },
+        "value": {
+          "any_of": [
+            {
+              "type": "STRING"
+            },
+            {
+              "type": "NUMBER"
+            },
+            {
+              "type": "INTEGER"
+            }
+          ],
+          "nullable": true,
+          "title": "Value"
+        }
+      },
+      "property_ordering": [
+        "value",
+        "confidence",
+        "bbox"
+      ],
+      "required": [
+        "confidence"
+      ],
+      "title": "FieldRef",
+      "type": "OBJECT"
+    },
+    "port_of_discharge": {
+      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
+      "nullable": true,
+      "properties": {
+        "bbox": {
+          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+          "nullable": true,
+          "properties": {
+            "page": {
+              "description": "1-indexed page number within the processed document",
+              "minimum": 1.0,
+              "title": "Page",
+              "type": "INTEGER"
+            },
+            "xmax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmax",
+              "type": "NUMBER"
+            },
+            "xmin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmin",
+              "type": "NUMBER"
+            },
+            "ymax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymax",
+              "type": "NUMBER"
+            },
+            "ymin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymin",
+              "type": "NUMBER"
+            }
+          },
+          "property_ordering": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "required": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "title": "BBox",
+          "type": "OBJECT"
+        },
+        "confidence": {
+          "description": "Extraction confidence 0.0\u20131.0",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "NUMBER"
+        },
+        "value": {
+          "nullable": true,
+          "title": "Value",
+          "type": "STRING"
+        }
+      },
+      "property_ordering": [
+        "value",
+        "confidence",
+        "bbox"
+      ],
+      "required": [
+        "confidence"
+      ],
+      "title": "TextRef",
+      "type": "OBJECT"
+    },
+    "port_of_loading": {
+      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
+      "nullable": true,
+      "properties": {
+        "bbox": {
+          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+          "nullable": true,
+          "properties": {
+            "page": {
+              "description": "1-indexed page number within the processed document",
+              "minimum": 1.0,
+              "title": "Page",
+              "type": "INTEGER"
+            },
+            "xmax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmax",
+              "type": "NUMBER"
+            },
+            "xmin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmin",
+              "type": "NUMBER"
+            },
+            "ymax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymax",
+              "type": "NUMBER"
+            },
+            "ymin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymin",
+              "type": "NUMBER"
+            }
+          },
+          "property_ordering": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "required": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "title": "BBox",
+          "type": "OBJECT"
+        },
+        "confidence": {
+          "description": "Extraction confidence 0.0\u20131.0",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "NUMBER"
+        },
+        "value": {
+          "nullable": true,
+          "title": "Value",
+          "type": "STRING"
+        }
+      },
+      "property_ordering": [
+        "value",
+        "confidence",
+        "bbox"
+      ],
+      "required": [
+        "confidence"
+      ],
+      "title": "TextRef",
+      "type": "OBJECT"
+    },
+    "shipment_date": {
+      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
+      "nullable": true,
+      "properties": {
+        "bbox": {
+          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+          "nullable": true,
+          "properties": {
+            "page": {
+              "description": "1-indexed page number within the processed document",
+              "minimum": 1.0,
+              "title": "Page",
+              "type": "INTEGER"
+            },
+            "xmax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmax",
+              "type": "NUMBER"
+            },
+            "xmin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmin",
+              "type": "NUMBER"
+            },
+            "ymax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymax",
+              "type": "NUMBER"
+            },
+            "ymin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymin",
+              "type": "NUMBER"
+            }
+          },
+          "property_ordering": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "required": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "title": "BBox",
+          "type": "OBJECT"
+        },
+        "confidence": {
+          "description": "Extraction confidence 0.0\u20131.0",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "NUMBER"
+        },
+        "value": {
+          "nullable": true,
+          "title": "Value",
+          "type": "STRING"
+        }
+      },
+      "property_ordering": [
+        "value",
+        "confidence",
+        "bbox"
+      ],
+      "required": [
+        "confidence"
+      ],
+      "title": "TextRef",
+      "type": "OBJECT"
+    },
+    "tare_weight_kg": {
+      "description": "A FieldRef for a measured quantity (a weight): the number as printed plus the unit as printed.\n\n``value`` stays exactly as printed (\"14,280.50\", 14280.5, ...) and ``unit`` is what the document says\n(\"KGS\", \"MT\", \"LBS\", ...). Nothing is converted at extraction time; the deterministic engine converts\nwith app.domain.units and reports every assumption it had to make.",
+      "nullable": true,
+      "properties": {
+        "bbox": {
+          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+          "nullable": true,
+          "properties": {
+            "page": {
+              "description": "1-indexed page number within the processed document",
+              "minimum": 1.0,
+              "title": "Page",
+              "type": "INTEGER"
+            },
+            "xmax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmax",
+              "type": "NUMBER"
+            },
+            "xmin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmin",
+              "type": "NUMBER"
+            },
+            "ymax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymax",
+              "type": "NUMBER"
+            },
+            "ymin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymin",
+              "type": "NUMBER"
+            }
+          },
+          "property_ordering": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "required": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "title": "BBox",
+          "type": "OBJECT"
+        },
+        "confidence": {
+          "description": "Extraction confidence 0.0\u20131.0",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "NUMBER"
+        },
+        "unit": {
+          "description": "unit exactly as printed, e.g. KGS, MT, LBS; never converted",
+          "nullable": true,
+          "title": "Unit",
+          "type": "STRING"
+        },
+        "value": {
+          "any_of": [
+            {
+              "type": "STRING"
+            },
+            {
+              "type": "NUMBER"
+            },
+            {
+              "type": "INTEGER"
+            }
+          ],
+          "nullable": true,
+          "title": "Value"
+        }
+      },
+      "property_ordering": [
+        "value",
+        "confidence",
+        "bbox",
+        "unit"
+      ],
+      "required": [
+        "confidence"
+      ],
+      "title": "QuantityRef",
+      "type": "OBJECT"
+    },
+    "total_gross_weight_kg": {
+      "description": "A FieldRef for a measured quantity (a weight): the number as printed plus the unit as printed.\n\n``value`` stays exactly as printed (\"14,280.50\", 14280.5, ...) and ``unit`` is what the document says\n(\"KGS\", \"MT\", \"LBS\", ...). Nothing is converted at extraction time; the deterministic engine converts\nwith app.domain.units and reports every assumption it had to make.",
+      "nullable": true,
+      "properties": {
+        "bbox": {
+          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+          "nullable": true,
+          "properties": {
+            "page": {
+              "description": "1-indexed page number within the processed document",
+              "minimum": 1.0,
+              "title": "Page",
+              "type": "INTEGER"
+            },
+            "xmax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmax",
+              "type": "NUMBER"
+            },
+            "xmin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmin",
+              "type": "NUMBER"
+            },
+            "ymax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymax",
+              "type": "NUMBER"
+            },
+            "ymin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymin",
+              "type": "NUMBER"
+            }
+          },
+          "property_ordering": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "required": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "title": "BBox",
+          "type": "OBJECT"
+        },
+        "confidence": {
+          "description": "Extraction confidence 0.0\u20131.0",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "NUMBER"
+        },
+        "unit": {
+          "description": "unit exactly as printed, e.g. KGS, MT, LBS; never converted",
+          "nullable": true,
+          "title": "Unit",
+          "type": "STRING"
+        },
+        "value": {
+          "any_of": [
+            {
+              "type": "STRING"
+            },
+            {
+              "type": "NUMBER"
+            },
+            {
+              "type": "INTEGER"
+            }
+          ],
+          "nullable": true,
+          "title": "Value"
+        }
+      },
+      "property_ordering": [
+        "value",
+        "confidence",
+        "bbox",
+        "unit"
+      ],
+      "required": [
+        "confidence"
+      ],
+      "title": "QuantityRef",
+      "type": "OBJECT"
+    },
+    "total_net_weight_kg": {
+      "description": "A FieldRef for a measured quantity (a weight): the number as printed plus the unit as printed.\n\n``value`` stays exactly as printed (\"14,280.50\", 14280.5, ...) and ``unit`` is what the document says\n(\"KGS\", \"MT\", \"LBS\", ...). Nothing is converted at extraction time; the deterministic engine converts\nwith app.domain.units and reports every assumption it had to make.",
+      "nullable": true,
+      "properties": {
+        "bbox": {
+          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+          "nullable": true,
+          "properties": {
+            "page": {
+              "description": "1-indexed page number within the processed document",
+              "minimum": 1.0,
+              "title": "Page",
+              "type": "INTEGER"
+            },
+            "xmax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmax",
+              "type": "NUMBER"
+            },
+            "xmin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmin",
+              "type": "NUMBER"
+            },
+            "ymax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymax",
+              "type": "NUMBER"
+            },
+            "ymin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymin",
+              "type": "NUMBER"
+            }
+          },
+          "property_ordering": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "required": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "title": "BBox",
+          "type": "OBJECT"
+        },
+        "confidence": {
+          "description": "Extraction confidence 0.0\u20131.0",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "NUMBER"
+        },
+        "unit": {
+          "description": "unit exactly as printed, e.g. KGS, MT, LBS; never converted",
+          "nullable": true,
+          "title": "Unit",
+          "type": "STRING"
+        },
+        "value": {
+          "any_of": [
+            {
+              "type": "STRING"
+            },
+            {
+              "type": "NUMBER"
+            },
+            {
+              "type": "INTEGER"
+            }
+          ],
+          "nullable": true,
+          "title": "Value"
+        }
+      },
+      "property_ordering": [
+        "value",
+        "confidence",
+        "bbox",
+        "unit"
+      ],
+      "required": [
+        "confidence"
+      ],
+      "title": "QuantityRef",
+      "type": "OBJECT"
+    },
+    "vessel_or_flight": {
+      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
+      "nullable": true,
+      "properties": {
+        "bbox": {
+          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+          "nullable": true,
+          "properties": {
+            "page": {
+              "description": "1-indexed page number within the processed document",
+              "minimum": 1.0,
+              "title": "Page",
+              "type": "INTEGER"
+            },
+            "xmax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmax",
+              "type": "NUMBER"
+            },
+            "xmin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Xmin",
+              "type": "NUMBER"
+            },
+            "ymax": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymax",
+              "type": "NUMBER"
+            },
+            "ymin": {
+              "maximum": 1000.0,
+              "minimum": 0.0,
+              "title": "Ymin",
+              "type": "NUMBER"
+            }
+          },
+          "property_ordering": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "required": [
+            "page",
+            "ymin",
+            "xmin",
+            "ymax",
+            "xmax"
+          ],
+          "title": "BBox",
+          "type": "OBJECT"
+        },
+        "confidence": {
+          "description": "Extraction confidence 0.0\u20131.0",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "NUMBER"
+        },
+        "value": {
+          "nullable": true,
+          "title": "Value",
+          "type": "STRING"
+        }
+      },
+      "property_ordering": [
+        "value",
+        "confidence",
+        "bbox"
+      ],
+      "required": [
+        "confidence"
+      ],
+      "title": "TextRef",
+      "type": "OBJECT"
+    }
+  },
+  "property_ordering": [
+    "document_id",
+    "doc_type",
+    "doc_type_confidence",
+    "document_number",
+    "consignee",
+    "consignor",
+    "vessel_or_flight",
+    "port_of_loading",
+    "port_of_discharge",
+    "shipment_date",
+    "invoice_value",
+    "invoice_currency",
+    "total_net_weight_kg",
+    "total_gross_weight_kg",
+    "tare_weight_kg",
+    "package_count",
+    "hs_code_header",
+    "line_items"
+  ],
+  "required": [
+    "document_id",
+    "doc_type",
+    "doc_type_confidence"
+  ],
+  "title": "ExtractedDocument",
+  "type": "OBJECT"
+}

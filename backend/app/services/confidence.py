@@ -8,34 +8,153 @@ Implements the 4-tier routing table from Specification §3 (Epic 5, US 5.3):
   0.65 – 0.94             any                      INTERACTIVE_REVIEW   SPECIALIST_REVIEW_REQUIRED
   < 0.65                  any                      MANUAL_ENTRY         SPECIALIST_REVIEW_REQUIRED
 
-Extracts confidence scores recursively from every visible scalar field across
-document headers and commodity line items.
+"Extraction confidence" is scoped to what the verdict rests on, so a field no check looks at cannot force a review:
+
+  min_overall_confidence   minimum over EVERY populated field (the original semantics, kept for reference)
+  min_field_confidence     minimum over the RELEVANT fields: the FieldRefs cited by ``ctx["checks"][*].evidence``
+                           that carry a value. When no cited field resolves (no checks, no evidence) every populated
+                           field is relevant. This is the figure the UI shows.
+  min_doc_type_confidence  minimum ``doc_type_confidence`` over ALL extracted documents
+  tier                     min(min_field_confidence, min_doc_type_confidence)
+
+The result also says what determined the tier: ``low_confidence_fields`` (which fields, used by which checks) and a
+one-sentence ``reason``. No documents, or nothing populated, is MANUAL_ENTRY.
+
+Runs after grounding in the pipeline, so it sees the evidence of G-001 as well as the deterministic checks.
 """
 
 from __future__ import annotations
 
-from typing import Any, Generator
+from dataclasses import dataclass, field
+from typing import Any, Iterator
 
-from app.domain.schemas import ExtractedDocument, FieldRef
+from app.domain.schemas import ExtractedDocument, FieldRef, LineItem
 
 MIN_FIELD_CONF_THRESHOLD: float = 0.65
 HIGH_CONF_THRESHOLD: float = 0.95
+MAX_LOW_CONFIDENCE_FIELDS: int = 10
+
+_DOC_FIELDS = frozenset(ExtractedDocument.model_fields)
+_LINE_FIELDS = frozenset(LineItem.model_fields)
 
 
-def _extract_all_field_refs(doc: ExtractedDocument) -> Generator[FieldRef, None, None]:
-    """Recursively collect every FieldRef present in a document."""
-    # Top-level fields
-    for field_name in doc.model_fields:
-        val = getattr(doc, field_name, None)
-        if isinstance(val, FieldRef):
-            yield val
-        elif isinstance(val, list):
-            for item in val:
-                if hasattr(item, "model_fields"):
-                    for sub_field in item.model_fields:
-                        sub_val = getattr(item, sub_field, None)
-                        if isinstance(sub_val, FieldRef):
-                            yield sub_val
+@dataclass
+class _Scoped:
+    """One field in scope: where it is, how sure the extraction was, and which checks cite it."""
+
+    document_id: str
+    name: str
+    line_item: int | None
+    confidence: float
+    used_by: set[str] = field(default_factory=set)
+
+    @property
+    def sort_key(self) -> tuple[float, int, str, int, str]:
+        return (self.confidence, 0, self.document_id, -1 if self.line_item is None else self.line_item, self.name)
+
+    @property
+    def label(self) -> str:
+        where = self.name if self.line_item is None else f"line_items[{self.line_item}].{self.name}"
+        return f"{self.document_id}.{where}"
+
+
+def _iter_fields(doc: ExtractedDocument) -> Iterator[tuple[str, int | None, FieldRef]]:
+    """Every FieldRef on a document: header fields (line item None) and the fields of each line item."""
+    for name in _DOC_FIELDS:
+        value = getattr(doc, name, None)
+        if isinstance(value, FieldRef):
+            yield name, None, value
+    for index, item in enumerate(doc.line_items):
+        for name in _LINE_FIELDS:
+            value = getattr(item, name, None)
+            if isinstance(value, FieldRef):
+                yield name, index, value
+
+
+def _resolve(doc: ExtractedDocument, name: Any, line_item: Any) -> list[tuple[int | None, FieldRef]]:
+    """The FieldRef(s) an evidence entry points at; empty when it cannot be resolved.
+
+    With ``line_item`` the field of that line; without it a header field, or (for a line-item field such as
+    hs_code_declared) the field of every line of the document.
+    """
+    if not isinstance(name, str):
+        return []
+    if line_item is not None:
+        if isinstance(line_item, bool) or not isinstance(line_item, int) or not 0 <= line_item < len(doc.line_items):
+            return []
+        value = getattr(doc.line_items[line_item], name, None) if name in _LINE_FIELDS else None
+        return [(line_item, value)] if isinstance(value, FieldRef) else []
+
+    header = getattr(doc, name, None) if name in _DOC_FIELDS else None
+    if isinstance(header, FieldRef):
+        return [(None, header)]
+    if name in _LINE_FIELDS:
+        return [
+            (index, value)
+            for index, item in enumerate(doc.line_items)
+            if isinstance(value := getattr(item, name, None), FieldRef)
+        ]
+    return []
+
+
+def _cited_fields(docs: list[ExtractedDocument], checks: list[dict[str, Any]]) -> list[_Scoped]:
+    """The populated fields that checks cite, each with the ids of the checks that cite it."""
+    by_id = {d.document_id: d for d in docs}
+    cited: dict[tuple[str, str, int | None], _Scoped] = {}
+    for check in checks:
+        check_id = check.get("check_id")
+        for entry in check.get("evidence") or []:
+            if not isinstance(entry, dict):
+                continue
+            doc = by_id.get(entry.get("doc"))
+            if doc is None:
+                continue
+            for index, ref in _resolve(doc, entry.get("field"), entry.get("line_item")):
+                if ref.value is None:
+                    continue
+                key = (doc.document_id, entry["field"], index)
+                scoped = cited.setdefault(
+                    key, _Scoped(doc.document_id, entry["field"], index, round(float(ref.confidence), 4))
+                )
+                if check_id:
+                    scoped.used_by.add(str(check_id))
+    return list(cited.values())
+
+
+def _fmt(confidence: float) -> str:
+    return f"{confidence:.2f}" if round(confidence, 2) == confidence else f"{confidence:.4f}".rstrip("0")
+
+
+def _action(tier_confidence: float, math_passed: bool) -> str:
+    if tier_confidence >= HIGH_CONF_THRESHOLD:
+        return "AUTO_ACCEPT" if math_passed else "AUTO_FLAG"
+    if tier_confidence >= MIN_FIELD_CONF_THRESHOLD:
+        return "INTERACTIVE_REVIEW"
+    return "MANUAL_ENTRY"
+
+
+def _reason(
+    *,
+    tier_confidence: float,
+    in_scope: list[_Scoped],
+    uses_checks: bool,
+    lowest_doc: ExtractedDocument,
+    min_doc: float,
+) -> str:
+    """One sentence naming the field or document that determined the tier."""
+    if tier_confidence >= HIGH_CONF_THRESHOLD:
+        scope = "Every field used by a check" if uses_checks else "Every populated field"
+        return f"{scope} and every document classification is >= {HIGH_CONF_THRESHOLD:.2f}."
+
+    outcome = "interactive review" if tier_confidence >= MIN_FIELD_CONF_THRESHOLD else "manual entry"
+    lowest_field = min(in_scope, key=lambda s: s.sort_key)
+    if min_doc < lowest_field.confidence:
+        return (
+            f"Lowest confidence is the document classification of {lowest_doc.document_id} "
+            f"({_fmt(min_doc)}) -> {outcome}."
+        )
+    scope = "fields used by checks" if uses_checks else "all populated fields (no check cites a field)"
+    return f"Lowest confidence among {scope}: {lowest_field.label} ({_fmt(lowest_field.confidence)}) -> {outcome}."
 
 
 async def route(ctx: dict[str, Any]) -> dict[str, Any]:
@@ -43,40 +162,64 @@ async def route(ctx: dict[str, Any]) -> dict[str, Any]:
 
     Reads:
       - ctx["extracted"] (list[ExtractedDocument])
+      - ctx.get("checks") (list[dict]; the evidence they cite defines which fields matter)
       - ctx.get("math_status", "COMPLIANT_FOR_SUBMISSION")
 
     Writes:
-      - ctx["confidence"] (dict with min_field_confidence and action)
+      - ctx["confidence"] (dict: min_field_confidence, action, min_overall_confidence, min_doc_type_confidence,
+        low_confidence_fields, reason)
       - ctx["force_status"] (optional status override when confidence requires review)
     """
     extracted_docs: list[ExtractedDocument] = ctx.get("extracted", [])
-    math_status: str = ctx.get("math_status", "COMPLIANT_FOR_SUBMISSION")
+    math_passed = ctx.get("math_status", "COMPLIANT_FOR_SUBMISSION") == "COMPLIANT_FOR_SUBMISSION"
 
-    # Gather confidence scores across all fields
-    all_refs: list[FieldRef] = []
+    populated = [
+        _Scoped(doc.document_id, name, index, round(float(ref.confidence), 4))
+        for doc in extracted_docs
+        for name, index, ref in _iter_fields(doc)
+        if ref.value is not None
+    ]
+    cited = _cited_fields(extracted_docs, ctx.get("checks", []))
+    in_scope = cited or populated  # nothing cited that resolves: every populated field is relevant
+
+    min_overall = min((s.confidence for s in populated), default=None)
+    min_field = min((s.confidence for s in in_scope), default=0.0)
+    lowest_doc = min(extracted_docs, key=lambda d: d.doc_type_confidence, default=None)
+    min_doc = round(float(lowest_doc.doc_type_confidence), 4) if lowest_doc is not None else None
+
+    low_fields = sorted((s for s in in_scope if s.confidence < HIGH_CONF_THRESHOLD), key=lambda s: s.sort_key)
+    low: list[tuple[tuple[float, int, str, int, str], dict[str, Any]]] = []
+    for scoped in low_fields[:MAX_LOW_CONFIDENCE_FIELDS]:
+        entry: dict[str, Any] = {"document_id": scoped.document_id, "field": scoped.name}
+        if scoped.line_item is not None:
+            entry["line_item"] = scoped.line_item
+        entry.update(confidence=scoped.confidence, used_by=sorted(scoped.used_by))
+        low.append((scoped.sort_key, entry))
     for doc in extracted_docs:
-        all_refs.extend(_extract_all_field_refs(doc))
+        doc_conf = round(float(doc.doc_type_confidence), 4)
+        if doc_conf < HIGH_CONF_THRESHOLD:
+            low.append(((doc_conf, 1, doc.document_id, -1, "doc_type"),
+                        {"document_id": doc.document_id, "field": "doc_type", "confidence": doc_conf}))
 
-    # Calculate minimum confidence across bundle
-    if all_refs:
-        min_conf = min(ref.confidence for ref in all_refs)
+    if lowest_doc is None or min_doc is None:
+        action, reason = "MANUAL_ENTRY", "No documents were extracted -> manual entry."
+    elif not populated:
+        action, reason = "MANUAL_ENTRY", "No populated field was extracted -> manual entry."
     else:
-        min_conf = 1.0
-
-    min_conf = round(float(min_conf), 4)
-    math_passed = math_status == "COMPLIANT_FOR_SUBMISSION"
-
-    # Evaluate 4-tier routing table
-    if min_conf >= HIGH_CONF_THRESHOLD:
-        action = "AUTO_ACCEPT" if math_passed else "AUTO_FLAG"
-    elif MIN_FIELD_CONF_THRESHOLD <= min_conf < HIGH_CONF_THRESHOLD:
-        action = "INTERACTIVE_REVIEW"
-    else:
-        action = "MANUAL_ENTRY"
+        tier_confidence = min(min_field, min_doc)
+        action = _action(tier_confidence, math_passed)
+        reason = _reason(
+            tier_confidence=tier_confidence, in_scope=in_scope, uses_checks=bool(cited),
+            lowest_doc=lowest_doc, min_doc=min_doc,
+        )
 
     ctx["confidence"] = {
-        "min_field_confidence": min_conf,
+        "min_field_confidence": min_field,
         "action": action,
+        "min_overall_confidence": min_overall,
+        "min_doc_type_confidence": min_doc,
+        "low_confidence_fields": [entry for _, entry in sorted(low, key=lambda pair: pair[0])],
+        "reason": reason,
     }
 
     # Moderate or low confidence overrides compliance to force specialist review

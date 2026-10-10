@@ -24,6 +24,18 @@
     "description": "List of mandatory regulatory certificates or permits"
   },
   {
+    "name": "rule_set",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Rule set the row belongs to, e.g. 'demo-curated' (prototype rules, not an official source)"
+  },
+  {
+    "name": "regulation_ref",
+    "type": "STRING",
+    "mode": "NULLABLE",
+    "description": "Reference shown with requirements derived from this row; prototype wording for the demo rule set"
+  },
+  {
     "name": "description_embedding",
     "type": "FLOAT64",
     "mode": "REPEATED",

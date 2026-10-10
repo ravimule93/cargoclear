@@ -13,6 +13,7 @@ Per v4.0 Specification (US 1.1, US 1.2):
 
 from __future__ import annotations
 
+import asyncio
 import io
 import math
 from typing import Any
@@ -71,6 +72,48 @@ def detect_orientation_pass(image_bytes: bytes) -> int:
     return 0
 
 
+def _render_pages(raw: bytes, document_id: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Render ``raw`` to grayscale PNG pages (blocking: run it with ``asyncio.to_thread``).
+
+    Returns ``(processed_pages, transforms)``. Raises when the document cannot be rendered (poppler missing, broken
+    PDF); the caller falls back to passing the raw PDF through.
+    """
+    from pdf2image import convert_from_bytes
+
+    transforms: list[dict[str, Any]] = []
+    processed_pages: list[dict[str, Any]] = []
+
+    images = convert_from_bytes(raw, dpi=TARGET_DPI, fmt="png")
+
+    for idx, img in enumerate(images, start=1):
+        buf = io.BytesIO()
+        # Convert to grayscale / B&W
+        bw_img = img.convert("L")
+        bw_img.save(buf, format="PNG")
+        img_bytes = buf.getvalue()
+
+        skew = estimate_skew_angle(img_bytes)
+        rot = detect_orientation_pass(img_bytes)
+
+        transforms.append({
+            "page": idx,
+            "document_id": document_id,
+            "deskew_deg": skew,
+            "rotation": rot,
+            "split_offset": 0,
+            "width": img.width,
+            "height": img.height,
+        })
+        processed_pages.append({
+            "page": idx,
+            "document_id": document_id,
+            "payload": img_bytes,
+            "mime": "image/png",
+        })
+
+    return processed_pages, transforms
+
+
 async def run(ctx: dict[str, Any]) -> dict[str, Any]:
     """Execute preprocessing on document pages in the context.
 
@@ -91,48 +134,15 @@ async def run(ctx: dict[str, Any]) -> dict[str, Any]:
         ctx["transform_meta"] = []
         return ctx
 
-    transforms: list[dict[str, Any]] = []
-    processed_pages: list[dict[str, Any]] = []
-
     try:
-        from pdf2image import convert_from_bytes
-        from PIL import Image
-
-        images = convert_from_bytes(raw, dpi=TARGET_DPI, fmt="png")
-        total_pages = len(images)
-
-        for idx, img in enumerate(images, start=1):
-            buf = io.BytesIO()
-            # Convert to grayscale / B&W
-            bw_img = img.convert("L")
-            bw_img.save(buf, format="PNG")
-            img_bytes = buf.getvalue()
-
-            skew = estimate_skew_angle(img_bytes)
-            rot = detect_orientation_pass(img_bytes)
-
-            transform_entry = {
-                "page": idx,
-                "document_id": document_id,
-                "deskew_deg": skew,
-                "rotation": rot,
-                "split_offset": 0,
-                "width": img.width,
-                "height": img.height,
-            }
-
-            transforms.append(transform_entry)
-            processed_pages.append({
-                "page": idx,
-                "document_id": document_id,
-                "payload": img_bytes,
-                "mime": "image/png",
-            })
+        # ONE worker-thread call: poppler, PIL and OpenCV block, and the event loop carries the heartbeat, the SSE
+        # streams and every other request
+        processed_pages, transforms = await asyncio.to_thread(_render_pages, raw, document_id)
 
     except Exception as exc:
         logger.info("pdf2image_processing_fallback", note="Using raw stream passthrough", error=str(exc))
         # Lightweight fallback: wrap raw PDF directly
-        transforms.append({
+        transforms = [{
             "page": 1,
             "document_id": document_id,
             "deskew_deg": 0.0,
@@ -140,13 +150,13 @@ async def run(ctx: dict[str, Any]) -> dict[str, Any]:
             "split_offset": 0,
             "width": 1000,
             "height": 1000,
-        })
-        processed_pages.append({
+        }]
+        processed_pages = [{
             "page": 1,
             "document_id": document_id,
             "payload": raw,
             "mime": "application/pdf",
-        })
+        }]
 
     # Auto-split check
     if len(raw) > MAX_BYTES_PER_SPLIT or len(processed_pages) > MAX_PAGES_PER_SPLIT:

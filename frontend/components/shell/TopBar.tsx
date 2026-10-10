@@ -1,23 +1,44 @@
 "use client";
 
+import { ChangeEvent, useRef } from "react";
 import { Bundle, Status } from "@/lib/types";
+import type { StreamConnection } from "@/lib/hooks/useBundleStream";
 import { StatusPill } from "../assess/StatusPill";
 
 interface TopBarProps {
   bundle: Bundle;
-  status: Status;
-  isReassessing?: boolean;
-  onReassess?: () => void;
-  onAddDocumentClick?: () => void;
+  /** null = not assessed yet */
+  status: Status | null;
+  isRunning?: boolean;
+  isUploading?: boolean;
+  /** "Run analysis" until the first iteration exists, "Reassess" afterwards. */
+  runMode: "analyze" | "reassess";
+  connection?: StreamConnection;
+  /** Visible, role="alert" message for a failed run or upload. */
+  actionError?: string | null;
+  onRun?: () => void;
+  onFilesSelected?: (files: File[]) => void;
 }
 
 export function TopBar({
   bundle,
   status,
-  isReassessing = false,
-  onReassess,
-  onAddDocumentClick,
+  isRunning = false,
+  isUploading = false,
+  runMode,
+  connection = "open",
+  actionError,
+  onRun,
+  onFilesSelected,
 }: TopBarProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // allow re-selecting the same file
+    if (files.length > 0) onFilesSelected?.(files);
+  };
+
   return (
     <header className="cc-top">
       <div className="flex items-center gap-2 font-semibold">
@@ -39,27 +60,57 @@ export function TopBar({
         <StatusPill status={status} />
       </div>
 
+      {connection !== "open" && (
+        <span
+          data-testid="stream-connection"
+          aria-live="polite"
+          className="text-[11px] text-[var(--cc-text-muted)]"
+        >
+          Live updates: {connection}…
+        </span>
+      )}
+
       <div className="ml-auto flex items-center gap-3">
+        {actionError && (
+          <span role="alert" className="text-xs font-medium text-[var(--cc-err)] max-w-[28rem]">
+            {actionError}
+          </span>
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="application/pdf,.pdf"
+          className="hidden"
+          data-testid="upload-input"
+          aria-label="Add documents to this bundle"
+          tabIndex={-1}
+          onChange={handleFileChange}
+        />
         <button
           type="button"
-          onClick={onAddDocumentClick}
-          className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-3 py-1.5 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] transition-colors cursor-pointer"
+          disabled={isUploading}
+          onClick={() => fileInputRef.current?.click()}
+          className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-3 py-1.5 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 transition-colors cursor-pointer"
         >
-          Add Document
+          {isUploading ? "Uploading..." : "Add Document"}
         </button>
         <button
           type="button"
-          disabled={isReassessing}
-          onClick={onReassess}
+          data-testid="run-button"
+          disabled={isRunning}
+          aria-busy={isRunning}
+          onClick={onRun}
           className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer flex items-center gap-1.5"
         >
-          {isReassessing && (
+          {isRunning && (
             <span
               aria-hidden="true"
               className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"
             />
           )}
-          <span>{isReassessing ? "Adjudicating..." : "Reassess Bundle"}</span>
+          <span>{runMode === "analyze" ? "Run analysis" : "Reassess"}</span>
         </button>
       </div>
     </header>

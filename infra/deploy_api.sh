@@ -27,6 +27,7 @@ gcloud run deploy cargoclear-api \
   --allow-unauthenticated \
   --quiet \
   --set-env-vars \
+APP_MODE="live",\
 PROJECT_ID="${PROJECT_ID}",\
 REGION="${REGION}",\
 RAW_BUCKET="cargoclear-raw-pdfs",\

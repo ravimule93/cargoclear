@@ -1,64 +1,123 @@
-export interface AuditEntry {
-  seq: number;
-  ts: string;
-  actor: string;
-  event_type: string;
-  hash: string;
-  prev_hash: string;
-  payload?: any;
-}
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import { toErrorEnvelope } from "@/lib/errors";
+import type { AuditResponse } from "@/lib/types";
 
 interface AuditTimelineProps {
-  events?: AuditEntry[];
+  bundleId: string;
+  /** Changing this value refetches the chain (e.g. a new iteration arrived). */
+  refreshKey?: string | number;
 }
 
-export function AuditTimeline({ events = [] }: AuditTimelineProps) {
-  // Default entries if no events passed yet
-  const displayEvents: AuditEntry[] =
-    events.length > 0
-      ? events
-      : [
-          {
-            seq: 1,
-            ts: new Date().toISOString(),
-            actor: "system",
-            event_type: "BUNDLE_INITIALIZED",
-            hash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            prev_hash: "GENESIS",
-          },
-          {
-            seq: 2,
-            ts: new Date().toISOString(),
-            actor: "user",
-            event_type: "DOCUMENTS_INGESTED",
-            hash: "a94a8fe5ccb19ba61c4c0873d391e987982fbbd34208a1d7f6c3821034c449c2",
-            prev_hash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-          },
-        ];
+const SHORT_HASH_LENGTH = 12;
+
+function shortHash(hash: string): string {
+  // "GENESIS" and other short markers are shown whole
+  return hash.length > SHORT_HASH_LENGTH ? `${hash.slice(0, SHORT_HASH_LENGTH)}…` : hash;
+}
+
+export function AuditTimeline({ bundleId, refreshKey }: AuditTimelineProps) {
+  const [audit, setAudit] = useState<AuditResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    api
+      .getAudit(bundleId)
+      .then((response) => {
+        if (cancelled) return;
+        setAudit(response);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(toErrorEnvelope(err).message);
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [bundleId, refreshKey, attempt]);
+
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
+
+  if (error) {
+    return (
+      <div role="alert" className="text-xs text-[var(--cc-err)] flex items-center gap-3">
+        <span>Could not load audit chain: {error}</span>
+        <button
+          type="button"
+          onClick={retry}
+          className="px-2 py-0.5 rounded border border-[var(--cc-border-strong)] text-[var(--cc-text)] cursor-pointer"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // Keep showing the previous chain while a refetch is in flight; only the first load is a blank state.
+  if (!audit) {
+    return (
+      <div role="status" aria-busy={loading} className="text-xs text-[var(--cc-text-muted)]">
+        Loading audit chain...
+      </div>
+    );
+  }
+
+  const badgeText = audit.verified ? "Chain verified" : `Chain BROKEN: ${audit.error ?? "unknown reason"}`;
 
   return (
     <div className="flex flex-col gap-2 max-w-4xl" aria-label="Tamper-evident audit chain">
-      {displayEvents.map((evt) => (
-        <article
-          key={evt.seq}
-          className="text-xs p-2.5 rounded-[var(--cc-radius)] border border-[var(--cc-border)] bg-[var(--cc-surface-2)] flex flex-col gap-1.5"
-        >
-          <div className="flex items-center justify-between font-semibold">
-            <span className="font-mono text-[var(--cc-focus)]">
-              #{evt.seq} {evt.event_type}
-            </span>
-            <time className="text-[10px] text-[var(--cc-text-muted)] font-mono">
-              {evt.ts}
-            </time>
-          </div>
-          <div className="flex items-center justify-between text-[11px] font-mono text-[var(--cc-text-muted)] pt-1 border-t border-[var(--cc-border)]">
-            <span>Actor: <strong className="text-[var(--cc-text)]">{evt.actor}</strong></span>
-            <span>
-              Hash: <code className="text-[var(--cc-text-subtle)]">{evt.hash.substring(0, 16)}...</code>
-            </span>
-          </div>
-        </article>
-      ))}
+      <div
+        data-testid="audit-verified-badge"
+        className={`self-start rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+          audit.verified
+            ? "text-[var(--cc-ok)] bg-[var(--cc-ok-bg)] border-[var(--cc-ok-bd)]"
+            : "text-[var(--cc-err)] bg-[var(--cc-err-bg)] border-[var(--cc-err-bd)]"
+        }`}
+      >
+        {badgeText}
+      </div>
+
+      {audit.events.length === 0 ? (
+        <p className="text-xs text-[var(--cc-text-muted)] italic">No audit events recorded yet.</p>
+      ) : (
+        <ol className="flex flex-col gap-2">
+          {audit.events.map((evt) => (
+            <li
+              key={evt.event_id}
+              className="text-xs p-2.5 rounded-[var(--cc-radius)] border border-[var(--cc-border)] bg-[var(--cc-surface-2)] flex flex-col gap-1.5"
+            >
+              <div className="flex items-center justify-between font-semibold">
+                <span className="font-mono text-[var(--cc-focus)]">
+                  #{evt.seq} {evt.event_type}
+                </span>
+                <time dateTime={evt.ts} className="text-[10px] text-[var(--cc-text-muted)] font-mono">
+                  {evt.ts}
+                </time>
+              </div>
+              <div className="flex items-center justify-between gap-3 text-[11px] font-mono text-[var(--cc-text-muted)] pt-1 border-t border-[var(--cc-border)]">
+                <span>
+                  Actor: <strong className="text-[var(--cc-text)]">{evt.actor}</strong>
+                </span>
+                <span>
+                  Prev: <code title={evt.prev_hash}>{shortHash(evt.prev_hash)}</code>
+                </span>
+                <span>
+                  Hash: <code title={evt.hash}>{shortHash(evt.hash)}</code>
+                </span>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   );
 }

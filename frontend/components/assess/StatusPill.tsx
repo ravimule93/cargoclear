@@ -1,7 +1,8 @@
 import { Status } from "@/lib/types";
 
 interface StatusPillProps {
-  status: Status;
+  /** null = the bundle has not been assessed yet */
+  status: Status | null;
 }
 
 const TOKENS: Record<Status, { label: string; fg: string; bd: string; bg: string }> = {
@@ -31,12 +32,20 @@ const TOKENS: Record<Status, { label: string; fg: string; bd: string; bg: string
   },
 };
 
+const NOT_ASSESSED = {
+  label: "Not assessed yet",
+  fg: "var(--cc-text-muted)",
+  bd: "var(--cc-border-strong)",
+  bg: "var(--cc-surface-2)",
+};
+
 export function StatusPill({ status }: StatusPillProps) {
-  const token = TOKENS[status] || TOKENS.SPECIALIST_REVIEW_REQUIRED;
+  const token = status === null ? NOT_ASSESSED : TOKENS[status] || TOKENS.SPECIALIST_REVIEW_REQUIRED;
 
   return (
     <span
       role="status"
+      data-testid="status-pill"
       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold tracking-tight"
       style={{
         color: token.fg,

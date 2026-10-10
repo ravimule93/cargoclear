@@ -1,60 +1,91 @@
 """CargoClear-JAPAC Backend — FastAPI application entry point."""
 
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
+
+from fastapi import Depends, FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.gateway.middleware import ErrorEnvelopeMiddleware, RequestContextMiddleware
-from app.api.v1 import bundles, documents, assessment, stream
+from app.api.v1 import bundles, demo, documents, assessment, stream, meta
 from app.core.config import settings
-
-app = FastAPI(
-    title="CargoClear-JAPAC API",
-    version="4.0.0",
-    description=(
-        "Pre-submission adversarial customs adjudicator for JAPAC cross-border trade. "
-        "Decision-support only — the authorised CHA decides."
-    ),
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json",
+from app.gateway.ids import validate_path_ids
+from app.gateway.limits import BodySizeLimitMiddleware, RateLimitMiddleware
+from app.gateway.middleware import (
+    ErrorEnvelopeMiddleware,
+    RequestContextMiddleware,
+    SecurityHeadersMiddleware,
+    http_exception_handler,
+    validation_error_handler,
 )
-
-# ---------------------------------------------------------------------------
-# Middleware (order matters — outermost is applied last)
-# ---------------------------------------------------------------------------
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.allowed_origins_list,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["*"],
-    allow_credentials=False,
-)
-
-# NOTE: SSE stream router must NOT go through ErrorEnvelopeMiddleware
-# (streaming responses cannot be re-wrapped). It is mounted separately below.
-app.add_middleware(RequestContextMiddleware)
-app.add_middleware(ErrorEnvelopeMiddleware)
-
-# ---------------------------------------------------------------------------
-# Routers
-# ---------------------------------------------------------------------------
-
-for router in (bundles.router, documents.router, assessment.router, stream.router):
-    app.include_router(router, prefix="/api/v1")
+from app.services import orchestrator
 
 
-# ---------------------------------------------------------------------------
-# Health / readiness
-# ---------------------------------------------------------------------------
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """On shutdown, cancel the running analyses and wait (briefly) for them to record that they were cancelled."""
+    yield
+    await orchestrator.shutdown(timeout=5)
 
 
-@app.get("/healthz", tags=["ops"], summary="Liveness probe")
-async def healthz() -> dict:
-    return {"status": "ok"}
+def create_app() -> FastAPI:
+    """Build the application. /docs, /redoc and /openapi.json exist only when ``settings.api_docs_enabled``."""
+    docs = settings.api_docs_enabled
+    app = FastAPI(
+        lifespan=lifespan,
+        title="CargoClear-JAPAC API",
+        version="4.0.0",
+        description=(
+            "Pre-submission adversarial customs adjudicator for JAPAC cross-border trade. "
+            "Decision-support only — the authorised CHA decides."
+        ),
+        docs_url="/docs" if docs else None,
+        redoc_url="/redoc" if docs else None,
+        openapi_url="/openapi.json" if docs else None,
+        dependencies=[Depends(validate_path_ids)],
+    )
+
+    # 422 and the Starlette HTTPExceptions (404 unknown route, 405, ...) answer the same envelope as everything else
+    app.add_exception_handler(RequestValidationError, validation_error_handler)
+    app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+
+    # -----------------------------------------------------------------------
+    # Middleware. add_middleware puts the LAST one added OUTERMOST, so this reads inside-out. Request path:
+    #   RequestContext -> SecurityHeaders -> CORS -> RateLimit -> BodySizeLimit -> ErrorEnvelope -> routes
+    # (everything the guards refuse still carries the request id, the security headers and the CORS headers)
+    # -----------------------------------------------------------------------
+    app.add_middleware(ErrorEnvelopeMiddleware)
+    app.add_middleware(BodySizeLimitMiddleware)
+    app.add_middleware(RateLimitMiddleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.allowed_origins_list,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["*"],
+        allow_credentials=False,
+    )
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(RequestContextMiddleware)
+
+    for router in (
+        bundles.router,
+        documents.router,
+        assessment.router,
+        stream.router,
+        meta.router,
+        demo.router,
+    ):
+        app.include_router(router, prefix="/api/v1")
+
+    @app.get("/healthz", tags=["ops"], summary="Liveness probe")
+    async def healthz() -> dict:
+        return {"status": "ok"}
+
+    @app.get("/readyz", tags=["ops"], summary="Readiness probe")
+    async def readyz() -> dict:
+        return {"status": "ok"}
+
+    return app
 
 
-@app.get("/readyz", tags=["ops"], summary="Readiness probe")
-async def readyz() -> dict:
-    # TODO(Phase 1): Add Firestore + GCS connectivity checks
-    return {"status": "ok"}
+app = create_app()

@@ -3,24 +3,32 @@
     "hs_code": "73041900",
     "description": "Line pipe of a kind used for oil or gas pipelines, seamless, of iron or steel",
     "destination_country": "SG",
-    "required_documents": ["MILL_TEST_CERTIFICATE"]
+    "required_documents": ["MILL_TEST_CERTIFICATE"],
+    "rule_set": "demo-curated",
+    "regulation_ref": "Demo rule set (prototype); not an official AHTN requirement"
   },
   {
     "hs_code": "73043100",
     "description": "Other tubes, pipes and hollow profiles, seamless, of circular cross-section, of iron or non-alloy steel: Cold-drawn or cold-rolled (cold-reduced)",
     "destination_country": "SG",
-    "required_documents": ["MILL_TEST_CERTIFICATE"]
+    "required_documents": ["MILL_TEST_CERTIFICATE"],
+    "rule_set": "demo-curated",
+    "regulation_ref": "Demo rule set (prototype); not an official AHTN requirement"
   },
   {
     "hs_code": "10019910",
     "description": "Wheat and meslin: Other: Fit for human consumption",
     "destination_country": "SG",
-    "required_documents": ["PHYTOSANITARY"]
+    "required_documents": ["PHYTOSANITARY"],
+    "rule_set": "demo-curated",
+    "regulation_ref": "Demo rule set (prototype); not an official AHTN requirement"
   },
   {
     "hs_code": "09012110",
     "description": "Coffee, whether or not roasted or decaffeinated: Roasted: Not decaffeinated",
     "destination_country": "SG",
-    "required_documents": ["PHYTOSANITARY", "CERTIFICATE_OF_ORIGIN"]
+    "required_documents": ["PHYTOSANITARY", "CERTIFICATE_OF_ORIGIN"],
+    "rule_set": "demo-curated",
+    "regulation_ref": "Demo rule set (prototype); not an official AHTN requirement"
   }
 ]

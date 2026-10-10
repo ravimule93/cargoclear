@@ -1,0 +1,17 @@
+-r requirements.txt
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.2
+pytest-cov==6.0.0
+httpx==0.28.1
+hypothesis==6.122.3
+
+# Linting / formatting
+ruff==0.9.1
+
+# Type checking
+mypy==1.14.1
+
+# Case C sample PDF generator (scripts/generate_case_c_pdfs.py); versions pinned so output bytes are stable
+reportlab==5.0.1

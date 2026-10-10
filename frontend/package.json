@@ -9,7 +9,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
-    "test:a11y": "playwright test tests/a11y.spec.ts"
+    "test:a11y": "playwright test tests/a11y.spec.ts",
+    "postinstall": "node scripts/copy-pdf-worker.mjs"
   },
   "dependencies": {
     "next": "15.1.3",

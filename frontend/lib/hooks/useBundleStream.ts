@@ -1,60 +1,141 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { subscribeToBundle } from "../sse";
-import { AssessmentIteration, IterationEvent, StatusEvent } from "../types";
+import type { AssessmentIteration, StatusEvent, StreamErrorEvent } from "../types";
 
-/** Maps a live SSE IterationEvent to the full AssessmentIteration shape. */
-function toAssessmentIteration(iter: IterationEvent): AssessmentIteration {
-  return {
-    iteration: iter.iteration,
-    bundle_id: iter.bundle_id,
-    status: iter.status,
-    checks: iter.checks,
-    missing_evidence: iter.missing_evidence,
-    confidence: iter.confidence ?? null,
-    reasoning_delta: iter.reasoning_delta ?? null,
-    // Fields not present in the SSE event: fall back to safe defaults
-    grounding: [],
-    documents: [],
-    created_at: new Date().toISOString(),
-  };
+export interface StreamRunState {
+  run_id?: string;
+  state?: StatusEvent["state"];
+  stage?: string | null;
+  progress?: number;
+  message?: string | null;
 }
 
-export function useBundleStream(
-  bundleId: string,
-  initialAssessment?: AssessmentIteration | null
-) {
-  const [assessment, setAssessment] = useState<AssessmentIteration | null>(
-    initialAssessment ?? null
-  );
-  const [run, setRun] = useState<StatusEvent>({
-    kind: "status",
-    bundle_id: bundleId,
-    run_id: "",
-    state: "COMPLETE",
-    stage: null,
-    progress: 1.0,
-    message: null,
-  });
+export type StreamConnection = "connecting" | "open" | "reconnecting";
+
+export interface BundleStream {
+  /** Latest iteration seen on the stream (full object: grounding, documents, data_source, ...). */
+  assessment: AssessmentIteration | null;
+  run: StreamRunState | null;
+  connection: StreamConnection;
+  /** Message of a pipeline run in state ERROR, or of a server-side stream failure. */
+  error: string | null;
+}
+
+/** Delay before re-opening a stream the browser gave up on (readyState CLOSED). */
+const REOPEN_DELAY_MS = 3000;
+
+function parseJson(raw: unknown): unknown {
+  if (typeof raw !== "string") return null;
+  try {
+    return JSON.parse(raw);
+  } catch (err: unknown) {
+    console.error("Failed to parse SSE payload", err);
+    return null;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isStatusPayload(value: unknown): value is StatusEvent {
+  return isRecord(value) && typeof value.state === "string";
+}
+
+function isIterationPayload(value: unknown): value is AssessmentIteration {
+  return isRecord(value) && typeof value.iteration === "number" && typeof value.status === "string";
+}
+
+/**
+ * Subscribes to GET {NEXT_PUBLIC_API_BASE}/api/v1/bundles/{id}/stream.
+ *
+ * The backend sends NAMED SSE events, so the event name decides how a payload is read:
+ *   `status`    -> run progress (payload carries kind:"status")
+ *   `iteration` -> a full AssessmentIteration (no `kind` field)
+ * On connect it immediately replays the current status and latest iteration.
+ */
+export function useBundleStream(bundleId: string | null): BundleStream {
+  const [assessment, setAssessment] = useState<AssessmentIteration | null>(null);
+  const [run, setRun] = useState<StreamRunState | null>(null);
+  const [connection, setConnection] = useState<StreamConnection>("connecting");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setAssessment(null);
+    setRun(null);
+    setError(null);
+    setConnection("connecting");
+
     if (!bundleId) return;
 
-    const unsubscribe = subscribeToBundle(bundleId, {
-      onStatus: (s) => setRun(s),
-      onIteration: (iter) => setAssessment(toAssessmentIteration(iter)),
-      onError: (err) => {
-        setRun((prev) => ({
-          ...prev,
-          state: "ERROR",
-          message: err.message,
-        }));
-      },
-    });
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+    const url = `${baseUrl}/api/v1/bundles/${encodeURIComponent(bundleId)}/stream`;
 
-    return () => unsubscribe();
+    // `disposed` makes this safe under React StrictMode's mount/unmount/mount in dev:
+    // the first source is closed by cleanup and can never write state afterwards.
+    let disposed = false;
+    let source: EventSource | null = null;
+    let reopenTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const connect = () => {
+      if (disposed) return;
+      const es = new EventSource(url);
+      source = es;
+
+      es.addEventListener("open", () => {
+        if (disposed) return;
+        setConnection("open");
+      });
+
+      es.addEventListener("status", (event) => {
+        if (disposed) return;
+        const data = parseJson((event as MessageEvent).data);
+        if (!isStatusPayload(data)) return;
+        setRun({
+          run_id: data.run_id,
+          state: data.state,
+          stage: data.stage,
+          progress: data.progress,
+          message: data.message,
+        });
+        setError(data.state === "ERROR" ? (data.message ?? "Pipeline run failed") : null);
+      });
+
+      es.addEventListener("iteration", (event) => {
+        if (disposed) return;
+        const data = parseJson((event as MessageEvent).data);
+        if (!isIterationPayload(data)) return;
+        // Ignore stale iterations (e.g. a replay older than what we already hold).
+        setAssessment((prev) => (prev && data.iteration < prev.iteration ? prev : data));
+      });
+
+      // "error" is both the browser's connection-failure event (a plain Event) and the name of
+      // a server-sent error event (a MessageEvent carrying a JSON body).
+      es.addEventListener("error", (event) => {
+        if (disposed) return;
+        if (event instanceof MessageEvent) {
+          const data = parseJson(event.data) as StreamErrorEvent | null;
+          setError(data?.message ?? "Stream error");
+          return;
+        }
+        setConnection("reconnecting");
+        if (es.readyState === EventSource.CLOSED) {
+          // The browser will not retry a closed stream by itself; do it ourselves.
+          es.close();
+          reopenTimer = setTimeout(connect, REOPEN_DELAY_MS);
+        }
+      });
+    };
+
+    connect();
+
+    return () => {
+      disposed = true;
+      if (reopenTimer !== undefined) clearTimeout(reopenTimer);
+      source?.close();
+    };
   }, [bundleId]);
 
-  return { assessment, run };
+  return { assessment, run, connection, error };
 }

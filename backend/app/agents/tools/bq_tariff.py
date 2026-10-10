@@ -9,21 +9,21 @@ Per v4.0 Specification Appendix D:
   - Pre-filter: `destination_country = @dest`
   - Returns: hs_code, description, required_documents, cosine distance.
 
-Provides an offline local seed matching fallback when GCP credentials
-are not present in the runtime environment.
+Provides an offline local seed matching fallback when in demo mode.
 """
 
 from __future__ import annotations
 
 import json
-import math
-import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import structlog
 
 from app.core.config import settings
+from app.core.mode import no_credentials_message, use_live_gcp
+from app.domain.provenance import REGULATION_REF_DEMO, RULE_SET_DEMO
+from app.gateway.errors import UpstreamError
 
 logger = structlog.get_logger(__name__)
 
@@ -34,6 +34,8 @@ SELECT
     base.hs_code,
     base.description,
     base.required_documents,
+    base.rule_set,
+    base.regulation_ref,
     distance
 FROM VECTOR_SEARCH(
     TABLE `{tariff_table}`,
@@ -59,9 +61,10 @@ def _get_bq_client():
     if _bq_client is not None:
         return _bq_client
 
-    has_creds = bool(os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or os.getenv("K_SERVICE"))
-    if not has_creds and os.getenv("USE_BIGQUERY_MOCK") != "false":
-        logger.info("bq_client_mock_mode", reason="No GCP credentials found, running vector seed fallback")
+    if not use_live_gcp():
+        if settings.app_mode == "live":
+            raise UpstreamError(no_credentials_message())
+        logger.info("bq_client_mock_mode", reason="Running in demo mode without GCP credentials")
         return None
 
     try:
@@ -70,6 +73,8 @@ def _get_bq_client():
         _bq_client = bigquery.Client(project=settings.project_id)
         return _bq_client
     except Exception as exc:
+        if settings.app_mode == "live":
+            raise UpstreamError(f"BigQuery client init failed in live mode: {type(exc).__name__}") from exc
         logger.warning("bq_client_init_failed", error=str(exc), fallback="seed_lookup")
         return None
 
@@ -86,7 +91,23 @@ def lookup_tariff(
 
     Returns:
         List of up to 5 tariff candidates sorted by cosine distance (ascending).
-        Each entry contains: hs_code, description, required_documents, distance.
+        Each entry contains: hs_code, description, required_documents, rule_set, regulation_ref, distance.
+
+    Use :func:`lookup_tariff_with_source` when you also need to know where the answer came from.
+    """
+    hits, _source = lookup_tariff_with_source(description, destination_country)
+    return hits
+
+
+def lookup_tariff_with_source(
+    description: str,
+    destination_country: str = "SG",
+) -> tuple[list[dict[str, Any]], Literal["bigquery", "seed"]]:
+    """Like :func:`lookup_tariff`, but also reports which backend answered.
+
+    Returns:
+        ``(hits, source)`` where source is ``"bigquery"`` when the vector search answered and
+        ``"seed"`` when the offline local seed did (demo mode only; live mode raises instead).
     """
     client = _get_bq_client()
 
@@ -107,19 +128,32 @@ def lookup_tariff(
                     ]
                 ),
             )
-            results = [dict(row) for row in job.result()]
+            results = [_with_provenance(dict(row)) for row in job.result()]
             logger.info("bq_vector_search_success", count=len(results), desc=description[:30])
-            return results
+            return results, "bigquery"
         except Exception as exc:
+            if settings.app_mode == "live":
+                raise UpstreamError(f"BigQuery vector query failed: {type(exc).__name__}") from exc
             logger.warning("bq_vector_query_failed", error=str(exc), fallback="seed_data")
 
     # Offline local seed fallback
-    return _local_seed_search(description, destination_country)
+    return _local_seed_search(description, destination_country), "seed"
+
+
+def _with_provenance(candidate: dict[str, Any]) -> dict[str, Any]:
+    """Every candidate states its rule set and reference; rows that carry none get the prototype wording."""
+    candidate["rule_set"] = candidate.get("rule_set") or RULE_SET_DEMO
+    candidate["regulation_ref"] = candidate.get("regulation_ref") or REGULATION_REF_DEMO
+    return candidate
 
 
 def _local_seed_search(query: str, destination_country: str) -> list[dict[str, Any]]:
-    """Simulates vector search against local AHTN seed records."""
-    seed_file = Path(__file__).resolve().parents[3] / "infra" / "bigquery" / "seed" / "sample_tariff.json"
+    """Simulates vector search against local seed records.
+
+    ``query`` is the commodity DESCRIPTION only. It is scored by token overlap with each row's description;
+    digits in the query get no special treatment, so a declared HS code can never pull its own row up the ranking.
+    """
+    seed_file = Path(__file__).resolve().parents[4] / "infra" / "bigquery" / "seed" / "sample_tariff.json"
     records: list[dict[str, Any]] = []
 
     if seed_file.exists():
@@ -129,7 +163,6 @@ def _local_seed_search(query: str, destination_country: str) -> list[dict[str, A
             records = []
 
     if not records:
-        # Fallback default records
         records = [
             {
                 "hs_code": "73041900",
@@ -151,12 +184,10 @@ def _local_seed_search(query: str, destination_country: str) -> list[dict[str, A
             },
         ]
 
-    # Filter by destination country
     filtered = [r for r in records if r.get("destination_country", "SG") == destination_country.upper()]
     if not filtered:
         filtered = records
 
-    # Token overlap heuristic to compute simulated cosine distance [0.0 - 1.0]
     q_tokens = set(query.lower().replace(",", " ").replace("-", " ").split())
     candidates = []
 
@@ -164,20 +195,21 @@ def _local_seed_search(query: str, destination_country: str) -> list[dict[str, A
         item_tokens = set(item["description"].lower().replace(",", " ").replace("-", " ").split())
         overlap = len(q_tokens & item_tokens)
 
-        # Distance: 0.08 if high overlap, 0.45 if low overlap
-        if overlap >= 2 or any(token in item["hs_code"] for token in q_tokens):
+        if overlap >= 2:
             distance = 0.08
         elif overlap == 1:
             distance = 0.22
         else:
             distance = 0.48
 
-        candidates.append({
+        candidates.append(_with_provenance({
             "hs_code": item["hs_code"],
             "description": item["description"],
             "required_documents": item.get("required_documents", []),
             "distance": distance,
-        })
+            "rule_set": item.get("rule_set"),
+            "regulation_ref": item.get("regulation_ref"),
+        }))
 
     candidates.sort(key=lambda x: x["distance"])
     return candidates[:5]
