@@ -1,26 +1,46 @@
-# Product.md — CargoClear-JAPAC
+# CargoClear-JAPAC product summary
 
-**Pre-submission adversarial customs adjudicator** for JAPAC cross-border trade (Google Cloud AI Builder Cup 2026). Decision support only: the authorised customs house agent (CHA) decides.
+CargoClear is a pre-submission customs-document assessment aid for JAPAC trade bundles. It helps an authorised Custom House Agent inspect evidence, deterministic checks, and reasoning changes before the agent makes the final decision.
 
-## What it does
-Given a bundle of trade documents (commercial invoice, bill of lading, packing list, certificates…), it extracts fields with provenance (value, confidence, bounding box), runs deterministic checks (weight parity W-001, HS-code consistency H-002, entity alignment), grounds the declared HS code against the tariff, and returns one of four statuses:
-`COMPLIANT_FOR_SUBMISSION` · `MISSING_EVIDENCE` · `MATERIAL_CONTRADICTION` · `SPECIALIST_REVIEW_REQUIRED`.
-Every state change is appended to a SHA-256 hash-chained audit log; each reassessment produces a Reasoning Delta explaining what changed and why.
+It is not a government-submission tool, duty/payment system, legal decision-maker, supplier-risk scorer, or authentication/SSO product. Authentication and SSO remain out of scope for this MVP.
 
-## The workbench (investigator layout, not chat)
-Top bar (bundle, status pill, Add Document, Run analysis / Reassess) · Document rail · PDF viewer with evidence boxes · Assessment panel · Drawer with Reasoning Delta and Audit Chain tabs.
+## User experience
 
-## Demo journey — Case C (works in a browser with no GCP credentials)
-1. `/` → **Start Case C demo** (or **New empty bundle**).
-2. Workbench opens with Invoice, Bill of Lading, Packing List; panel says *No assessment yet*.
-3. **Run analysis** → status *Missing Evidence*; W-001 and H-002 pass; a Mill Test Certificate is required for HS 7304.19.00. W-001 boxes sit on the printed weights on the Bill of Lading and Packing List.
-4. **Use sample MTC (demo)** (or upload your own) → automatic reassessment → *Compliant For Submission*; the Reasoning Delta names `mtc_pipe_test_cert.pdf`.
-5. **Audit Chain Timeline** shows the real events and *Chain verified*.
+The workbench is an investigator interface, not a chatbot: document rail, original-PDF viewer with evidence overlays, assessment panel, and Reasoning Delta/Audit Chain drawer.
 
-## Honesty rules
-- **Demo mode extracts from synthetic fixtures keyed on the filename, not by reading the document.** A persistent banner says so: "DEMO MODE - extraction uses synthetic fixtures keyed on filename, not a real document reading." The sample PDFs are generated from the same fixture values (and say "Synthetic sample … not a real shipping document").
-- The UI never invents data: missing data is shown as loading, empty, not-found or error. If the backend is down the page shows only the error and Retry.
-- Live mode (`APP_MODE=live` + GCP credentials) uses Gemini 2.5 Flash, Firestore, GCS and BigQuery vector search; demo endpoints return 404 there.
+The API returns one of four statuses:
 
-## Known product limits (see Handoff.md)
-Run progress is real but the demo pipeline finishes faster than the 1 s stream poll, so stages usually flash by; below 1280 px the workbench has no tab navigation yet; Playwright specs are stale.
+- `COMPLIANT_FOR_SUBMISSION`
+- `MISSING_EVIDENCE`
+- `MATERIAL_CONTRADICTION`
+- `SPECIALIST_REVIEW_REQUIRED`
+
+The status is advisory. It does not assert that goods are legal or ready for a government submission.
+
+## Case C demo
+
+The supported browser journey starts at `/`; it does not use a hardcoded bundle URL.
+
+1. Select **Start Case C demo**. This creates a new bundle containing the Invoice, Bill of Lading, and Packing List.
+2. Run analysis. The bundle reaches `MISSING_EVIDENCE`, including the Mill Test Certificate requirement for the Case C HS classification.
+3. Select **Use sample MTC (demo)**. The document is added and the bundle reassesses to `COMPLIANT_FOR_SUBMISSION`.
+4. Inspect the Reasoning Delta and the hash-verified Audit Chain.
+
+In demo mode, extraction is synthetic and keyed by document filename. The UI states this explicitly; the sample PDFs are illustrative, not proof that live document reading occurred.
+
+## Evidence provenance
+
+The backend records preprocessing metadata per evidence document. It renders processed extraction pages at 200 DPI in 1-bit B&W, conservatively applies confident 0/90/180/270-degree orientation fixes, and records source-page/artifact provenance. Large inputs are materialized as sequential artifacts when the configured page or size threshold applies.
+
+The viewer displays the original PDF and maps processed evidence boxes back using the persisted transform metadata endpoint:
+
+`GET /api/v1/bundles/{bundle_id}/documents/{document_id}/transform-metadata`
+
+The endpoint returns `{ "document_id": "…", "transform_meta": [ … ] }` through the existing scoped API/proxy flow. Storage URIs and credentials are not exposed to the browser.
+
+Deskew detection is diagnostic today: `deskew_applied` remains false because a reversible deskew mapping is not yet persisted. Rotation and identity transforms are supported; absent/unknown metadata safely preserves the existing coordinates.
+
+## Demo and live modes
+
+- `APP_MODE=demo` uses local/in-memory fallbacks and exposes the Case C endpoints. No GCP credentials are required for the intended local journey.
+- `APP_MODE=live` disables demo endpoints and requires real GCS, Firestore, BigQuery, and Gemini access through a credential source or Cloud Run service identity. Live mode never falls back to synthetic extraction fixtures.

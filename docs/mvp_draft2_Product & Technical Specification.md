@@ -3,8 +3,8 @@ CargoClear-JAPAC
 Master Product & Technical Specification — Hackathon MVP
 Google Cloud AI Builder Cup 2026 (JAPAC)
 
-Version: 4.0 (Implementation-Ready — Final)
-Status: Single Source of Truth for Dev Team
+Version: 4.0 (historical product/planning specification)
+Status: Product intent and design history; current code, environment examples, tests, and operational documentation are the implementation source of truth.
 Supersedes: v3.1 and all prior PDF/MD sources
 Primary Outcome: Working evidence-assessment workbench (not a chatbot or autonomous filer)
 
@@ -16,6 +16,21 @@ Document History
 · v2 / MD source: Prioritization (P0/P1/P2), 5-day roadmap, gap analysis, risks, API surface, Firestore entities.
 · v3.1: Gap closure — UNCTAD formula, WCAG contrast rules, 72-hour path, model naming.
 · v4.0 (this document): Resolves all technical conflicts and gaps. Provides verified model availability, exact ADK 2.0 APIs, BigQuery Vector Search DDL, google-genai Pydantic patterns, SSE implementation, status precedence, math tolerance, confidence routing, and a Day‑0 bootstrap checklist. No further research required.
+
+---
+
+## Current implementation addendum (2026-10)
+
+This addendum corrects only claims in this historical specification that conflict with the checked-in implementation.
+
+- The production pipeline uses the native FastAPI stage dispatcher by default (`PIPELINE_ENGINE=native`); ADK workflow material in this document is not the default runtime architecture.
+- The API is deliberately single-instance today. Its Cloud Run configuration uses `min-instances=1`, `max-instances=1`, `concurrency=80`, a 300-second request timeout, and retained CPU. Process-local locks, rate limits, and SSE coordination are not horizontally safe.
+- Browser API and SSE traffic go through the Next.js same-origin BFF proxy. The UI reads server-only runtime `API_BASE`; `NEXT_PUBLIC_API_BASE` and direct-browser API routing are retired.
+- A live deployment requires a supplied dedicated `RUNTIME_SERVICE_ACCOUNT` and deployer `iam.serviceAccounts.actAs` permission. Runtime access includes Vertex AI, Storage, BigQuery, and Firestore (`roles/datastore.user`). `roles/run.invoker` is unnecessary unless a runtime Cloud Run-to-Cloud Run call is introduced.
+- Cloud deployment configuration is statically tested only. Docker builds, Cloud Build, IAM effectiveness, Cloud Run networking, and live service behavior require authorised GCP verification.
+- Preprocessing renders 200-DPI 1-bit B&W pages, applies conservative 0/90/180/270-degree orientation correction, persists per-document transform metadata, and materializes split artifacts for the configured size/page thresholds. Deskew detection is diagnostic only: no deskew is claimed as applied until a reversible transform is persisted.
+- The supported Case C flow begins at `/` and creates a fresh bundle. Demo extraction uses synthetic filename-keyed fixtures; live mode requires real services and does not fall back to fixtures.
+- The scoped metadata API is `GET /api/v1/bundles/{bundle_id}/documents/{document_id}/transform-metadata`, returning `{document_id, transform_meta}`. It does not expose GCS credentials or require a browser to fetch a storage URI.
 
 ---
 
