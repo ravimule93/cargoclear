@@ -69,6 +69,7 @@ async def test_health_and_meta_are_unchanged_whether_or_not_the_docs_are_served(
     assert health.json() == ready.json() == {"status": "ok"}
     assert meta.json() == {
         "app_mode": mode, "data_source_policy": "live" if mode == "live" else "fixture_with_offline_fallbacks",
+        "pipeline_engine": settings.pipeline_engine,  # additive since the engine seam: "native" unless PIPELINE_ENGINE says adk
     }
 
 

@@ -18,4 +18,5 @@ async def get_meta() -> dict[str, Any]:
     return {
         "app_mode": settings.app_mode,
         "data_source_policy": "live" if is_live else "fixture_with_offline_fallbacks",
+        "pipeline_engine": settings.pipeline_engine,
     }

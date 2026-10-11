@@ -19,7 +19,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: "cd ../backend && APP_MODE=demo venv/bin/uvicorn app.main:app --port 8080",
+      command: "cd ../backend && APP_MODE=demo .venv/bin/uvicorn app.main:app --port 8080",
       url: "http://localhost:8080/healthz",
       reuseExistingServer: !process.env.CI,
     },

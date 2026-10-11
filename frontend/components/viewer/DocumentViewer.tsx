@@ -4,9 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 // Type-only imports are erased at compile time, so nothing from pdfjs-dist is evaluated during SSR.
 // The library itself is imported lazily inside the effects below.
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, RenderTask } from "pdfjs-dist";
-import type { DocumentRecord } from "@/lib/types";
+import type { DocumentRecord, TransformMetadataResponse } from "@/lib/types";
 import type { Highlight } from "@/lib/highlights";
+import { api } from "@/lib/api";
 import { mapBBoxToCanvas } from "@/lib/bbox";
+import { mapProcessedBBoxToOriginal } from "@/lib/transform-bbox";
 import { BBoxLayer, HighlightBox } from "./BBoxLayer";
 
 interface DocumentViewerProps {
@@ -18,6 +20,9 @@ interface DocumentViewerProps {
 }
 
 type LoadState = "idle" | "loading" | "ready" | "error";
+type TransformMetadataState =
+  | { status: "idle" | "loading" | "missing" | "error" }
+  | { status: "ready"; data: TransformMetadataResponse };
 
 const WORKER_SRC = "/pdf.worker.min.mjs";
 
@@ -46,8 +51,35 @@ export function DocumentViewer({
   const [containerWidth, setContainerWidth] = useState(0);
   // CSS-pixel size of the rendered page; the bbox overlay is laid out in these units.
   const [cssSize, setCssSize] = useState({ w: 0, h: 0 });
+  const [transformMetadata, setTransformMetadata] = useState<TransformMetadataState>({ status: "idle" });
 
   const activeDocument = documents.find((d) => d.document_id === activeDocumentId) ?? null;
+
+  // Transform metadata is optional: missing or unavailable metadata preserves the existing overlay coordinates.
+  useEffect(() => {
+    if (!activeDocumentId) {
+      setTransformMetadata({ status: "idle" });
+      return;
+    }
+
+    let cancelled = false;
+    setTransformMetadata({ status: "loading" });
+
+    api.getDocumentTransformMetadata(bundleId, activeDocumentId).then(
+      (data) => {
+        if (!cancelled) setTransformMetadata({ status: "ready", data });
+      },
+      (err: unknown) => {
+        if (cancelled) return;
+        const code = typeof err === "object" && err !== null && "code" in err ? err.code : undefined;
+        setTransformMetadata({ status: code === "NOT_FOUND" ? "missing" : "error" });
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [bundleId, activeDocumentId]);
 
   // Fit-to-container width.
   useEffect(() => {
@@ -156,16 +188,24 @@ export function DocumentViewer({
   }, [pdf, page, containerWidth]);
 
   const boxes: HighlightBox[] = useMemo(
-    () =>
-      highlights
+    () => {
+      const transforms = transformMetadata.status === "ready" ? transformMetadata.data.transform_meta : [];
+      return highlights
         .filter((h) => h.document_id === activeDocumentId && h.page === page)
         .map((h) => ({
-          ...mapBBoxToCanvas(h.bbox, { w: cssSize.w, h: cssSize.h }),
+          ...mapBBoxToCanvas(
+            mapProcessedBBoxToOriginal(
+              h.bbox,
+              transforms.find((transform) => (transform.source_page ?? transform.page) === h.page)
+            ),
+            { w: cssSize.w, h: cssSize.h }
+          ),
           id: h.id,
           severity: h.severity,
           label: h.label,
-        })),
-    [highlights, activeDocumentId, page, cssSize]
+        }));
+    },
+    [highlights, activeDocumentId, page, cssSize, transformMetadata]
   );
 
   const hasDocument = documents.length > 0 && activeDocumentId !== null;

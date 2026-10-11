@@ -150,6 +150,17 @@ async def update_document_doc_type(bundle_id: str, document_id: str, doc_type: s
             _IN_MEMORY_DOCS[bundle_id][document_id]["doc_type"] = doc_type
 
 
+async def update_document_transform_meta_uri(bundle_id: str, document_id: str, transform_meta_uri: str) -> None:
+    """Associate a document with its durable preprocessing-transform metadata."""
+    client = _get_firestore_client()
+
+    if client is not None:
+        doc_ref = client.collection("bundles").document(bundle_id).collection("documents").document(document_id)
+        await doc_ref.update({"transform_meta_uri": transform_meta_uri})
+    elif bundle_id in _IN_MEMORY_DOCS and document_id in _IN_MEMORY_DOCS[bundle_id]:
+        _IN_MEMORY_DOCS[bundle_id][document_id]["transform_meta_uri"] = transform_meta_uri
+
+
 async def get_bundle_document(bundle_id: str, document_id: str) -> dict[str, Any] | None:
     """Lookup a document specifically within a bundle."""
     client = _get_firestore_client()

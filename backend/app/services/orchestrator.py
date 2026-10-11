@@ -33,6 +33,8 @@ comes from ``public_error``: raw exception text (paths, bucket names, document c
 from __future__ import annotations
 
 import asyncio
+import functools
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -55,6 +57,7 @@ from app.gateway.errors import (
 )
 from app.repo import firestore
 from app.services import audit, run_events, storage
+from app.services.engines import get_engine
 
 logger = structlog.get_logger(__name__)
 
@@ -302,8 +305,19 @@ async def _preprocess_documents(ctx: dict[str, Any]) -> None:
                 "document_id": doc_id,
             }
             sub_res = await dispatch("preprocess", sub_ctx)
+            transform_meta = sub_res.get("transform_meta", [])
+            await storage.upload_processed_artifacts(bundle_id, doc_id, sub_res.get("processed_artifacts", []))
+            transform_meta_uri = await storage.upload_transform_meta(bundle_id, doc_id, transform_meta)
+            await firestore.update_document_transform_meta_uri(bundle_id, doc_id, transform_meta_uri)
+            doc["transform_meta_uri"] = transform_meta_uri
             all_processed_pages.extend(sub_res.get("processed_pages", []))
-            all_transform_meta.extend(sub_res.get("transform_meta", []))
+            all_transform_meta.extend(transform_meta)
+        except PipelineError:
+            # A preprocessing stage that explicitly reports an unrecoverable
+            # compliance failure must fail the run in every mode.  Demo mode
+            # may tolerate an unavailable optional rasterizer, but it must not
+            # claim to have created a required split artifact when it has not.
+            raise
         except Exception as exc:
             if settings.app_mode == "live":
                 # the class name only: the text of the exception can carry paths or content
@@ -412,8 +426,46 @@ async def _stop_heartbeat(task: asyncio.Task[Any]) -> None:
     await asyncio.gather(task, return_exceptions=True)
 
 
+async def _stage(stage: str, ctx: dict[str, Any], *, tracker: dict[str, Any]) -> dict[str, Any]:
+    """Run ONE pipeline stage: the only callable an engine uses (bound to the run's tracker, it is ``run_stage(stage, ctx)``).
+
+    Marks the stage as current (ctx and tracker, which names the stage in a failure's audit event), resolves the status
+    before ``synthesize``, checks the run still owns the bundle (fencing: a stage write on a reaped run would turn its
+    ERROR back into RUNNING), writes the progress BEFORE the work, then does the work and logs ``stage_finished`` with its
+    duration. ``dispatch`` is looked up on this module at call time, so a test that patches ``orchestrator.dispatch``
+    sees every stage whichever engine runs it.
+
+    The "preprocess" stage is the bundle preprocessing: it renders EVERY document (one ``dispatch("preprocess", ...)`` per
+    document, each with that document's bytes) and fills ``ctx["processed_pages"]`` for the stages that follow. Dispatching
+    it with the pipeline ctx, which carries no ``raw_bytes``, would answer an empty page list and wipe the pages.
+    """
+    bundle_id = ctx["bundle_id"]
+    run_id = ctx["run_id"]
+    ctx["stage"] = tracker["stage"] = stage
+    progress = _STAGE_PROGRESS[stage]
+
+    # T2.3: Synthesize status before running synthesize stage
+    if stage == "synthesize":
+        ctx["final_status"] = resolve_final_status(ctx)
+
+    await _ensure_claim(bundle_id, run_id)
+    await _set_stage(bundle_id, run_id, stage, progress)
+    logger.info("stage_running", bundle_id=bundle_id, stage=stage, progress=progress)
+
+    started = time.perf_counter()
+    if stage == "preprocess":
+        await _preprocess_documents(ctx)
+    else:
+        ctx = await dispatch(stage, ctx)  # route through the decoupled stage dispatcher
+    logger.info(
+        "stage_finished", bundle_id=bundle_id, run_id=run_id, stage=stage,
+        duration_ms=round((time.perf_counter() - started) * 1000, 1),
+    )
+    return ctx
+
+
 async def _run_stages(ctx: dict[str, Any], tracker: dict[str, Any]) -> None:
-    """ANALYSIS_STARTED -> preprocess -> stages -> finalize -> iteration persisted -> ASSESSMENT_COMPLETED."""
+    """ANALYSIS_STARTED -> the stages (driven by the engine) -> finalize -> iteration persisted -> ASSESSMENT_COMPLETED."""
     bundle_id = ctx["bundle_id"]
     run_id = ctx["run_id"]
 
@@ -431,22 +483,9 @@ async def _run_stages(ctx: dict[str, Any], tracker: dict[str, Any]) -> None:
         "actor": "system",
     })
 
-    await _preprocess_documents(ctx)
-
-    for stage in PIPELINE_STAGES:
-        ctx["stage"] = tracker["stage"] = stage
-        progress = _STAGE_PROGRESS[stage]
-
-        # T2.3: Synthesize status before running synthesize stage
-        if stage == "synthesize":
-            ctx["final_status"] = resolve_final_status(ctx)
-
-        await _ensure_claim(bundle_id, run_id)  # a stage write on a reaped run would turn its ERROR back into RUNNING
-        await _set_stage(bundle_id, run_id, stage, progress)
-        logger.info("stage_running", bundle_id=bundle_id, stage=stage, progress=progress)
-
-        # Route through decoupled stage dispatcher
-        ctx = await dispatch(stage, ctx)
+    # The engine drives the stage loop (native: a plain loop; adk: a google-adk Workflow); everything else is identical.
+    engine = get_engine(settings.pipeline_engine)
+    ctx = await engine(ctx, PIPELINE_STAGES, functools.partial(_stage, tracker=tracker))
 
     # T2.3: Re-verify final status resolution
     ctx["final_status"] = resolve_final_status(ctx)

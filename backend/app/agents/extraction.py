@@ -416,11 +416,18 @@ def _build_parts(types: Any, pages: list[dict[str, Any]]) -> tuple[list[Any], in
     PDF passed through (mime application/pdf) has an unknown page count and gets no label.
     """
     passthrough = len(pages) == 1 and pages[0].get("mime", "application/pdf") == "application/pdf"
-    total = len(pages)
+    # Legacy callers may supply image parts without page metadata.  Those are
+    # still one ordered logical document, so use their position as the source
+    # page fallback rather than emitting an invalid "of 0" label.
+    total = max(
+        (int(page.get("source_page", page.get("page", position))) for position, page in enumerate(pages, start=1)),
+        default=0,
+    )
     parts: list[Any] = []
-    for number, page in enumerate(pages, start=1):
+    for position, page in enumerate(pages, start=1):
         if not passthrough:
-            parts.append(types.Part.from_text(text=f"Page {number} of {total}."))
+            source_page = int(page.get("source_page", page.get("page", position)))
+            parts.append(types.Part.from_text(text=f"Page {source_page} of {total}."))
         parts.append(types.Part.from_bytes(data=page.get("payload", b""), mime_type=page.get("mime", "application/pdf")))
     parts.append(types.Part.from_text(text=EXTRACT_INSTRUCTION))
     return parts, None if passthrough else total
@@ -526,6 +533,8 @@ def _group_pages(
     pages_by_doc: dict[str, list[dict[str, Any]]] = {}
     for page in processed_pages:
         pages_by_doc.setdefault(page.get("document_id", "doc-unknown"), []).append(page)
+    for pages in pages_by_doc.values():
+        pages.sort(key=lambda page: int(page.get("source_page", page.get("page", 0))))
     order = [d.get("document_id") for d in documents_meta if d.get("document_id") in pages_by_doc]
     order = list(dict.fromkeys(order))
     order += [doc_id for doc_id in pages_by_doc if doc_id not in order]

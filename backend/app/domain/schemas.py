@@ -328,16 +328,6 @@ class CreateBundleRequest(BaseModel):
         return cleaned
 
 
-class BundleResponse(BaseModel):
-    id: str
-    reference: str | None
-    destination_country: str
-    status: str
-    current_iteration: int
-    documents: list[dict] = Field(default_factory=list)
-    created_at: str
-
-
 class DocumentResponse(BaseModel):
     document_id: str
     bundle_id: str
@@ -347,6 +337,27 @@ class DocumentResponse(BaseModel):
     sha256: str
     bytes: int
     uploaded_at: str
+    transform_meta_uri: str | None = Field(
+        default=None,
+        description="Durable location of per-page preprocessing transforms; null until preprocessing completes.",
+    )
+
+
+class TransformMetadataResponse(BaseModel):
+    document_id: str
+    transform_meta: list[dict[str, Any]] = Field(
+        description="Per-page preprocessing transforms used to map evidence coordinates to the original document."
+    )
+
+
+class BundleResponse(BaseModel):
+    id: str
+    reference: str | None
+    destination_country: str
+    status: str
+    current_iteration: int
+    documents: list[DocumentResponse] = Field(default_factory=list)
+    created_at: str
 
 
 class RunResponse(BaseModel):

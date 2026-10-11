@@ -36,8 +36,10 @@ CASE_C_DESTINATION = "SG"
 CASE_C_PRELOADED = ("commercial_invoice.pdf", "bill_of_lading.pdf", "packing_list.pdf")
 CASE_C_MTC = "mtc_pipe_test_cert.pdf"
 
-# backend/app/api/v1/demo.py -> repo root is four levels above this file's directory
-_DEFAULT_FIXTURE_DIR = Path(__file__).resolve().parents[4] / "fixtures" / "case_c"
+# backend/app/api/v1/demo.py -> repo root is four levels above this file's directory.
+# The packaged fallback is copied with ``app/`` by the backend Dockerfile.
+_REPOSITORY_FIXTURE_DIR = Path(__file__).resolve().parents[4] / "fixtures" / "case_c"
+_PACKAGED_FIXTURE_DIR = Path(__file__).resolve().parents[2] / "fixtures" / "case_c"
 
 
 def _require_demo_mode() -> None:
@@ -47,7 +49,11 @@ def _require_demo_mode() -> None:
 
 def _fixture_dir() -> Path:
     override = os.environ.get("CASE_C_FIXTURE_DIR")
-    return Path(override) if override else _DEFAULT_FIXTURE_DIR
+    if override:
+        return Path(override)
+    if _REPOSITORY_FIXTURE_DIR.is_dir():
+        return _REPOSITORY_FIXTURE_DIR
+    return _PACKAGED_FIXTURE_DIR
 
 
 def _read_fixture(filename: str) -> bytes:

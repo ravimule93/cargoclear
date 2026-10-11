@@ -36,6 +36,7 @@ ROUTES = [
     ("POST", "/api/v1/bundles/{b}/analyze"),
     ("POST", "/api/v1/bundles/{b}/reassess"),
     ("GET", "/api/v1/bundles/{b}/documents/doc-0123456789abcdef/file"),
+    ("GET", "/api/v1/bundles/{b}/documents/doc-0123456789abcdef/transform-metadata"),
 ]
 
 
@@ -78,14 +79,17 @@ async def test_a_hostile_bundle_id_is_the_same_404_on_every_route(name, method_p
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("endpoint", ["file", "transform-metadata"])
 @pytest.mark.parametrize("name", list(HOSTILE))
-async def test_a_hostile_document_id_is_the_same_404(name) -> None:
+async def test_a_hostile_document_id_is_the_same_404(name, endpoint) -> None:
     async with api_client() as client:
         bundle_id = await create_bundle_with_documents(client, {"a.pdf": b"%PDF-1.4 a"})
     hostile = decoded(HOSTILE[name])
 
-    result = await asgi_call("GET", f"/api/v1/bundles/{bundle_id}/documents/{hostile}/file")
-    reference = await asgi_call("GET", f"/api/v1/bundles/{bundle_id}/documents/doc-0123456789abcdef/file")
+    result = await asgi_call("GET", f"/api/v1/bundles/{bundle_id}/documents/{hostile}/{endpoint}")
+    reference = await asgi_call(
+        "GET", f"/api/v1/bundles/{bundle_id}/documents/doc-0123456789abcdef/{endpoint}"
+    )
 
     assert result.status == reference.status == 404
     assert result.json()["code"] == reference.json()["code"] == "NOT_FOUND"

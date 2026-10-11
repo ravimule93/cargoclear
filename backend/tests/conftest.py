@@ -1,5 +1,7 @@
 """pytest configuration and shared hermetic test fixtures."""
 
+import os
+
 import pytest
 
 
@@ -36,6 +38,9 @@ def hermetic_test_env(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "app_mode", "demo")
     monkeypatch.setattr(settings, "local_storage_path", str(tmp_path))
     monkeypatch.setattr(settings, "google_application_credentials", None)  # never the developer's .env value
+    # The pipeline engine comes from the PROCESS environment only (the ADK run sets PIPELINE_ENGINE=adk for the whole suite);
+    # a developer's .env must not decide which engine the tests exercise.
+    monkeypatch.setattr(settings, "pipeline_engine", os.environ.get("PIPELINE_ENGINE", "native"))
 
     # Reset Firestore in-memory state
     from app.repo import firestore

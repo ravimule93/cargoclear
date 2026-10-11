@@ -3,13 +3,18 @@
  *
  * Environment variables:
  * - API_BASE: The internal URL for the FastAPI backend (default: http://localhost:8080).
- *   Used by this server-side proxy route.
- * - NEXT_PUBLIC_API_BASE: The browser-accessible URL for direct backend connections like SSE
- *   (default: http://localhost:8080).
+ *   Used only by this server-side proxy route. Browser API and SSE traffic
+ *   always stays same-origin via /api/proxy.
  */
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE = process.env.API_BASE || process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+// Evaluate configuration at request time so Cloud Run's runtime environment,
+// rather than Next's image-build environment, supplies the backend URL.
+export const dynamic = "force-dynamic";
+
+function backendBase(): string {
+  return process.env.API_BASE || "http://localhost:8080";
+}
 
 export async function GET(
   request: NextRequest,
@@ -43,18 +48,17 @@ async function handleProxy(
   request: NextRequest,
   params: { path: string[] }
 ) {
-  const path = params.path.join("/");
-  const targetUrl = new URL(`/api/v1/${path}`, API_BASE);
-
-  // Forward query params
-  request.nextUrl.searchParams.forEach((val, key) => {
-    targetUrl.searchParams.set(key, val);
-  });
-
-  const headers = new Headers(request.headers);
-  headers.delete("host");
-
   try {
+    const path = params.path.join("/");
+    const targetUrl = new URL(`/api/v1/${path}`, backendBase());
+
+    // Forward query params
+    request.nextUrl.searchParams.forEach((val, key) => {
+      targetUrl.searchParams.set(key, val);
+    });
+
+    const headers = new Headers(request.headers);
+    headers.delete("host");
     const hasBody = request.method !== "GET" && request.method !== "HEAD";
     const response = await fetch(targetUrl.toString(), {
       method: request.method,

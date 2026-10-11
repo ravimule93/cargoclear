@@ -6,7 +6,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # 1. Install dependencies
 FROM base AS deps
 COPY package.json ./
-RUN npm install --legacy-peer-deps
+COPY package-lock.json ./
+RUN npm ci --legacy-peer-deps
 
 # 2. Build the application
 FROM base AS builder
@@ -19,6 +20,8 @@ RUN npm run build
 FROM base AS runner
 ENV NODE_ENV=production
 ENV PORT=8080
+# Local Docker default only; Cloud Run provides the deployed API URL at runtime.
+ENV API_BASE=http://localhost:8080
 EXPOSE 8080
 
 # Copy necessary files from builder

@@ -1,14 +1,7 @@
-import { ReasoningDelta as ReasoningDeltaType } from "@/lib/types";
+import { ReasoningDelta as ReasoningDeltaType, type ReasoningDeltaChange } from "@/lib/types";
 
 interface ReasoningDeltaProps {
   delta?: ReasoningDeltaType | null;
-}
-
-interface DeltaChange {
-  field: string;
-  from: string;
-  to: string;
-  because: string;
 }
 
 export function ReasoningDelta({ delta }: ReasoningDeltaProps) {
@@ -47,7 +40,7 @@ export function ReasoningDelta({ delta }: ReasoningDeltaProps) {
               </tr>
             </thead>
             <tbody>
-              {delta.changes.map((change: DeltaChange, idx: number) => (
+              {delta.changes.map((change: ReasoningDeltaChange, idx: number) => (
 
                 <tr key={idx} className="border-b border-[var(--cc-border)] hover:bg-[var(--cc-surface-2)]">
                   <td className="py-1.5 px-2 font-mono text-[var(--cc-text)]">{change.field || ""}</td>

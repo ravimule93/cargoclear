@@ -7,7 +7,7 @@ from fastapi import APIRouter, File, Path, UploadFile
 from fastapi.responses import Response
 
 from app.core.config import settings
-from app.domain.schemas import DocumentResponse
+from app.domain.schemas import DocumentResponse, TransformMetadataResponse
 from app.gateway.errors import NotFoundError, PayloadTooLargeError, ValidationError
 from app.repo import firestore
 from app.services import storage
@@ -129,4 +129,32 @@ async def get_document_file(
         content=pdf_bytes,
         media_type="application/pdf",
         headers=download_headers(doc_meta.get("filename") or "document.pdf"),
+    )
+
+
+@router.get(
+    "/bundles/{bundle_id}/documents/{document_id}/transform-metadata",
+    response_model=TransformMetadataResponse,
+    summary="Get persisted preprocessing transforms for one evidence document",
+)
+async def get_document_transform_metadata(
+    bundle_id: str = Path(..., description="Target bundle ID"),
+    document_id: str = Path(..., description="Document ID"),
+) -> TransformMetadataResponse:
+    """Return private transform metadata only after verifying the document belongs to the bundle."""
+    doc_meta = await firestore.get_bundle_document(bundle_id, document_id)
+    if doc_meta is None:
+        raise NotFoundError(
+            f"Document '{document_id}' not found in bundle '{bundle_id}'.",
+            detail={"bundle_id": bundle_id, "document_id": document_id},
+        )
+    if not doc_meta.get("transform_meta_uri"):
+        raise NotFoundError(
+            f"Transform metadata for document '{document_id}' not found.",
+            detail={"bundle_id": bundle_id, "document_id": document_id},
+        )
+
+    return TransformMetadataResponse(
+        document_id=document_id,
+        transform_meta=await storage.download_transform_meta(bundle_id, document_id),
     )

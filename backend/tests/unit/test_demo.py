@@ -7,14 +7,32 @@ from pathlib import Path
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.api.v1 import demo
 from app.core.config import settings
 from app.main import app
+from tests.helpers import CASE_C_DIR
 
 EXPECTED_PRELOADED = {"commercial_invoice.pdf", "bill_of_lading.pdf", "packing_list.pdf"}
+CASE_C_FILENAMES = (*EXPECTED_PRELOADED, "mtc_pipe_test_cert.pdf")
 
 
 def _client() -> AsyncClient:
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+
+
+def test_fixture_dir_uses_repository_fixtures_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("CASE_C_FIXTURE_DIR", raising=False)
+
+    assert demo._fixture_dir() == CASE_C_DIR
+
+
+def test_fixture_dir_falls_back_to_packaged_fixtures(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.delenv("CASE_C_FIXTURE_DIR", raising=False)
+    monkeypatch.setattr(demo, "_REPOSITORY_FIXTURE_DIR", tmp_path / "missing-repository-fixtures")
+
+    assert demo._fixture_dir() == demo._PACKAGED_FIXTURE_DIR
+    for name in CASE_C_FILENAMES:
+        assert (demo._PACKAGED_FIXTURE_DIR / name).read_bytes() == (CASE_C_DIR / name).read_bytes()
 
 
 @pytest.mark.asyncio

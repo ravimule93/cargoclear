@@ -1,9 +1,10 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { openCaseCDemoWorkbench } from "./support/case-c";
 
 test.describe("CargoClear Workbench Accessibility (WCAG 2.2 AA)", () => {
   test("workbench has 0 critical or serious accessibility violations", async ({ page }) => {
-    await page.goto("/workbench/default-bundle");
+    await openCaseCDemoWorkbench(page);
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
@@ -17,7 +18,7 @@ test.describe("CargoClear Workbench Accessibility (WCAG 2.2 AA)", () => {
   });
 
   test("entire workbench shell is keyboard accessible", async ({ page }) => {
-    await page.goto("/workbench/default-bundle");
+    await openCaseCDemoWorkbench(page);
 
     const focusedElements: string[] = [];
     for (let i = 0; i < 20; i++) {
@@ -35,7 +36,7 @@ test.describe("CargoClear Workbench Accessibility (WCAG 2.2 AA)", () => {
   });
 
   test("drawer tablist supports arrow key navigation", async ({ page }) => {
-    await page.goto("/workbench/default-bundle");
+    await openCaseCDemoWorkbench(page);
 
     const reasoningTab = page.locator("#tab-delta");
     await reasoningTab.focus();

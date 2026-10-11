@@ -1,9 +1,13 @@
 """Unit tests for storage service, hashing, document upload, and retrieval."""
 
+import json
+from types import SimpleNamespace
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.main import app
+from app.services import storage
 from app.services.storage import compute_sha256, document_id_from_sha256, upload_raw, download_raw
 
 
@@ -30,6 +34,98 @@ async def test_storage_upload_and_download_roundtrip(tmp_path, monkeypatch):
 
     retrieved = await download_raw(bundle_id, meta["document_id"])
     assert retrieved == data
+
+
+@pytest.mark.asyncio
+async def test_upload_transform_meta_writes_the_document_scoped_gcs_artifact(monkeypatch):
+    uploaded: dict[str, object] = {}
+
+    class Blob:
+        def upload_from_string(self, data, content_type):
+            uploaded.update(data=data, content_type=content_type)
+
+    class Bucket:
+        def blob(self, path):
+            uploaded["path"] = path
+            return Blob()
+
+    monkeypatch.setattr(storage, "_get_gcs_client", lambda: SimpleNamespace(bucket=lambda _name: Bucket()))
+    transforms = [{"document_id": "doc-1", "page": 1, "rotation": 0}]
+
+    uri = await storage.upload_transform_meta("bnd-1", "doc-1", transforms)
+
+    assert uri.endswith("/bundles/bnd-1/processed/doc-1/transform.json")
+    assert uploaded["path"] == "bundles/bnd-1/processed/doc-1/transform.json"
+    assert uploaded["content_type"] == "application/json"
+    assert json.loads(uploaded["data"]) == transforms
+
+
+@pytest.mark.asyncio
+async def test_download_transform_meta_reads_the_document_scoped_gcs_artifact(monkeypatch):
+    downloaded: dict[str, object] = {}
+    transforms = [{"document_id": "doc-1", "page": 1, "rotation": 0}]
+
+    class Blob:
+        def exists(self):
+            return True
+
+        def download_as_bytes(self):
+            return json.dumps(transforms).encode()
+
+    class Bucket:
+        def blob(self, path):
+            downloaded["path"] = path
+            return Blob()
+
+    monkeypatch.setattr(storage, "_get_gcs_client", lambda: SimpleNamespace(bucket=lambda _name: Bucket()))
+
+    assert await storage.download_transform_meta("bnd-1", "doc-1") == transforms
+    assert downloaded["path"] == "bundles/bnd-1/processed/doc-1/transform.json"
+
+
+@pytest.mark.asyncio
+async def test_upload_processed_artifacts_writes_private_sequential_local_pdfs(tmp_path, monkeypatch):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "local_storage_path", str(tmp_path))
+    artifacts = [
+        {"artifact_id": "part-001", "payload": b"%PDF-1.4 one"},
+        {"artifact_id": "part-002", "payload": b"%PDF-1.4 two"},
+    ]
+
+    await storage.upload_processed_artifacts("bnd-1", "doc-1", artifacts)
+
+    directory = tmp_path / "bundles" / "bnd-1" / "processed" / "doc-1"
+    assert (directory / "part-001.pdf").read_bytes() == b"%PDF-1.4 one"
+    assert (directory / "part-002.pdf").read_bytes() == b"%PDF-1.4 two"
+
+
+@pytest.mark.asyncio
+async def test_upload_processed_artifacts_writes_private_sequential_gcs_pdfs(monkeypatch):
+    uploaded: list[tuple[str, bytes, str]] = []
+
+    class Blob:
+        def __init__(self, path):
+            self.path = path
+
+        def upload_from_string(self, data, content_type):
+            uploaded.append((self.path, data, content_type))
+
+    class Bucket:
+        def blob(self, path):
+            return Blob(path)
+
+    monkeypatch.setattr(storage, "_get_gcs_client", lambda: SimpleNamespace(bucket=lambda _name: Bucket()))
+
+    await storage.upload_processed_artifacts(
+        "bnd-1",
+        "doc-1",
+        [{"artifact_id": "part-001", "payload": b"%PDF-1.4 one"}],
+    )
+
+    assert uploaded == [
+        ("bundles/bnd-1/processed/doc-1/part-001.pdf", b"%PDF-1.4 one", "application/pdf")
+    ]
 
 
 @pytest.mark.asyncio

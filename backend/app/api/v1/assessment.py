@@ -88,6 +88,8 @@ async def get_assessment(bundle_id: str = Path(...)) -> AssessmentIteration:
     summary="List all assessment iterations for the Reasoning Delta view",
 )
 async def list_iterations(bundle_id: str = Path(...)) -> list[AssessmentIteration]:
-    """Return all AssessmentIterations in chronological order."""
+    """Return all AssessmentIterations in chronological order (404 for an unknown bundle; [] before the first run)."""
+    if await firestore.get_bundle(bundle_id) is None:
+        raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
     iterations = await firestore.list_iterations(bundle_id)
     return [AssessmentIteration(**it) for it in iterations]

@@ -18,12 +18,14 @@ from app.gateway.middleware import (
     http_exception_handler,
     validation_error_handler,
 )
-from app.services import orchestrator
+from app.services import engines, orchestrator
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    """On shutdown, cancel the running analyses and wait (briefly) for them to record that they were cancelled."""
+    """Refuse to start without the configured pipeline engine; on shutdown, cancel the running analyses and wait
+    (briefly) for them to record that they were cancelled."""
+    engines.require_engine(settings.pipeline_engine)
     yield
     await orchestrator.shutdown(timeout=5)
 

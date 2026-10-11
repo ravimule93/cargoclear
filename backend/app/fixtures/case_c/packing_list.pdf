@@ -1,0 +1,181 @@
+%PDF-1.3
+%“Œ‹ž ReportLab Generated PDF document (opensource)
+1 0 obj
+<<
+/F1 2 0 R /F2 3 0 R
+>>
+endobj
+2 0 obj
+<<
+/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font
+>>
+endobj
+3 0 obj
+<<
+/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /Name /F2 /Subtype /Type1 /Type /Font
+>>
+endobj
+4 0 obj
+<<
+/Contents 8 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 7 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
+
+>> 
+  /Type /Page
+>>
+endobj
+5 0 obj
+<<
+/PageMode /UseNone /Pages 7 0 R /Type /Catalog
+>>
+endobj
+6 0 obj
+<<
+/Author (CargoClear demo fixtures) /CreationDate (D:20000101000000+00'00') /Creator (scripts/generate_case_c_pdfs.py) /Keywords () /ModDate (D:20000101000000+00'00') /Producer (ReportLab PDF Library - \(opensource\)) 
+  /Subject (Synthetic sample document for the CargoClear Case C demo) /Title (PACKING LIST \(CargoClear Case C sample\)) /Trapped /False
+>>
+endobj
+7 0 obj
+<<
+/Count 1 /Kids [ 4 0 R ] /Type /Pages
+>>
+endobj
+8 0 obj
+<<
+/Length 2857
+>>
+stream
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+0 0 0 rg
+BT /F2 14 Tf 16.8 TL ET
+BT 1 0 0 1 47.62205 811.8898 Tm (PACKING LIST) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6.5 Tf 7.8 TL ET
+BT 1 0 0 1 47.62205 796.8898 Tm (Synthetic sample for the CargoClear demo - not a real shipping document) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 59.52756 759.5008 Tm (Document No.) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 59.52756 692.1496 Tm (Consignee) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 59.52756 641.6362 Tm (Consignor) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 357.1654 422.7449 Tm (Net Weight \(kg\)) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 357.1654 389.0693 Tm (Gross Weight \(kg\)) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 357.1654 355.3937 Tm (Tare \(kg\)) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 59.52756 296.4614 Tm (Description) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 309.5433 296.4614 Tm (Quantity) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 363.1181 296.4614 Tm (Net \(kg\)) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 434.5512 296.4614 Tm (Gross \(kg\)) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 505.9843 296.4614 Tm (HS Code) Tj T* ET
+q
+n 59.52756 732.4441 148.8189 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 59.52756 740.0211 Tm (PL-2024-001) Tj T* ET
+Q
+q
+n 59.52756 656.674 238.1102 33.67559 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 59.52756 666.7767 Tm (SINGAPORE PRECISION PIPING PTE LTD) Tj T* ET
+Q
+q
+n 59.52756 606.1606 226.2047 33.67559 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 59.52756 616.2633 Tm (BHARAT SEAMLESS PIPES LTD) Tj T* ET
+Q
+q
+n 357.1654 395.6882 119.0551 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 357.1654 403.2652 Tm (14000.0 KGS) Tj T* ET
+Q
+q
+n 357.1654 362.0126 119.0551 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 357.1654 369.5896 Tm (14280.0 KGS) Tj T* ET
+Q
+q
+n 357.1654 328.337 119.0551 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 357.1654 335.914 Tm (280.0 KGS) Tj T* ET
+Q
+q
+n 59.52756 269.4047 238.1102 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 59.52756 276.9817 Tm (Seamless carbon steel pipes API 5L Grade B) Tj T* ET
+Q
+q
+n 309.5433 269.4047 47.62205 25.25669 re W* n
+0 0 0 rg
+BT /F1 7 Tf 8.4 TL ET
+BT 1 0 0 1 309.5433 276.9817 Tm (120 LENGTHS) Tj T* ET
+Q
+q
+n 363.1181 269.4047 65.48031 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 363.1181 276.9817 Tm (14000.0 KGS) Tj T* ET
+Q
+q
+n 434.5512 269.4047 65.48031 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 434.5512 276.9817 Tm (14280.0 KGS) Tj T* ET
+Q
+q
+n 505.9843 269.4047 59.52756 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 505.9843 276.9817 Tm (73041900) Tj T* ET
+Q
+ 
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000061 00000 n 
+0000000102 00000 n 
+0000000209 00000 n 
+0000000321 00000 n 
+0000000524 00000 n 
+0000000592 00000 n 
+0000000968 00000 n 
+0000001027 00000 n 
+trailer
+<<
+/ID 
+[<2543a55259786e7b107b288ce8d55f05><2543a55259786e7b107b288ce8d55f05>]
+% ReportLab generated PDF document -- digest (opensource)
+
+/Info 6 0 R
+/Root 5 0 R
+/Size 9
+>>
+startxref
+3935
+%%EOF

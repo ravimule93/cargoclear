@@ -8,6 +8,7 @@ surface (``client.aio.models.generate_content``, which extraction uses) AND the 
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import time
 from types import SimpleNamespace
@@ -161,3 +162,62 @@ def ctx_for(*doc_ids: str, mime: str = "image/png", pages: int = 1, bundle_id: s
         for n in range(1, pages + 1)
     ]
     return {"bundle_id": bundle_id, "documents": documents, "processed_pages": processed}
+
+
+# ---------------------------------------------------------------------------
+# A fake Gemini for the whole live pipeline: it "reads" the Case C PDFs
+# ---------------------------------------------------------------------------
+
+
+def parts_of(kwargs: dict[str, Any]) -> list[dict[str, Any]]:
+    """The request parts as plain dicts: {"text": str} or {"mime": str, "data": bytes}."""
+    out: list[dict[str, Any]] = []
+    for part in kwargs["contents"]:
+        inline = getattr(part, "inline_data", None)
+        if inline is not None:
+            out.append({"mime": inline.mime_type, "data": bytes(inline.data)})
+        else:
+            out.append({"text": part if isinstance(part, str) else part.text})
+    return out
+
+
+def first_page_of(kwargs: dict[str, Any]) -> bytes:
+    return next(p["data"] for p in parts_of(kwargs) if "data" in p)
+
+
+def fixture_json(filename: str) -> dict[str, Any]:
+    """What a flawless extraction of this Case C PDF returns: the values and boxes the PDF was drawn from."""
+    from app.agents import extraction
+
+    return extraction._generate_fixture_for_file("model-id", filename).model_dump(mode="json")
+
+
+async def case_c_gemini(filenames: Any, *, delay: float = 0.0) -> FakeGenai:
+    """A FakeGenai that answers each request with ``fixture_json`` of the document whose first page it was sent.
+
+    The document is identified by the sha256 of the first page payload. The hash -> file map is built from the very
+    rendering the pipeline performs (``preprocess.run``), so it holds with poppler (PNG pages) and without it (the raw
+    PDF is passed through). A request for any other payload fails loudly (and is recorded in ``fake.unknown``).
+    """
+    from app.services import preprocess
+    from tests.helpers import case_c_pdf
+
+    by_hash: dict[str, str] = {}
+    for name in filenames:
+        rendered = await preprocess.run({"raw_bytes": case_c_pdf(name), "document_id": name})
+        by_hash[hashlib.sha256(rendered["processed_pages"][0]["payload"]).hexdigest()] = name
+
+    unknown: list[str] = []
+
+    def outcome(_number: int, kwargs: dict[str, Any]) -> Any:
+        digest = hashlib.sha256(first_page_of(kwargs)).hexdigest()
+        name = by_hash.get(digest)
+        if name is None:
+            unknown.append(digest)
+            return RuntimeError("the fake Gemini was sent a payload it does not know")
+        return response(fixture_json(name))
+
+    fake = FakeGenai(outcome, delay=delay)
+    fake.by_hash = by_hash  # type: ignore[attr-defined]
+    fake.unknown = unknown  # type: ignore[attr-defined]
+    return fake

@@ -1,9 +1,13 @@
 """Unit tests for the pipeline orchestrator, assessment API, and precedence rules."""
 
+import json
+from pathlib import Path
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.domain.status import Status, resolve_status
+from app.core.config import settings
 from app.main import app
 from app.repo import firestore
 from app.services.orchestrator import start_run
@@ -82,6 +86,28 @@ async def test_full_analyze_pipeline_execution():
         iters_resp = await client.get(f"/api/v1/bundles/{bundle_id}/iterations")
         assert iters_resp.status_code == 200
         assert len(iters_resp.json()) >= 1
+
+
+@pytest.mark.asyncio
+async def test_preprocessing_persists_transform_metadata_and_exposes_its_document_uri():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        bundle_id = (await client.post("/api/v1/bundles", json={"reference": "TRANSFORM-META"})).json()["id"]
+        upload = await client.post(
+            f"/api/v1/bundles/{bundle_id}/documents",
+            files={"file": ("invoice.pdf", b"%PDF-1.5 transform metadata", "application/pdf")},
+        )
+        document_id = upload.json()["document_id"]
+        run_id = (await client.post(f"/api/v1/bundles/{bundle_id}/analyze")).json()["run_id"]
+
+        assert (await wait_for_run(bundle_id, run_id))["state"] == "COMPLETE"
+        document = (await client.get(f"/api/v1/bundles/{bundle_id}")).json()["documents"][0]
+
+    uri = f"gs://{settings.raw_bucket}/bundles/{bundle_id}/processed/{document_id}/transform.json"
+    assert document["transform_meta_uri"] == uri
+    persisted = Path(settings.local_storage_path) / "bundles" / bundle_id / "processed" / document_id / "transform.json"
+    transforms = json.loads(persisted.read_text(encoding="utf-8"))
+    assert transforms and {entry["document_id"] for entry in transforms} == {document_id}
 
 
 @pytest.mark.asyncio

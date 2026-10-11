@@ -6,7 +6,7 @@
 
 set -euo pipefail
 
-PROJECT_ID="${PROJECT_ID:-cargoclear-hackathon}"
+PROJECT_ID="${PROJECT_ID:?PROJECT_ID must identify the target GCP project}"
 REGION="${REGION:-asia-south1}"
 SA_NAME="cargoclear-sa"
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
@@ -32,7 +32,10 @@ gcloud iam service-accounts create "${SA_NAME}" \
     --display-name="CargoClear Cloud Run Runtime Service Account" || true
 
 # Bind least-privilege roles
-for ROLE in roles/aiplatform.user roles/storage.objectAdmin roles/bigquery.dataViewer roles/run.invoker; do
+# datastore.user is required for the Firestore bundle/run/audit records that
+# the live API persists. No runtime Cloud Run-to-Cloud Run call exists, so the
+# specification's conditional roles/run.invoker grant is intentionally omitted.
+for ROLE in roles/aiplatform.user roles/storage.objectAdmin roles/bigquery.dataViewer roles/datastore.user; do
     gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
         --member="serviceAccount:${SA_EMAIL}" \
         --role="${ROLE}"

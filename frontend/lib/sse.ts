@@ -1,9 +1,9 @@
-import { StatusEvent, IterationEvent, ErrorEvent } from "./types";
+import { type AssessmentIteration, type StatusEvent, type StreamErrorEvent } from "./types";
 
 export interface SSEHandlers {
   onStatus?: (status: StatusEvent) => void;
-  onIteration?: (iteration: IterationEvent) => void;
-  onError?: (error: ErrorEvent) => void;
+  onIteration?: (iteration: AssessmentIteration) => void;
+  onError?: (error: StreamErrorEvent) => void;
 }
 
 export function subscribeToBundle(bundleId: string, handlers: SSEHandlers): () => void {
@@ -32,7 +32,7 @@ export function subscribeToBundle(bundleId: string, handlers: SSEHandlers): () =
 
   es.addEventListener("iteration", (e: MessageEvent) => {
     try {
-      const data = JSON.parse(e.data) as IterationEvent;
+      const data = JSON.parse(e.data) as AssessmentIteration;
       handlers.onIteration?.(data);
     } catch (err) {
       console.error("Failed to parse SSE iteration event", err);
@@ -43,7 +43,7 @@ export function subscribeToBundle(bundleId: string, handlers: SSEHandlers): () =
     try {
       const msgEvent = e as MessageEvent;
       if (msgEvent.data) {
-        const data = JSON.parse(msgEvent.data) as ErrorEvent;
+        const data = JSON.parse(msgEvent.data) as StreamErrorEvent;
         handlers.onError?.(data);
       }
     } catch {
@@ -55,7 +55,6 @@ export function subscribeToBundle(bundleId: string, handlers: SSEHandlers): () =
     handlers.onError?.({
       kind: "error",
       bundle_id: bundleId,
-      run_id: "",
       code: "STREAM_UNAVAILABLE",
       message: "Live stream unavailable. Fallback polling active.",
     });

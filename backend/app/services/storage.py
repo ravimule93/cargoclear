@@ -179,10 +179,61 @@ async def upload_transform_meta(
             blob = bucket.blob(path)
             blob.upload_from_string(data_str, content_type="application/json")
         except Exception as exc:
-            logger.warning("transform_meta_upload_failed", error=str(exc))
+            raise UpstreamError(f"Failed to persist transform metadata: {type(exc).__name__}") from exc
     else:
         local_file = _get_local_storage_dir() / path
         local_file.parent.mkdir(parents=True, exist_ok=True)
         local_file.write_text(data_str, encoding="utf-8")
 
     return f"gs://{settings.raw_bucket}/{path}"
+
+
+async def upload_processed_artifacts(
+    bundle_id: str, document_id: str, artifacts: list[dict[str, Any]]
+) -> None:
+    """Persist private sequential e-SANCHIT-oriented processed PDFs for one raw evidence document."""
+    if not artifacts:
+        return
+    client = _get_gcs_client()
+    try:
+        if client is not None:
+            bucket = client.bucket(settings.raw_bucket)
+            for artifact in artifacts:
+                artifact_id = artifact["artifact_id"]
+                blob = bucket.blob(f"bundles/{bundle_id}/processed/{document_id}/{artifact_id}.pdf")
+                blob.upload_from_string(artifact["payload"], content_type="application/pdf")
+        else:
+            directory = _get_local_storage_dir() / "bundles" / bundle_id / "processed" / document_id
+            directory.mkdir(parents=True, exist_ok=True)
+            for artifact in artifacts:
+                (directory / f"{artifact['artifact_id']}.pdf").write_bytes(artifact["payload"])
+    except Exception as exc:
+        raise UpstreamError(f"Failed to persist processed artifacts: {type(exc).__name__}") from exc
+
+
+async def download_transform_meta(bundle_id: str, document_id: str) -> list[dict[str, Any]]:
+    """Read one document's persisted preprocessing transforms from private storage."""
+    path = f"bundles/{bundle_id}/processed/{document_id}/transform.json"
+    client = _get_gcs_client()
+
+    try:
+        if client is not None:
+            bucket = client.bucket(settings.raw_bucket)
+            blob = bucket.blob(path)
+            if not blob.exists():
+                raise NotFoundError(f"Transform metadata for document '{document_id}' not found.")
+            raw = blob.download_as_bytes()
+        else:
+            local_file = _get_local_storage_dir() / path
+            if not local_file.is_file():
+                raise NotFoundError(f"Transform metadata for document '{document_id}' not found.")
+            raw = local_file.read_bytes()
+        data = json.loads(raw)
+    except NotFoundError:
+        raise
+    except Exception as exc:
+        raise UpstreamError(f"Failed to retrieve transform metadata: {type(exc).__name__}") from exc
+
+    if not isinstance(data, list) or not all(isinstance(entry, dict) for entry in data):
+        raise UpstreamError("Transform metadata is invalid.")
+    return data

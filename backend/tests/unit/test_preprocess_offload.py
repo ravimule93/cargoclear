@@ -32,22 +32,6 @@ def page_image(seed: int, size: tuple[int, int] = (120, 160)) -> Image.Image:
     return image
 
 
-def old_path(images: list[Image.Image], document_id: str) -> list[dict[str, Any]]:
-    """The pre-change per-page sequence, inline: grayscale, PNG, skew, orientation."""
-    pages = []
-    for index, image in enumerate(images, start=1):
-        buffer = io.BytesIO()
-        image.convert("L").save(buffer, format="PNG")
-        payload = buffer.getvalue()
-        pages.append({
-            "page": index, "mime": "image/png", "width": image.width, "height": image.height,
-            "sha256": hashlib.sha256(payload).hexdigest(),
-            "deskew_deg": preprocess.estimate_skew_angle(payload),
-            "rotation": preprocess.detect_orientation_pass(payload),
-        })
-    return pages
-
-
 def summarise(result: dict[str, Any]) -> list[dict[str, Any]]:
     return [
         {
@@ -104,30 +88,37 @@ async def test_all_cpu_bound_work_runs_in_one_worker_thread(monkeypatch) -> None
 
 
 @pytest.mark.asyncio
-async def test_output_is_identical_to_the_old_code_path_for_synthetic_pages(monkeypatch) -> None:
+async def test_output_is_deterministic_one_bit_normalized_pages_with_source_provenance(monkeypatch) -> None:
     images = [page_image(1), page_image(2, (200, 100)), page_image(3)]
     monkeypatch.setattr("pdf2image.convert_from_bytes", lambda _raw, **_kw: images)
 
     result = await preprocess.run({"raw_bytes": b"%PDF-1.4 x", "document_id": "doc-1"})
 
-    assert summarise(result) == old_path(images, "doc-1")
+    assert [entry["page"] for entry in summarise(result)] == [1, 2, 3]
+    assert [m["source_page"] for m in result["transform_meta"]] == [1, 2, 3]
     assert [m["document_id"] for m in result["transform_meta"]] == ["doc-1"] * 3
-    assert all(m["split_offset"] == 0 for m in result["transform_meta"])
+    assert all(m["split_offset"] == 0 and m["deskew_applied"] is False for m in result["transform_meta"])
+    for page in result["processed_pages"]:
+        with Image.open(io.BytesIO(page["payload"])) as normalized:
+            assert normalized.mode == "1"
 
 
 @pytest.mark.skipif(shutil.which("pdftoppm") is None, reason="poppler is not installed")
 @pytest.mark.asyncio
 @pytest.mark.parametrize("name", ["commercial_invoice.pdf", "bill_of_lading.pdf", "packing_list.pdf", "mtc_pipe_test_cert.pdf"])
-async def test_case_c_pdfs_render_byte_identically(name) -> None:
+async def test_case_c_pdfs_render_as_one_bit_source_pages(name) -> None:
     from pdf2image import convert_from_bytes
 
     raw = (CASE_C_DIR / name).read_bytes()
-    expected = old_path(convert_from_bytes(raw, dpi=preprocess.TARGET_DPI, fmt="png"), name)
+    expected_count = len(convert_from_bytes(raw, dpi=preprocess.TARGET_DPI, fmt="png"))
 
     result = await preprocess.run({"raw_bytes": raw, "document_id": name})
 
-    assert len(result["processed_pages"]) == len(expected) >= 1
-    assert summarise(result) == expected
+    assert len(result["processed_pages"]) == expected_count >= 1
+    assert [m["source_page"] for m in result["transform_meta"]] == list(range(1, expected_count + 1))
+    for page in result["processed_pages"]:
+        with Image.open(io.BytesIO(page["payload"])) as normalized:
+            assert normalized.mode == "1"
 
 
 @pytest.mark.asyncio
@@ -144,9 +135,40 @@ async def test_a_render_failure_still_falls_back_to_the_raw_pdf(monkeypatch) -> 
 
 
 @pytest.mark.asyncio
-async def test_a_large_document_is_still_split_into_offsets(monkeypatch) -> None:
+async def test_rotation_is_applied_to_the_extraction_payload_and_has_an_inverse_affine(monkeypatch) -> None:
+    image = page_image(1, (120, 160))
+    monkeypatch.setattr("pdf2image.convert_from_bytes", lambda _raw, **_kw: [image])
+    monkeypatch.setattr(preprocess, "detect_orientation_pass", lambda _data: 90)
+
+    result = await preprocess.run({"raw_bytes": b"%PDF-1.4 x", "document_id": "doc-1"})
+
+    with Image.open(io.BytesIO(result["processed_pages"][0]["payload"])) as normalized:
+        assert normalized.size == (160, 120)
+    meta = result["transform_meta"][0]
+    assert meta["rotation"] == 90 and meta["rotation_applied"] is True
+    assert meta["processed_to_source_affine"] == [[0, 1, 0], [-1, 0, 1000], [0, 0, 1]]
+
+
+@pytest.mark.asyncio
+async def test_detected_deskew_is_not_claimed_as_applied_without_reversible_geometry(monkeypatch) -> None:
+    monkeypatch.setattr("pdf2image.convert_from_bytes", lambda _raw, **_kw: [page_image(1)])
+    monkeypatch.setattr(preprocess, "estimate_skew_angle", lambda _data: 3.5)
+
+    result = await preprocess.run({"raw_bytes": b"%PDF-1.4 x", "document_id": "doc-1"})
+
+    meta = result["transform_meta"][0]
+    assert meta["deskew_detected_deg"] == 3.5
+    assert meta["deskew_deg"] == 0.0 and meta["deskew_applied"] is False and meta["crop"] is None
+
+
+@pytest.mark.asyncio
+async def test_a_large_document_materializes_sequential_compliant_split_artifacts(monkeypatch) -> None:
     monkeypatch.setattr("pdf2image.convert_from_bytes", lambda _raw, **_kw: [page_image(i, (20, 20)) for i in range(27)])
 
     result = await preprocess.run({"raw_bytes": b"%PDF-1.4 x", "document_id": "doc-1"})
 
-    assert [m["split_offset"] for m in result["transform_meta"]] == [i // 13 for i in range(27)]
+    artifacts = result["processed_artifacts"]
+    assert [artifact["artifact_id"] for artifact in artifacts] == ["part-001", "part-002", "part-003"]
+    assert [artifact["source_pages"] for artifact in artifacts] == [list(range(1, 14)), list(range(14, 27)), [27]]
+    assert all(len(artifact["payload"]) <= preprocess.MAX_BYTES_PER_SPLIT for artifact in artifacts)
+    assert [m["artifact_index"] for m in result["transform_meta"]] == [i // 13 + 1 for i in range(27)]

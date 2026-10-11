@@ -81,6 +81,10 @@ class Settings(BaseSettings):
     # /docs, /redoc and /openapi.json. None = on in demo mode, off in live mode.
     enable_api_docs: bool | None = Field(default=None, alias="ENABLE_API_DOCS")
 
+    # How the stage loop is driven (services/engines.py): the plain loop, or the optional google-adk Workflow.
+    # Anything else is a startup error. "adk" needs the separate ADK lock (requirements-adk.txt).
+    pipeline_engine: Literal["native", "adk"] = Field(default="native", alias="PIPELINE_ENGINE")
+
     # CORS
     allowed_origins: str = Field(
         default="http://localhost:3000",

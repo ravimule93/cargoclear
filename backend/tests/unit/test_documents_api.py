@@ -11,6 +11,8 @@ import pytest
 from app.api.v1 import documents
 from app.core.config import settings
 from app.gateway.errors import PayloadTooLargeError
+from app.repo import firestore
+from app.services import storage
 from tests.helpers import api_client, case_c_pdf
 
 KB = 1024
@@ -316,6 +318,54 @@ async def test_a_document_stored_with_a_legacy_hostile_name_still_downloads_safe
     assert download.status_code == 200
     disposition = download.headers["content-disposition"]
     assert "\r" not in disposition and disposition.startswith("inline; filename=\"")
+
+
+@pytest.mark.asyncio
+async def test_transform_metadata_is_scoped_to_its_document_and_returned_as_private_json() -> None:
+    transforms = [{"document_id": "placeholder", "page": 1, "rotation": 0, "deskew_deg": 0.0}]
+    async with api_client() as client:
+        bundle_id = await new_bundle(client)
+        created = await upload(client, bundle_id, "invoice.pdf", pdf("transform"))
+        document_id = created.json()["document_id"]
+        endpoint = f"/api/v1/bundles/{bundle_id}/documents/{document_id}/transform-metadata"
+
+        missing_reference = await client.get(endpoint)
+        transforms[0]["document_id"] = document_id
+        uri = await storage.upload_transform_meta(bundle_id, document_id, transforms)
+        await firestore.update_document_transform_meta_uri(bundle_id, document_id, uri)
+        response = await client.get(endpoint)
+
+    assert missing_reference.status_code == 404
+    assert missing_reference.json()["code"] == "NOT_FOUND"
+    assert response.status_code == 200
+    assert response.json() == {"document_id": document_id, "transform_meta": transforms}
+    assert "gs://" not in response.text
+    assert response.headers["content-type"].startswith("application/json")
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["x-content-type-options"] == "nosniff"
+
+
+@pytest.mark.asyncio
+async def test_transform_metadata_returns_404_for_a_missing_artifact_or_wrong_bundle() -> None:
+    async with api_client() as client:
+        source_bundle = await new_bundle(client)
+        created = await upload(client, source_bundle, "invoice.pdf", pdf("transform-missing"))
+        document_id = created.json()["document_id"]
+        uri = f"gs://bucket/bundles/{source_bundle}/processed/{document_id}/transform.json"
+        await firestore.update_document_transform_meta_uri(source_bundle, document_id, uri)
+
+        missing = await client.get(
+            f"/api/v1/bundles/{source_bundle}/documents/{document_id}/transform-metadata"
+        )
+        other_bundle = await new_bundle(client)
+        wrong_bundle = await client.get(
+            f"/api/v1/bundles/{other_bundle}/documents/{document_id}/transform-metadata"
+        )
+
+    for response in (missing, wrong_bundle):
+        assert response.status_code == 404
+        assert response.json()["code"] == "NOT_FOUND"
+        assert set(response.json()) == {"code", "message", "detail", "request_id"}
 
 
 # ---------------------------------------------------------------------------

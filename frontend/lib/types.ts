@@ -103,6 +103,34 @@ export interface DocumentRecord {
   sha256: string;
   bytes: number;
   uploaded_at: string;
+  transform_meta_uri?: string | null;
+}
+
+/** Per-page preprocessing metadata returned through the scoped backend endpoint. */
+export interface TransformMetadata {
+  page: number;
+  /** Original one-indexed PDF page. Absent on metadata written before provenance upgrades. */
+  source_page?: number;
+  /** One-indexed page position inside the processed artifact. */
+  processed_page?: number;
+  document_id: string;
+  deskew_deg: number;
+  deskew_applied?: boolean;
+  rotation: number;
+  rotation_applied?: boolean;
+  /** Normalized processed-to-source affine matrix, present for newly transformed records. */
+  processed_to_source_affine?: number[][];
+  artifact_index?: number;
+  artifact_page?: number;
+  artifact_id?: string | null;
+  split_offset: number;
+  width: number;
+  height: number;
+}
+
+export interface TransformMetadataResponse {
+  document_id: string;
+  transform_meta: TransformMetadata[];
 }
 
 export interface Bundle {

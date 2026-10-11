@@ -6,6 +6,7 @@ import {
   ErrorEnvelope,
   Meta,
   RunResponse,
+  TransformMetadataResponse,
 } from "./types";
 
 /** Browser calls go through the Next route handler, which forwards to the FastAPI backend. */
@@ -67,6 +68,15 @@ export const api = {
       method: "POST",
       body: formData,
     });
+  },
+
+  async getDocumentTransformMetadata(
+    bundleId: string,
+    documentId: string
+  ): Promise<TransformMetadataResponse> {
+    return request<TransformMetadataResponse>(
+      `/bundles/${encodeURIComponent(bundleId)}/documents/${encodeURIComponent(documentId)}/transform-metadata`
+    );
   },
 
   async analyze(bundleId: string, mode: string = "full"): Promise<RunResponse> {
