@@ -301,6 +301,8 @@ def _classify(exc: Exception) -> _AttemptFailure:
     if isinstance(exc, genai_errors.APIError):
         code = getattr(exc, "code", None)
         retryable = code in _RETRYABLE_STATUS
+        msg = getattr(exc, "message", None) or str(exc)
+        logger.error("gemini_api_error", code=code, error_message=msg)
         return _AttemptFailure(
             f"{name} {code}",
             retryable=retryable,

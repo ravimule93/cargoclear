@@ -69,8 +69,7 @@ export function useBundleStream(bundleId: string | null): BundleStream {
 
     if (!bundleId) return;
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
-    const url = `${baseUrl}/api/v1/bundles/${encodeURIComponent(bundleId)}/stream`;
+    const url = `/api/proxy/bundles/${encodeURIComponent(bundleId)}/stream`;
 
     // `disposed` makes this safe under React StrictMode's mount/unmount/mount in dev:
     // the first source is closed by cleanup and can never write state afterwards.

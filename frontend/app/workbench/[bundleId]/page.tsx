@@ -79,6 +79,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         status={assessment?.status ?? null}
         isRunning={wb.isRunning}
         isUploading={wb.isUploading}
+        uploadProgress={wb.uploadProgress}
         runMode={wb.runMode}
         connection={wb.connection}
         actionError={actionError}
@@ -109,6 +110,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           bundleId={bundleId}
           run={wb.run}
           isRunning={wb.isRunning}
+          actionError={actionError}
           appMode={meta?.app_mode}
           onDocumentUploaded={wb.handleUploaded}
         />

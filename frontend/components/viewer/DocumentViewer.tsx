@@ -62,6 +62,11 @@ export function DocumentViewer({
       return;
     }
 
+    if (!activeDocument?.transform_meta_uri) {
+      setTransformMetadata({ status: "missing" });
+      return;
+    }
+
     let cancelled = false;
     setTransformMetadata({ status: "loading" });
 
@@ -79,7 +84,7 @@ export function DocumentViewer({
     return () => {
       cancelled = true;
     };
-  }, [bundleId, activeDocumentId]);
+  }, [bundleId, activeDocumentId, activeDocument?.transform_meta_uri]);
 
   // Fit-to-container width.
   useEffect(() => {

@@ -11,31 +11,22 @@
           "properties": {
             "page": {
               "description": "1-indexed page number within the processed document",
-              "minimum": 1.0,
               "title": "Page",
               "type": "INTEGER"
             },
             "xmax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmax",
               "type": "NUMBER"
             },
             "xmin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmin",
               "type": "NUMBER"
             },
             "ymax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymax",
               "type": "NUMBER"
             },
             "ymin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymin",
               "type": "NUMBER"
             }
@@ -91,31 +82,22 @@
           "properties": {
             "page": {
               "description": "1-indexed page number within the processed document",
-              "minimum": 1.0,
               "title": "Page",
               "type": "INTEGER"
             },
             "xmax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmax",
               "type": "NUMBER"
             },
             "xmin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmin",
               "type": "NUMBER"
             },
             "ymax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymax",
               "type": "NUMBER"
             },
             "ymin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymin",
               "type": "NUMBER"
             }
@@ -195,31 +177,22 @@
           "properties": {
             "page": {
               "description": "1-indexed page number within the processed document",
-              "minimum": 1.0,
               "title": "Page",
               "type": "INTEGER"
             },
             "xmax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmax",
               "type": "NUMBER"
             },
             "xmin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmin",
               "type": "NUMBER"
             },
             "ymax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymax",
               "type": "NUMBER"
             },
             "ymin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymin",
               "type": "NUMBER"
             }
@@ -275,31 +248,22 @@
           "properties": {
             "page": {
               "description": "1-indexed page number within the processed document",
-              "minimum": 1.0,
               "title": "Page",
               "type": "INTEGER"
             },
             "xmax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmax",
               "type": "NUMBER"
             },
             "xmin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmin",
               "type": "NUMBER"
             },
             "ymax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymax",
               "type": "NUMBER"
             },
             "ymin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymin",
               "type": "NUMBER"
             }
@@ -355,31 +319,22 @@
           "properties": {
             "page": {
               "description": "1-indexed page number within the processed document",
-              "minimum": 1.0,
               "title": "Page",
               "type": "INTEGER"
             },
             "xmax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmax",
               "type": "NUMBER"
             },
             "xmin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmin",
               "type": "NUMBER"
             },
             "ymax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymax",
               "type": "NUMBER"
             },
             "ymin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymin",
               "type": "NUMBER"
             }
@@ -435,31 +390,22 @@
           "properties": {
             "page": {
               "description": "1-indexed page number within the processed document",
-              "minimum": 1.0,
               "title": "Page",
               "type": "INTEGER"
             },
             "xmax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmax",
               "type": "NUMBER"
             },
             "xmin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmin",
               "type": "NUMBER"
             },
             "ymax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymax",
               "type": "NUMBER"
             },
             "ymin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymin",
               "type": "NUMBER"
             }
@@ -529,31 +475,22 @@
                 "properties": {
                   "page": {
                     "description": "1-indexed page number within the processed document",
-                    "minimum": 1.0,
                     "title": "Page",
                     "type": "INTEGER"
                   },
                   "xmax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmax",
                     "type": "NUMBER"
                   },
                   "xmin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmin",
                     "type": "NUMBER"
                   },
                   "ymax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymax",
                     "type": "NUMBER"
                   },
                   "ymin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymin",
                     "type": "NUMBER"
                   }
@@ -608,31 +545,22 @@
                 "properties": {
                   "page": {
                     "description": "1-indexed page number within the processed document",
-                    "minimum": 1.0,
                     "title": "Page",
                     "type": "INTEGER"
                   },
                   "xmax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmax",
                     "type": "NUMBER"
                   },
                   "xmin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmin",
                     "type": "NUMBER"
                   },
                   "ymax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymax",
                     "type": "NUMBER"
                   },
                   "ymin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymin",
                     "type": "NUMBER"
                   }
@@ -687,31 +615,22 @@
                 "properties": {
                   "page": {
                     "description": "1-indexed page number within the processed document",
-                    "minimum": 1.0,
                     "title": "Page",
                     "type": "INTEGER"
                   },
                   "xmax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmax",
                     "type": "NUMBER"
                   },
                   "xmin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmin",
                     "type": "NUMBER"
                   },
                   "ymax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymax",
                     "type": "NUMBER"
                   },
                   "ymin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymin",
                     "type": "NUMBER"
                   }
@@ -783,31 +702,22 @@
                 "properties": {
                   "page": {
                     "description": "1-indexed page number within the processed document",
-                    "minimum": 1.0,
                     "title": "Page",
                     "type": "INTEGER"
                   },
                   "xmax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmax",
                     "type": "NUMBER"
                   },
                   "xmin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmin",
                     "type": "NUMBER"
                   },
                   "ymax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymax",
                     "type": "NUMBER"
                   },
                   "ymin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymin",
                     "type": "NUMBER"
                   }
@@ -862,31 +772,22 @@
                 "properties": {
                   "page": {
                     "description": "1-indexed page number within the processed document",
-                    "minimum": 1.0,
                     "title": "Page",
                     "type": "INTEGER"
                   },
                   "xmax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmax",
                     "type": "NUMBER"
                   },
                   "xmin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmin",
                     "type": "NUMBER"
                   },
                   "ymax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymax",
                     "type": "NUMBER"
                   },
                   "ymin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymin",
                     "type": "NUMBER"
                   }
@@ -958,31 +859,22 @@
                 "properties": {
                   "page": {
                     "description": "1-indexed page number within the processed document",
-                    "minimum": 1.0,
                     "title": "Page",
                     "type": "INTEGER"
                   },
                   "xmax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmax",
                     "type": "NUMBER"
                   },
                   "xmin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmin",
                     "type": "NUMBER"
                   },
                   "ymax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymax",
                     "type": "NUMBER"
                   },
                   "ymin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymin",
                     "type": "NUMBER"
                   }
@@ -1038,31 +930,22 @@
                 "properties": {
                   "page": {
                     "description": "1-indexed page number within the processed document",
-                    "minimum": 1.0,
                     "title": "Page",
                     "type": "INTEGER"
                   },
                   "xmax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmax",
                     "type": "NUMBER"
                   },
                   "xmin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmin",
                     "type": "NUMBER"
                   },
                   "ymax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymax",
                     "type": "NUMBER"
                   },
                   "ymin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymin",
                     "type": "NUMBER"
                   }
@@ -1128,31 +1011,22 @@
                 "properties": {
                   "page": {
                     "description": "1-indexed page number within the processed document",
-                    "minimum": 1.0,
                     "title": "Page",
                     "type": "INTEGER"
                   },
                   "xmax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmax",
                     "type": "NUMBER"
                   },
                   "xmin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Xmin",
                     "type": "NUMBER"
                   },
                   "ymax": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymax",
                     "type": "NUMBER"
                   },
                   "ymin": {
-                    "maximum": 1000.0,
-                    "minimum": 0.0,
                     "title": "Ymin",
                     "type": "NUMBER"
                   }
@@ -1242,31 +1116,22 @@
           "properties": {
             "page": {
               "description": "1-indexed page number within the processed document",
-              "minimum": 1.0,
               "title": "Page",
               "type": "INTEGER"
             },
             "xmax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmax",
               "type": "NUMBER"
             },
             "xmin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmin",
               "type": "NUMBER"
             },
             "ymax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymax",
               "type": "NUMBER"
             },
             "ymin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymin",
               "type": "NUMBER"
             }
@@ -1332,31 +1197,22 @@
           "properties": {
             "page": {
               "description": "1-indexed page number within the processed document",
-              "minimum": 1.0,
               "title": "Page",
               "type": "INTEGER"
             },
             "xmax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmax",
               "type": "NUMBER"
             },
             "xmin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmin",
               "type": "NUMBER"
             },
             "ymax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymax",
               "type": "NUMBER"
             },
             "ymin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymin",
               "type": "NUMBER"
             }
@@ -1412,31 +1268,22 @@
           "properties": {
             "page": {
               "description": "1-indexed page number within the processed document",
-              "minimum": 1.0,
               "title": "Page",
               "type": "INTEGER"
             },
             "xmax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmax",
               "type": "NUMBER"
             },
             "xmin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmin",
               "type": "NUMBER"
             },
             "ymax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymax",
               "type": "NUMBER"
             },
             "ymin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymin",
               "type": "NUMBER"
             }
@@ -1492,31 +1339,22 @@
           "properties": {
             "page": {
               "description": "1-indexed page number within the processed document",
-              "minimum": 1.0,
               "title": "Page",
               "type": "INTEGER"
             },
             "xmax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmax",
               "type": "NUMBER"
             },
             "xmin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmin",
               "type": "NUMBER"
             },
             "ymax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymax",
               "type": "NUMBER"
             },
             "ymin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymin",
               "type": "NUMBER"
             }
@@ -1572,31 +1410,22 @@
           "properties": {
             "page": {
               "description": "1-indexed page number within the processed document",
-              "minimum": 1.0,
               "title": "Page",
               "type": "INTEGER"
             },
             "xmax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmax",
               "type": "NUMBER"
             },
             "xmin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmin",
               "type": "NUMBER"
             },
             "ymax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymax",
               "type": "NUMBER"
             },
             "ymin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymin",
               "type": "NUMBER"
             }
@@ -1669,31 +1498,22 @@
           "properties": {
             "page": {
               "description": "1-indexed page number within the processed document",
-              "minimum": 1.0,
               "title": "Page",
               "type": "INTEGER"
             },
             "xmax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmax",
               "type": "NUMBER"
             },
             "xmin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmin",
               "type": "NUMBER"
             },
             "ymax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymax",
               "type": "NUMBER"
             },
             "ymin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymin",
               "type": "NUMBER"
             }
@@ -1766,31 +1586,22 @@
           "properties": {
             "page": {
               "description": "1-indexed page number within the processed document",
-              "minimum": 1.0,
               "title": "Page",
               "type": "INTEGER"
             },
             "xmax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmax",
               "type": "NUMBER"
             },
             "xmin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmin",
               "type": "NUMBER"
             },
             "ymax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymax",
               "type": "NUMBER"
             },
             "ymin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymin",
               "type": "NUMBER"
             }
@@ -1863,31 +1674,22 @@
           "properties": {
             "page": {
               "description": "1-indexed page number within the processed document",
-              "minimum": 1.0,
               "title": "Page",
               "type": "INTEGER"
             },
             "xmax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmax",
               "type": "NUMBER"
             },
             "xmin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Xmin",
               "type": "NUMBER"
             },
             "ymax": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymax",
               "type": "NUMBER"
             },
             "ymin": {
-              "maximum": 1000.0,
-              "minimum": 0.0,
               "title": "Ymin",
               "type": "NUMBER"
             }

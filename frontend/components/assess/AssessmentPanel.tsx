@@ -17,6 +17,7 @@ interface AssessmentPanelProps {
   run?: StreamRunState | null;
   /** True from the moment a run was requested until the stream reports it finished. */
   isRunning?: boolean;
+  actionError?: string | null;
   appMode?: AppMode;
   onDocumentUploaded?: () => void;
 }
@@ -47,11 +48,29 @@ function RunProgress({ run }: { run?: StreamRunState | null }) {
   );
 }
 
+function ActionErrorBanner({ error }: { error: string }) {
+  return (
+    <div
+      role="alert"
+      className="rounded-[var(--cc-radius)] border border-[var(--cc-err)]/50 bg-[var(--cc-err)]/10 p-3 text-xs flex flex-col gap-1.5 text-[var(--cc-text)] animate-in fade-in"
+    >
+      <div className="flex items-center gap-1.5 font-bold text-[var(--cc-err)]">
+        <span aria-hidden="true">⚠️</span>
+        <span>Analysis Issue Detected</span>
+      </div>
+      <p className="leading-relaxed text-[var(--cc-text-muted)] text-[11px] font-mono break-words bg-[var(--cc-surface)]/60 p-2 rounded border border-[var(--cc-border)]">
+        {error}
+      </p>
+    </div>
+  );
+}
+
 export function AssessmentPanel({
   assessment,
   bundleId,
   run,
   isRunning = false,
+  actionError = null,
   appMode,
   onDocumentUploaded,
 }: AssessmentPanelProps) {
@@ -91,6 +110,7 @@ export function AssessmentPanel({
         tabIndex={-1}
         className="flex flex-col gap-3 p-4 h-full overflow-y-auto focus:outline-none"
       >
+        {actionError && <ActionErrorBanner error={actionError} />}
         {isRunning && <RunProgress run={run} />}
         <h2 className="text-sm font-bold text-[var(--cc-text)]">No assessment yet</h2>
         <p className="text-xs text-[var(--cc-text-muted)] leading-relaxed">
@@ -137,6 +157,9 @@ export function AssessmentPanel({
           </span>
         </div>
       </header>
+
+      {/* Prominent Action Error Banner (e.g. Gemini token limits or validation failures) */}
+      {actionError && <ActionErrorBanner error={actionError} />}
 
       {/* Real-time SSE execution progress indicator */}
       {isRunning && <RunProgress run={run} />}

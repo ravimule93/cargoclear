@@ -12,6 +12,10 @@ This roadmap distinguishes code verified locally from static configuration and w
 | PDF preprocessing provenance | Complete with stated limitation | 200-DPI B&W extraction pages, confident quarter-turn orientation, split artifacts, document-scoped metadata persistence/retrieval, and original-PDF overlay mapping are implemented. |
 | Frontend build integrity | Complete | Typecheck, lint, and production build pass in the verified local environment. |
 | Cloud Run configuration guardrails | Statically validated | Scripts/configuration enforce a single API instance, runtime BFF URL flow, live mode, hidden docs, and a mandatory runtime identity. |
+| Cloud Run deployment | Complete & Verified Live | Backend (`cargoclear-api`) and Frontend (`cargoclear-ui`) deployed in `asia-south1` via Cloud Build with BFF proxy routing. |
+| BigQuery AHTN Grounding | Complete & Verified Live | `ahtn.master_tariff` and `embedding_model` (`text-embedding-004`) provisioned in `asia-south1`; vector search evaluates required documents. |
+| Live extraction resilience | Complete & Verified Live | Multimodal extraction with Gemini 2.5 Flash on Vertex AI; `GEMINI_MAX_OUTPUT_TOKENS` tuned to 65,536 for complex trade documents. |
+| Upload & Error UX feedback | Complete | Real-time batch upload progress (`current/total`) and prominent, responsive error diagnostics banner in Assessment panel. |
 
 ## Current product path
 
@@ -28,8 +32,6 @@ This roadmap distinguishes code verified locally from static configuration and w
 | Deskew coordinate mapping | Detection is diagnostic; `deskew_applied` is false because no reversible transform is persisted. | Persist/apply a reversible deskew transform before claiming deskew-coordinate inversion. |
 | Horizontal API scaling | Not supported: locks, rate limits, and SSE wakeups are process-local. | Design durable/distributed coordination before increasing Cloud Run API instances. |
 | Playwright execution in restricted environments | Specs are current, but browser/port sandboxing may prevent execution. | Run in an environment with Playwright browsers and local server binding. |
-| Cloud deployment | Config is static-tested only. | Authorised Docker/Cloud Build/Cloud Run validation with a real project, IAM, and service URLs. |
-| Live extraction quality | The live path is implemented but not exercised by ordinary hermetic tests against Vertex. | Run approved smoke/evaluation work only with synthetic/non-customer inputs and controlled credentials. |
 
 ## Deliberately deferred or out of scope
 

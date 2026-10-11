@@ -31,11 +31,26 @@ class BBox(BaseModel):
     We store as a structured object for clarity and type safety.
     """
 
-    page: int = Field(ge=1, description="1-indexed page number within the processed document")
-    ymin: float = Field(ge=0, le=1000)
-    xmin: float = Field(ge=0, le=1000)
-    ymax: float = Field(ge=0, le=1000)
-    xmax: float = Field(ge=0, le=1000)
+    page: int = Field(description="1-indexed page number within the processed document")
+    ymin: float
+    xmin: float
+    ymax: float
+    xmax: float
+
+    @field_validator("page")
+    @classmethod
+    def _validate_page(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("page must be >= 1")
+        return v
+
+    @field_validator("ymin", "xmin", "ymax", "xmax")
+    @classmethod
+    def _validate_coords(cls, v: float) -> float:
+        if not (0.0 <= v <= 1000.0):
+            raise ValueError("coordinate must be between 0 and 1000")
+        return v
+
 
 
 class FieldRef(BaseModel):

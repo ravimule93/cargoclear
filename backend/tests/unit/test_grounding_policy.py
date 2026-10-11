@@ -440,7 +440,7 @@ def test_vector_sql_selects_the_provenance_columns_and_keeps_its_filter() -> Non
     sql = bq_tariff.VECTOR_SQL
     assert "base.rule_set" in sql
     assert "base.regulation_ref" in sql
-    assert "WHERE destination_country = @dest" in sql  # the pre-filter is owned by a later task
+    assert "base.destination_country = @dest" in sql
 
 
 def test_seed_rows_all_carry_the_prototype_provenance() -> None:

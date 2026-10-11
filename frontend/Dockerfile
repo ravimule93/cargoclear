@@ -7,6 +7,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 FROM base AS deps
 COPY package.json ./
 COPY package-lock.json ./
+COPY scripts/ ./scripts/
+RUN mkdir -p /app/public
 RUN npm ci --legacy-peer-deps
 
 # 2. Build the application

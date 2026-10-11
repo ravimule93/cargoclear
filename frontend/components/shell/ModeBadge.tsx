@@ -1,0 +1,51 @@
+"use client";
+
+import { useMeta } from "@/lib/hooks/useMeta";
+
+export function ModeBadge() {
+  const { meta, loading, error } = useMeta();
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-[var(--cc-text-muted)] border border-[var(--cc-border)] rounded-full px-2.5 py-0.5">
+        <span className="w-1.5 h-1.5 rounded-full bg-[var(--cc-text-muted)] animate-pulse" />
+        <span className="text-[11px]">Connecting...</span>
+      </div>
+    );
+  }
+
+  if (error || !meta) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-[var(--cc-err)] border border-[var(--cc-err)]/30 bg-[var(--cc-err)]/10 rounded-full px-2.5 py-0.5" title={error ?? "Backend offline"}>
+        <span className="w-1.5 h-1.5 rounded-full bg-[var(--cc-err)]" />
+        <span className="text-[11px] font-medium">Offline</span>
+      </div>
+    );
+  }
+
+  const isLive = meta.app_mode === "live";
+
+  return (
+    <div
+      className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium border ${
+        isLive
+          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+          : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+      }`}
+      title={
+        isLive
+          ? "Live GCP Mode: Multimodal extraction powered by Gemini 2.5 Flash on Vertex AI"
+          : "Demo Mode: Evaluates synthetic fixtures without contacting GCP"
+      }
+    >
+      <span
+        className={`w-2 h-2 rounded-full ${
+          isLive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+        }`}
+      />
+      <span className="text-[11px] font-semibold tracking-wide uppercase">
+        {isLive ? "Live GCP" : "Demo Mode"}
+      </span>
+    </div>
+  );
+}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { toErrorEnvelope } from "@/lib/errors";
 import { useMeta } from "@/lib/hooks/useMeta";
+import { ModeBadge } from "@/components/shell/ModeBadge";
 import type { Bundle } from "@/lib/types";
 
 type Pending = "empty" | "demo" | null;
@@ -32,7 +33,10 @@ export default function Home() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-6 p-6">
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold tracking-tight text-[var(--cc-text)]">CargoClear-JAPAC</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--cc-text)]">CargoClear-JAPAC</h1>
+          <ModeBadge />
+        </div>
         <p className="text-sm text-[var(--cc-text-muted)] leading-relaxed">
           Pre-submission adversarial customs adjudicator. Create a bundle, add trade documents and run
           the analysis. Decision support only: the authorised CHA decides.

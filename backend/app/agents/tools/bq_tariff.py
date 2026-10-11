@@ -48,7 +48,7 @@ FROM VECTOR_SEARCH(
     top_k => 5,
     distance_type => 'COSINE'
 )
-WHERE destination_country = @dest
+WHERE base.destination_country = @dest
 ORDER BY distance
 """
 
@@ -70,7 +70,7 @@ def _get_bq_client():
     try:
         from google.cloud import bigquery
 
-        _bq_client = bigquery.Client(project=settings.project_id)
+        _bq_client = bigquery.Client(project=settings.project_id, location=settings.region)
         return _bq_client
     except Exception as exc:
         if settings.app_mode == "live":

@@ -4,6 +4,7 @@ import { ChangeEvent, useRef } from "react";
 import { Bundle, Status } from "@/lib/types";
 import type { StreamConnection } from "@/lib/hooks/useBundleStream";
 import { StatusPill } from "../assess/StatusPill";
+import { ModeBadge } from "./ModeBadge";
 
 interface TopBarProps {
   bundle: Bundle;
@@ -11,6 +12,7 @@ interface TopBarProps {
   status: Status | null;
   isRunning?: boolean;
   isUploading?: boolean;
+  uploadProgress?: { current: number; total: number; filename?: string } | null;
   /** "Run analysis" until the first iteration exists, "Reassess" afterwards. */
   runMode: "analyze" | "reassess";
   connection?: StreamConnection;
@@ -25,9 +27,9 @@ export function TopBar({
   status,
   isRunning = false,
   isUploading = false,
+  uploadProgress = null,
   runMode,
   connection = "open",
-  actionError,
   onRun,
   onFilesSelected,
 }: TopBarProps) {
@@ -70,13 +72,22 @@ export function TopBar({
         </span>
       )}
 
-      <div className="ml-auto flex items-center gap-3">
-        {actionError && (
-          <span role="alert" className="text-xs font-medium text-[var(--cc-err)] max-w-[28rem]">
-            {actionError}
+      {isUploading && uploadProgress && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="ml-3 flex items-center gap-2 text-xs bg-[var(--cc-surface-2)] border border-[var(--cc-focus)]/40 px-2.5 py-1 rounded-full text-[var(--cc-text)]"
+        >
+          <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border-2 border-[var(--cc-focus)] border-t-transparent" />
+          <span className="font-medium text-[11px]">
+            Uploading {uploadProgress.current}/{uploadProgress.total}
+            {uploadProgress.filename ? `: ${uploadProgress.filename}` : ""}
           </span>
-        )}
+        </div>
+      )}
 
+      <div className="ml-auto flex items-center gap-3">
+        <ModeBadge />
         <input
           ref={fileInputRef}
           type="file"
@@ -92,9 +103,18 @@ export function TopBar({
           type="button"
           disabled={isUploading}
           onClick={() => fileInputRef.current?.click()}
-          className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-3 py-1.5 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 transition-colors cursor-pointer"
+          className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-3 py-1.5 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 transition-colors cursor-pointer flex items-center gap-1.5"
         >
-          {isUploading ? "Uploading..." : "Add Document"}
+          {isUploading ? (
+            <>
+              <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border-2 border-[var(--cc-text)] border-t-transparent" />
+              <span>
+                {uploadProgress ? `Uploading (${uploadProgress.current}/${uploadProgress.total})...` : "Uploading..."}
+              </span>
+            </>
+          ) : (
+            <span>+ Add Document</span>
+          )}
         </button>
         <button
           type="button"

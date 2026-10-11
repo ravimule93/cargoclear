@@ -36,6 +36,7 @@ export interface Workbench {
   /** Call after documents were uploaded elsewhere (e.g. the dropzone). One refresh, one run action. */
   handleUploaded: () => Promise<void>;
   isUploading: boolean;
+  uploadProgress: { current: number; total: number; filename?: string } | null;
 
   actionError: string | null;
   /** Pipeline error reported by the stream (run state ERROR or stream failure). */
@@ -88,14 +89,18 @@ export function useWorkbench(bundleId: string): Workbench {
 
     (async () => {
       try {
-        const [loadedBundle, loadedAssessment, loadedIterations] = await Promise.all([
-          api.getBundle(bundleId),
-          api.getAssessment(bundleId).catch((err: unknown) => {
-            if (isNotFound(err)) return null;
-            throw err;
-          }),
-          api.listIterations(bundleId),
-        ]);
+        const loadedBundle = await api.getBundle(bundleId);
+        let loadedAssessment: AssessmentIteration | null = null;
+        let loadedIterations: AssessmentIteration[] = [];
+        if (loadedBundle.current_iteration > 0) {
+          [loadedAssessment, loadedIterations] = await Promise.all([
+            api.getAssessment(bundleId).catch((err: unknown) => {
+              if (isNotFound(err)) return null;
+              throw err;
+            }),
+            api.listIterations(bundleId).catch(() => []),
+          ]);
+        }
         if (cancelled) return;
         handledIterationRef.current = Math.max(
           loadedAssessment?.iteration ?? 0,
@@ -212,14 +217,19 @@ export function useWorkbench(bundleId: string): Workbench {
     if (currentIteration > 0) await runAnalysis();
   }, [refreshBundle, currentIteration, runAnalysis]);
 
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; filename?: string } | null>(null);
+
   const uploadFiles = useCallback(
     async (files: File[]) => {
       if (files.length === 0) return;
       setActionError(null);
       setIsUploading(true);
+      setUploadProgress({ current: 0, total: files.length, filename: files[0]?.name });
       let uploaded = 0;
       try {
-        for (const file of files) {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          setUploadProgress({ current: i + 1, total: files.length, filename: file.name });
           await api.uploadDocument(bundleId, file);
           uploaded += 1;
         }
@@ -227,6 +237,7 @@ export function useWorkbench(bundleId: string): Workbench {
         setActionError(toErrorEnvelope(err).message);
       } finally {
         setIsUploading(false);
+        setUploadProgress(null);
       }
       if (uploaded === files.length) {
         await handleUploaded();
@@ -259,6 +270,7 @@ export function useWorkbench(bundleId: string): Workbench {
     uploadFiles,
     handleUploaded,
     isUploading,
+    uploadProgress,
     actionError,
     streamError: stream.error,
   };

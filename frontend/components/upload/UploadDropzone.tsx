@@ -16,6 +16,7 @@ export function UploadDropzone({
   label = "Upload Missing Document (PDF)",
 }: UploadDropzoneProps) {
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; name?: string } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -23,11 +24,13 @@ export function UploadDropzone({
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploading(true);
+    setUploadProgress({ current: 0, total: files.length, name: files[0]?.name });
     setErrorMessage(null);
 
     let uploaded = 0;
     try {
       for (let i = 0; i < files.length; i++) {
+        setUploadProgress({ current: i + 1, total: files.length, name: files[i]?.name });
         await api.uploadDocument(bundleId, files[i]);
         uploaded += 1;
       }
@@ -36,6 +39,7 @@ export function UploadDropzone({
       setErrorMessage(toErrorEnvelope(err).message || "Failed to upload file");
     } finally {
       setUploading(false);
+      setUploadProgress(null);
     }
     // One callback per batch, even after a partial failure, so the page refreshes what did land.
     if (uploaded > 0) onUploaded?.();
@@ -79,12 +83,20 @@ export function UploadDropzone({
       />
 
       <div className="flex flex-col items-center gap-1.5">
-        <span aria-hidden="true" className="text-xl">📄</span>
+        <span aria-hidden="true" className="text-xl">
+          {uploading ? "⏳" : "📄"}
+        </span>
         <div className="text-xs font-semibold text-[var(--cc-text)]">
-          {uploading ? "Uploading document..." : label}
+          {uploading
+            ? uploadProgress
+              ? `Uploading ${uploadProgress.current} of ${uploadProgress.total}...`
+              : "Uploading document..."
+            : label}
         </div>
         <p className="text-[11px] text-[var(--cc-text-muted)]">
-          Drag & drop trade PDF or browse file
+          {uploading && uploadProgress?.name
+            ? uploadProgress.name
+            : "Drag & drop trade PDF or browse file"}
         </p>
       </div>
 
