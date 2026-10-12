@@ -8,9 +8,8 @@
 .cc-workbench {
   display: grid;
   height: 100dvh;
-  grid-template-columns: 280px minmax(0, 1fr) 400px;
-  /* The banner row is `auto`: it collapses to 0 height when no banner is rendered. */
-  grid-template-rows: auto 56px minmax(0, 1fr) 280px;
+  grid-template-columns: 280px minmax(0, 1fr) 380px;
+  grid-template-rows: auto 56px minmax(0, 1fr) var(--cc-drawer-height, 260px);
   grid-template-areas:
     "banner banner banner"
     "top    top    top"
@@ -18,6 +17,12 @@
     "drawer drawer drawer";
   background: var(--cc-bg);
   color: var(--cc-text);
+  overflow: hidden;
+  transition: grid-template-rows 0.2s ease;
+}
+
+.cc-workbench[data-drawer-collapsed="true"] {
+  --cc-drawer-height: 40px;
 }
 
 .cc-banner {
@@ -52,6 +57,7 @@
   align-items: center;
   padding: 0 1rem;
   gap: 1rem;
+  z-index: 10;
 }
 
 .cc-rail {
@@ -81,13 +87,23 @@
   border-top: 1px solid var(--cc-border);
   background: var(--cc-surface);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* =============================================================================
-   Responsive: below 1280px → collapse to tabbed single column
+   Medium screens (1024px - 1279px): compact rail and assess panels
    ============================================================================= */
+@media (max-width: 1279px) and (min-width: 900px) {
+  .cc-workbench {
+    grid-template-columns: 240px minmax(0, 1fr) 340px;
+  }
+}
 
-@media (max-width: 1279px) {
+/* =============================================================================
+   Small screens (< 900px): collapsible or single column with tab switcher
+   ============================================================================= */
+@media (max-width: 899px) {
   .cc-workbench {
     grid-template-columns: 1fr;
     grid-template-rows: auto 56px 44px minmax(0, 1fr);

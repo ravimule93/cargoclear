@@ -90,6 +90,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
       <aside className="cc-rail" aria-label="Documents in this bundle">
         <DocumentRail
           documents={wb.documents}
+          checks={assessment?.checks ?? []}
           activeDocumentId={wb.activeDocumentId ?? undefined}
           onSelectDocument={wb.selectDocument}
         />
@@ -108,6 +109,8 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         <AssessmentPanel
           assessment={assessment}
           bundleId={bundleId}
+          documents={wb.documents}
+          onSelectDocument={wb.selectDocument}
           run={wb.run}
           isRunning={wb.isRunning}
           actionError={actionError}

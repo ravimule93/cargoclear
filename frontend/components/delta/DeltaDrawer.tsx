@@ -19,6 +19,7 @@ const TABS = [
 
 export function DeltaDrawer({ bundleId, iterations, auditRefreshKey }: DeltaDrawerProps) {
   const [activeTab, setActiveTab] = useState<"delta" | "audit">("delta");
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const latestIteration = iterations[iterations.length - 1];
 
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
@@ -31,49 +32,78 @@ export function DeltaDrawer({ bundleId, iterations, auditRefreshKey }: DeltaDraw
     }
   };
 
+  const toggleCollapse = () => {
+    const next = !isCollapsed;
+    setIsCollapsed(next);
+    const workbenchEl = document.querySelector(".cc-workbench");
+    if (workbenchEl) {
+      if (next) {
+        workbenchEl.setAttribute("data-drawer-collapsed", "true");
+      } else {
+        workbenchEl.removeAttribute("data-drawer-collapsed");
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-[var(--cc-surface)]">
       <div
         role="tablist"
         aria-label="Adjudication timeline and delta views"
-        className="flex border-b border-[var(--cc-border)] px-4 bg-[var(--cc-surface-2)]"
+        className="flex items-center justify-between border-b border-[var(--cc-border)] px-4 bg-[var(--cc-surface-2)]"
       >
-        {TABS.map((tab, idx) => {
-          const isSelected = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              role="tab"
-              id={`tab-${tab.id}`}
-              aria-selected={isSelected}
-              aria-controls={`panel-${tab.id}`}
-              tabIndex={isSelected ? 0 : -1}
-              onClick={() => setActiveTab(tab.id)}
-              onKeyDown={(e) => handleKeyDown(e, idx)}
-              className={`py-2 px-3 text-xs font-semibold cursor-pointer border-b-2 transition-colors ${
-                isSelected
-                  ? "border-[var(--cc-focus)] text-[var(--cc-focus)]"
-                  : "border-transparent text-[var(--cc-text-muted)] hover:text-[var(--cc-text)]"
-              }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+        <div className="flex">
+          {TABS.map((tab, idx) => {
+            const isSelected = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                role="tab"
+                id={`tab-${tab.id}`}
+                aria-selected={isSelected}
+                aria-controls={`panel-${tab.id}`}
+                tabIndex={isSelected ? 0 : -1}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  if (isCollapsed) toggleCollapse();
+                }}
+                onKeyDown={(e) => handleKeyDown(e, idx)}
+                className={`py-2 px-3 text-xs font-semibold cursor-pointer border-b-2 transition-colors ${
+                  isSelected
+                    ? "border-[var(--cc-focus)] text-[var(--cc-focus)]"
+                    : "border-transparent text-[var(--cc-text-muted)] hover:text-[var(--cc-text)]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          onClick={toggleCollapse}
+          className="text-xs text-[var(--cc-text-muted)] hover:text-[var(--cc-text)] px-2 py-1 rounded hover:bg-[var(--cc-surface)] transition-colors cursor-pointer flex items-center gap-1"
+          title={isCollapsed ? "Expand Drawer" : "Collapse Drawer"}
+        >
+          <span className="text-[10px]">{isCollapsed ? "▲ Expand" : "▼ Collapse"}</span>
+        </button>
       </div>
 
-      <div
-        role="tabpanel"
-        id={`panel-${activeTab}`}
-        aria-labelledby={`tab-${activeTab}`}
-        className="p-4 flex-1 overflow-y-auto"
-      >
-        {activeTab === "delta" ? (
-          <ReasoningDelta delta={latestIteration?.reasoning_delta} />
-        ) : (
-          <AuditTimeline bundleId={bundleId} refreshKey={auditRefreshKey} />
-        )}
-      </div>
+      {!isCollapsed && (
+        <div
+          role="tabpanel"
+          id={`panel-${activeTab}`}
+          aria-labelledby={`tab-${activeTab}`}
+          className="p-4 flex-1 overflow-y-auto"
+        >
+          {activeTab === "delta" ? (
+            <ReasoningDelta delta={latestIteration?.reasoning_delta} />
+          ) : (
+            <AuditTimeline bundleId={bundleId} refreshKey={auditRefreshKey} />
+          )}
+        </div>
+      )}
     </div>
   );
 }

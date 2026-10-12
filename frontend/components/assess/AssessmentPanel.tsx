@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { toErrorEnvelope } from "@/lib/errors";
-import type { AppMode, AssessmentIteration } from "@/lib/types";
+import type { AppMode, AssessmentIteration, DocumentRecord } from "@/lib/types";
 import type { StreamRunState } from "@/lib/hooks/useBundleStream";
 import { CheckList } from "./CheckList";
 import { MissingEvidenceCard } from "./MissingEvidenceCard";
@@ -14,6 +14,8 @@ interface AssessmentPanelProps {
   /** null = the bundle has not been analysed yet */
   assessment: AssessmentIteration | null;
   bundleId: string;
+  documents?: DocumentRecord[];
+  onSelectDocument?: (documentId: string) => void;
   run?: StreamRunState | null;
   /** True from the moment a run was requested until the stream reports it finished. */
   isRunning?: boolean;
@@ -68,6 +70,8 @@ function ActionErrorBanner({ error }: { error: string }) {
 export function AssessmentPanel({
   assessment,
   bundleId,
+  documents = [],
+  onSelectDocument,
   run,
   isRunning = false,
   actionError = null,
@@ -169,7 +173,11 @@ export function AssessmentPanel({
         <h3 className="text-xs font-bold uppercase text-[var(--cc-text-subtle)]">
           Mathematical & Semantic Parity Checks
         </h3>
-        <CheckList checks={assessment.checks} />
+        <CheckList
+          checks={assessment.checks}
+          documents={documents}
+          onSelectDocument={onSelectDocument}
+        />
       </div>
 
       {/* Missing Evidence / Regulatory Grounding */}
