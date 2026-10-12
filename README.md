@@ -75,13 +75,15 @@ npm run build
 
 `npm test` runs the current Playwright Case C and accessibility journeys. It starts local backend and frontend servers. In restricted sandboxes that prohibit local port binding or lack a browser runtime, report that limitation rather than treating it as a product failure.
 
-## Deployment boundary
+## Deployment status
 
-Deployment is intentionally not a local-demo prerequisite. The checked-in Cloud Run configuration is statically guarded but has not been verified against a real project in this repository:
+The application is deployed live to Google Cloud Run in `asia-south1` (Mumbai):
 
-- The API is deployed with `--max-instances 1`, `--min-instances 1`, `--concurrency 80`, a 300-second request timeout, and CPU retained for background analyses. The application uses process-local coordination and is not horizontally safe.
-- The UI discovers the deployed API service URL during deployment and supplies it as runtime-only `API_BASE`; browser traffic remains BFF-proxied, including SSE.
-- `RUNTIME_SERVICE_ACCOUNT` is mandatory for API deployment. The deployer needs `iam.serviceAccounts.actAs`; the runtime identity needs the checked-in least-privilege Vertex AI, Storage, BigQuery, and Firestore roles.
-- The API deploy sets `APP_MODE=live` and disables API docs. Demo endpoints are therefore unavailable in that deployment.
+- **Backend API**: `https://cargoclear-api-448522365737.asia-south1.run.app`
+- **Frontend UI**: `https://cargoclear-ui-5ho4zmc74q-el.a.run.app` (or `https://cargoclear-ui-448522365737.asia-south1.run.app`)
+- **API configuration**: Deployed with `--max-instances 1`, `--min-instances 1`, `--concurrency 80`, a 300-second request timeout, and CPU always allocated.
+- **UI configuration**: Runs with Next.js BFF proxy routing `/api/proxy/...` directly to the backend API, preserving same-origin semantics for both HTTP requests and SSE event streams.
+- **Live GCP Integrations**: BigQuery vector search on tariff dataset `cargoclear-hackathon:ahtn`, Firestore hash-chained audit logging, GCS PDF storage (`cargoclear-raw-pdfs`), and multimodal extraction with Vertex AI `gemini-2.5-flash`.
 
-Do not run Docker, Cloud Build, `gcloud`, or deployment commands without authorised project access. See [docs/HOW_TO_RUN_AND_DEMO.md](docs/HOW_TO_RUN_AND_DEMO.md) for the operational walkthrough and [docs/FAQ_ONBOARDING.md](docs/FAQ_ONBOARDING.md) for boundaries and troubleshooting.
+See [docs/01_analysis_and_roadmap.md](docs/01_analysis_and_roadmap.md) for the verified roadmap, [docs/HOW_TO_RUN_AND_DEMO.md](docs/HOW_TO_RUN_AND_DEMO.md) for the operational walkthrough, and [docs/FAQ_ONBOARDING.md](docs/FAQ_ONBOARDING.md) for boundaries and troubleshooting.
+
