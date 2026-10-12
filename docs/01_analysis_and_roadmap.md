@@ -52,15 +52,21 @@ This roadmap tracks the verified implementation progress against the Hackathon M
 
 ---
 
-## 4. Deliberately Deferred / Post-MVP Roadmap (P2)
+## 4. Winning Improvement Roadmap & Next Enhancements
 
-The following items are intentionally out of scope for the pre-submission Hackathon MVP:
+To advance CargoClear beyond the Hackathon MVP into an enterprise-grade, winning solution, comprehensive critique and transformation blueprints have been authored:
 
-- **Government Portal Auto-Filing**: Automated submission to ICEGATE / e-SANCHIT or ASEAN Single Window (system is decision support for human CHA).
-- **Payment & Duty Calculation**: Customs duty payments, GST ITC calculations, and bank gateways.
-- **Horizontal API Scaling**: The API is currently pinned to `max-instances=1` (with concurrency=80 and retained CPU) because locks and SSE wakeups are in-process. Scaling to multiple replicas requires Cloud Pub/Sub or Redis Pub/Sub.
+* **Detailed Improvement Blueprint & Architecture**: See [`docs/02_judge_critique_and_improvement_roadmap.md`](02_judge_critique_and_improvement_roadmap.md) for judge critique resolutions, GATT valuation (`VAL-001`), deep MTC metallurgy checks (`H-003-ADV`), and horizontal scaling with Cloud Pub/Sub.
+* **Market Landscape, Differentiation & USP**: See [`docs/03_market_comparison_and_usp.md`](03_market_comparison_and_usp.md) for head-to-head comparisons against CargoWise, Google Document AI, Traydstream, and Indian customs copilot **Broto AI**.
+
+### Deliberately Deferred / Post-MVP Roadmap (P2)
+The following items are scheduled for Phase 2/Phase 3 development per the improvement roadmap:
+- **Government Portal Auto-Filing**: Automated declaration export to Indian ICEGATE Bill of Entry JSON and ASEAN Single Window CUSDEC XML.
+- **Payment & Duty Calculation**: Customs duty payments, GST ITC calculations, and bank gateways (GATT assessable valuation engine).
+- **Horizontal API Scaling**: Distributed Redis Locks (Cloud Memorystore) and Google Cloud Pub/Sub SSE message mesh to remove the `max-instances=1` barrier.
 - **Authentication & Single Sign-On (SSO)**: Multi-tenant CHA authentication and OAuth/SAML integration.
 - **Batch Processing Pipeline**: Asynchronous Vertex AI batch pipeline for 50+ document shipping containers.
+
 
 ---
 
