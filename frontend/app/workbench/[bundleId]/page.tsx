@@ -3,6 +3,7 @@
 import { use } from "react";
 import Link from "next/link";
 import { TopBar } from "@/components/shell/TopBar";
+import { UserMenu } from "@/components/shell/UserMenu";
 import { DemoBanner } from "@/components/shell/DemoBanner";
 import { DocumentRail } from "@/components/rail/DocumentRail";
 import { DocumentViewer } from "@/components/viewer/DocumentViewer";
