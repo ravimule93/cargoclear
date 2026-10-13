@@ -50,17 +50,30 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
   if (wb.loadState === "error" || wb.bundle === null) {
     return (
       <main className="cc-state">
-        <div role="alert" className="flex flex-col items-center gap-3">
+        <div role="alert" className="flex flex-col items-center gap-4 max-w-md text-center">
           <p className="text-sm font-medium text-[var(--cc-err)]">
             Could not load bundle: {wb.loadError ?? "unknown error"}
           </p>
-          <button
-            type="button"
-            onClick={wb.retry}
-            className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 cursor-pointer"
-          >
-            Retry
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={wb.retry}
+              className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 cursor-pointer"
+            >
+              Retry
+            </button>
+            <UserMenu
+              user={meta?.user ?? null}
+              onLogin={(email) => {
+                document.cookie = `cargoclear_session_token=mock-jwt-${email}-LICENSED_CHA; path=/; max-age=86400; SameSite=Lax`;
+                window.location.reload();
+              }}
+              onLogout={() => {
+                document.cookie = `cargoclear_session_token=; path=/; max-age=0; SameSite=Lax`;
+                window.location.reload();
+              }}
+            />
+          </div>
         </div>
       </main>
     );

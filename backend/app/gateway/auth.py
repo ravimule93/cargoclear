@@ -50,10 +50,54 @@ def get_current_user(request: Request) -> UserIdentity:
     """FastAPI dependency to extract and verify the authenticated user.
 
     Behaviors:
-    - If AUTH_ENABLED is False (or APP_MODE=demo): Injects a mock commercial CHA identity (e.g., demo-cha@customs.com)
-    - If AUTH_ENABLED is True: Reads `Authorization: Bearer <token>`, validates claims, extracts domain tenancy,
+    - If `Authorization: Bearer <token>` is present: validates claims, extracts domain tenancy,
       and verifies allowed corporate email domains.
+    - If no Authorization header is present:
+        - If AUTH_ENABLED is False (or demo mode): Injects mock commercial CHA identity (demo-cha@customs.com).
+        - If AUTH_ENABLED is True: Raises 401 AuthenticationError.
     """
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        if not token:
+            raise AuthenticationError("Empty Bearer token provided.")
+
+        # In local testing or simulated SSO token mode
+        if token.startswith("mock-jwt-"):
+            payload = token[len("mock-jwt-"):]
+            possible_roles = {"LICENSED_CHA", "OPERATOR", "AUDITOR", "SYSTEM"}
+            email = payload
+            role = "LICENSED_CHA"
+            if "-" in payload:
+                prefix_part, maybe_role = payload.rsplit("-", 1)
+                if maybe_role in possible_roles:
+                    email = prefix_part
+                    role = maybe_role
+            elif ":" in payload:
+                prefix_part, maybe_role = payload.rsplit(":", 1)
+                if maybe_role in possible_roles:
+                    email = prefix_part
+                    role = maybe_role
+            if not email:
+                email = "demo-cha@customs.com"
+            claims = {"email": email, "sub": f"usr-{email}", "cargo_role": role, "name": email.split("@")[0].title()}
+        else:
+            claims = verify_bearer_token(token, client_id=settings.oauth_client_id)
+
+        user = UserIdentity.from_claims(claims)
+
+        # Check allowed corporate email domains
+        allowed_domains = settings.allowed_domains_list
+        if "*" not in allowed_domains:
+            domain = user.email.split("@")[-1].lower() if "@" in user.email else ""
+            if domain not in allowed_domains:
+                raise ForbiddenError(
+                    f"Domain '{domain}' is not authorized for this customs portal.",
+                    detail={"email": user.email, "allowed_domains": allowed_domains},
+                )
+
+        return user
+
     if not settings.auth_enabled:
         # Check if an optional test header is passed to simulate different users in test mode
         custom_email = request.headers.get("X-Test-User-Email")
@@ -61,58 +105,18 @@ def get_current_user(request: Request) -> UserIdentity:
             return UserIdentity.mock_commercial_cha(email=custom_email)
         return UserIdentity.mock_commercial_cha()
 
-
-
-
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise AuthenticationError("Missing or malformed Authorization header. Bearer token required.")
-
-    token = auth_header.split(" ", 1)[1].strip()
-    if not token:
-        raise AuthenticationError("Empty Bearer token provided.")
-
-    # In local testing or simulated SSO token mode
-    if token.startswith("mock-jwt-"):
-        payload = token[len("mock-jwt-"):]
-        possible_roles = {"LICENSED_CHA", "OPERATOR", "AUDITOR", "SYSTEM"}
-        email = payload
-        role = "LICENSED_CHA"
-        if "-" in payload:
-            prefix_part, maybe_role = payload.rsplit("-", 1)
-            if maybe_role in possible_roles:
-                email = prefix_part
-                role = maybe_role
-        elif ":" in payload:
-            prefix_part, maybe_role = payload.rsplit(":", 1)
-            if maybe_role in possible_roles:
-                email = prefix_part
-                role = maybe_role
-        if not email:
-            email = "demo-cha@customs.com"
-        claims = {"email": email, "sub": f"usr-{email}", "cargo_role": role, "name": email.split("@")[0].title()}
-    else:
-        claims = verify_bearer_token(token, client_id=settings.oauth_client_id)
-
-    user = UserIdentity.from_claims(claims)
-
-    # Check allowed corporate email domains
-    allowed_domains = settings.allowed_domains_list
-    if "*" not in allowed_domains:
-        domain = user.email.split("@")[-1].lower() if "@" in user.email else ""
-        if domain not in allowed_domains:
-            raise ForbiddenError(
-                f"Domain '{domain}' is not authorized for this customs portal.",
-                detail={"email": user.email, "allowed_domains": allowed_domains},
-            )
-
-    return user
+    raise AuthenticationError("Missing or malformed Authorization header. Bearer token required.")
 
 
 def get_optional_user(request: Request) -> UserIdentity | None:
     """Optional user dependency for public metadata routes like /meta."""
-    try:
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        try:
+            return get_current_user(request)
+        except Exception:
+            return None
+    if not settings.auth_enabled:
         return get_current_user(request)
-    except Exception:
-        return None
+    return None
 
