@@ -77,6 +77,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
       <TopBar
         bundle={bundle}
         status={assessment?.status ?? null}
+        user={meta?.user ?? null}
         isRunning={wb.isRunning}
         isUploading={wb.isUploading}
         uploadProgress={wb.uploadProgress}
@@ -85,7 +86,16 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         actionError={actionError}
         onRun={wb.runAnalysis}
         onFilesSelected={wb.uploadFiles}
+        onLogin={(email) => {
+          document.cookie = `cargoclear_session_token=mock-jwt-${email}-LICENSED_CHA; path=/; max-age=86400; SameSite=Lax`;
+          window.location.reload();
+        }}
+        onLogout={() => {
+          document.cookie = `cargoclear_session_token=; path=/; max-age=0; SameSite=Lax`;
+          window.location.reload();
+        }}
       />
+
 
       <aside className="cc-rail" aria-label="Documents in this bundle">
         <DocumentRail

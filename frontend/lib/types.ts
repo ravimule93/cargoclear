@@ -133,6 +133,22 @@ export interface TransformMetadataResponse {
   transform_meta: TransformMetadata[];
 }
 
+export interface UserIdentity {
+  user_id: string;
+  email: string;
+  name: string;
+  tenant_id: string;
+  role: "LICENSED_CHA" | "OPERATOR" | "AUDITOR" | "SYSTEM";
+  issuer?: string;
+}
+
+export interface AuthConfig {
+  enabled: boolean;
+  oauth_client_id?: string | null;
+  oauth_issuer?: string;
+  allowed_email_domains: string[];
+}
+
 export interface Bundle {
   id: string;
   reference?: string | null;
@@ -141,6 +157,8 @@ export interface Bundle {
   current_iteration: number;
   documents: DocumentRecord[];
   created_at: string;
+  tenant_id?: string | null;
+  created_by?: string | null;
 }
 
 export interface StatusEvent {
@@ -173,7 +191,11 @@ export type AppMode = "demo" | "live";
 export interface Meta {
   app_mode: AppMode;
   data_source_policy: string;
+  pipeline_engine?: string;
+  auth?: AuthConfig;
+  user?: UserIdentity;
 }
+
 
 export interface ErrorEnvelope {
   code: string;

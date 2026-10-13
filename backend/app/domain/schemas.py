@@ -373,6 +373,9 @@ class BundleResponse(BaseModel):
     current_iteration: int
     documents: list[DocumentResponse] = Field(default_factory=list)
     created_at: str
+    tenant_id: str | None = Field(default=None, description="Multi-tenant brokerage organization domain")
+    created_by: str | None = Field(default=None, description="Email of the creator / Customs House Agent")
+
 
 
 class RunResponse(BaseModel):

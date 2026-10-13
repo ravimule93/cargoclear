@@ -59,6 +59,13 @@ async function handleProxy(
 
     const headers = new Headers(request.headers);
     headers.delete("host");
+
+    // Read active auth session from cookie if Authorization header is not explicitly present
+    const sessionToken = request.cookies.get("cargoclear_session_token")?.value;
+    if (sessionToken && !headers.has("authorization")) {
+      headers.set("authorization", `Bearer ${sessionToken}`);
+    }
+
     const hasBody = request.method !== "GET" && request.method !== "HEAD";
     const response = await fetch(targetUrl.toString(), {
       method: request.method,
@@ -67,6 +74,7 @@ async function handleProxy(
       // @ts-expect-error duplex is required for streaming request body in Node fetch
       duplex: hasBody ? "half" : undefined,
     });
+
 
     return new NextResponse(response.body, {
       status: response.status,
