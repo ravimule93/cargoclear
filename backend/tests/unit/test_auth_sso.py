@@ -130,3 +130,66 @@ def test_domain_restriction_enforcement(monkeypatch):
     assert resp_forbidden.status_code == 403
     assert resp_forbidden.json()["code"] == "FORBIDDEN"
 
+
+def test_user_check_and_signup_flow():
+    """Verify checking user existence, registering, and subsequent signin."""
+    app = create_app()
+    client = TestClient(app)
+
+    # 1. Check unregistered user
+    res_check = client.get("/api/v1/auth/check", params={"email": "new.broker@customs.com"})
+    assert res_check.status_code == 200
+    assert res_check.json()["registered"] is False
+
+    # 2. Sign up
+    signup_payload = {
+        "email": "new.broker@customs.com",
+        "password": "strongPassword123",
+        "name": "Alex Broker",
+        "organization": "Customs Clearing Ltd",
+        "role": "LICENSED_CHA",
+    }
+    res_signup = client.post("/api/v1/auth/signup", json=signup_payload)
+    assert res_signup.status_code == 201
+    signup_data = res_signup.json()
+    assert signup_data["user"]["email"] == "new.broker@customs.com"
+    assert signup_data["user"]["tenant_id"] == "customs.com"
+    token = signup_data["token"]
+    assert token.startswith("mock-jwt-")
+
+    # 3. Check now returns registered
+    res_check_after = client.get("/api/v1/auth/check", params={"email": "new.broker@customs.com"})
+    assert res_check_after.status_code == 200
+    assert res_check_after.json()["registered"] is True
+    assert res_check_after.json()["tenant_id"] == "customs.com"
+
+    # 4. Duplicate signup returns 409 Conflict
+    res_dup = client.post("/api/v1/auth/signup", json=signup_payload)
+    assert res_dup.status_code == 409
+    assert res_dup.json()["code"] == "CONFLICT"
+
+    # 5. Sign in with correct password
+    res_signin = client.post(
+        "/api/v1/auth/signin",
+        json={"email": "new.broker@customs.com", "password": "strongPassword123"},
+    )
+    assert res_signin.status_code == 200
+    assert res_signin.json()["user"]["email"] == "new.broker@customs.com"
+
+    # 6. Sign in with wrong password returns 401
+    res_wrong = client.post(
+        "/api/v1/auth/signin",
+        json={"email": "new.broker@customs.com", "password": "wrongPassword!"},
+    )
+    assert res_wrong.status_code == 401
+    assert res_wrong.json()["code"] == "UNAUTHORIZED"
+
+    # 7. Audit trail records registration and login events
+    res_audit = client.get("/api/v1/auth/audit", headers={"Authorization": f"Bearer {token}"})
+    assert res_audit.status_code == 200
+    audit_data = res_audit.json()
+    assert audit_data["total_events"] >= 2
+    actions = [ev["action"] for ev in audit_data["audit_events"]]
+    assert "USER_REGISTERED" in actions
+    assert "USER_LOGIN_SUCCESS" in actions
+

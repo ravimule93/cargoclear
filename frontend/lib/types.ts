@@ -223,3 +223,45 @@ export interface AuditResponse {
   verified: boolean;
   error: string | null;
 }
+
+export interface CheckUserResponse {
+  registered: boolean;
+  email: string;
+  name?: string | null;
+  tenant_id?: string | null;
+  role?: "LICENSED_CHA" | "OPERATOR" | "AUDITOR" | "SYSTEM" | null;
+  auth_provider?: string | null;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: UserIdentity;
+  message: string;
+}
+
+export interface SignUpRequest {
+  email: string;
+  password: string;
+  name: string;
+  organization?: string;
+  role: "LICENSED_CHA" | "OPERATOR" | "AUDITOR";
+}
+
+export interface SignInRequest {
+  email: string;
+  password: string;
+}
+
+export interface UserAuditRecord {
+  audit_id: string;
+  action: string;
+  timestamp: string;
+  details?: Record<string, unknown>;
+}
+
+export interface UserAuditResponse {
+  email: string;
+  tenant_id: string;
+  total_events: number;
+  audit_events: UserAuditRecord[];
+}

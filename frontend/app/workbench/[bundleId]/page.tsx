@@ -70,8 +70,8 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
                 window.location.reload();
               }}
               onLogout={() => {
-                document.cookie = `cargoclear_session_token=; path=/; max-age=0; SameSite=Lax`;
-                window.location.reload();
+                document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                window.location.href = "/api/auth/logout";
               }}
             />
           </div>
@@ -105,8 +105,8 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           window.location.reload();
         }}
         onLogout={() => {
-          document.cookie = `cargoclear_session_token=; path=/; max-age=0; SameSite=Lax`;
-          window.location.reload();
+          document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+          window.location.href = "/api/auth/logout";
         }}
       />
 

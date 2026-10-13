@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { toErrorEnvelope } from "@/lib/errors";
 import { useMeta } from "@/lib/hooks/useMeta";
@@ -54,8 +55,8 @@ export default function Home() {
                 window.location.reload();
               }}
               onLogout={() => {
-                document.cookie = `cargoclear_session_token=; path=/; max-age=0; SameSite=Lax`;
-                window.location.reload();
+                document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                window.location.href = "/api/auth/logout";
               }}
             />
           </div>
@@ -70,11 +71,26 @@ export default function Home() {
         <div className="rounded-lg border border-[var(--cc-focus)]/30 bg-[var(--cc-surface-2)] p-4 shadow-xs space-y-3">
           <div>
             <h2 className="text-sm font-semibold text-[var(--cc-text)] flex items-center gap-1.5">
-              <span>🔐</span> Commercial Single Sign-On (SSO)
+              <span>🔐</span> Commercial Single Sign-On (SSO) & Registration
             </h2>
             <p className="text-xs text-[var(--cc-text-muted)] mt-1">
-              Sign in with your corporate Google Workspace account or CHA work email to access or create corporate bundles.
+              Sign in with your corporate Google Workspace account, corporate email/password, or register a new customs user account.
             </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            <Link
+              href="/auth/signin?tab=signin"
+              className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-2.5 text-xs font-semibold text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] transition-colors text-center shadow-2xs"
+            >
+              <span>🔑 Sign In to Account</span>
+            </Link>
+            <Link
+              href="/auth/signin?tab=signup"
+              className="flex items-center justify-center gap-1.5 rounded-lg bg-[var(--cc-focus)] p-2.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity text-center shadow-2xs"
+            >
+              <span>📝 Create New Account</span>
+            </Link>
           </div>
 
           <a
@@ -87,45 +103,18 @@ export default function Home() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
             </svg>
-            <span>Continue with Google</span>
+            <span>Continue with Google SSO</span>
           </a>
 
           <div className="relative flex items-center justify-center">
             <div className="w-full border-t border-[var(--cc-border)]" />
             <span className="bg-[var(--cc-surface-2)] px-2 text-[10px] uppercase tracking-wider text-[var(--cc-text-muted)] absolute">
-              or commercial email
+              or quick demo access
             </span>
           </div>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const form = e.currentTarget;
-              const input = form.elements.namedItem("landingEmail") as HTMLInputElement;
-              const email = input?.value?.trim().toLowerCase();
-              if (email) {
-                document.cookie = `cargoclear_session_token=mock-jwt-${email}-LICENSED_CHA; path=/; max-age=86400; SameSite=Lax`;
-                window.location.reload();
-              }
-            }}
-            className="flex flex-col sm:flex-row gap-2"
-          >
-            <input
-              name="landingEmail"
-              type="email"
-              required
-              placeholder="agent@customs.com"
-              className="flex-1 rounded border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] px-3 py-1.5 text-xs text-[var(--cc-text)] focus:outline-hidden focus:ring-1 focus:ring-[var(--cc-focus)]"
-            />
-            <button
-              type="submit"
-              className="rounded bg-[var(--cc-focus)] px-4 py-1.5 text-xs font-semibold text-white hover:opacity-90 cursor-pointer whitespace-nowrap"
-            >
-              Sign In with Corporate SSO
-            </button>
-          </form>
-          <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[var(--cc-border)]">
-            <span className="text-[10px] text-[var(--cc-text-muted)]">Quick presets:</span>
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <span className="text-[10px] text-[var(--cc-text-muted)]">1-Click presets:</span>
             <button
               type="button"
               onClick={() => {
@@ -134,7 +123,7 @@ export default function Home() {
               }}
               className="text-[10px] rounded bg-[var(--cc-surface)] border border-[var(--cc-border)] px-2 py-0.5 text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
             >
-              customs.com
+              🏢 customs.com
             </button>
             <button
               type="button"
@@ -144,7 +133,7 @@ export default function Home() {
               }}
               className="text-[10px] rounded bg-[var(--cc-surface)] border border-[var(--cc-border)] px-2 py-0.5 text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
             >
-              dhl.com
+              📦 dhl.com
             </button>
             <button
               type="button"
@@ -154,7 +143,7 @@ export default function Home() {
               }}
               className="text-[10px] rounded bg-[var(--cc-surface)] border border-[var(--cc-border)] px-2 py-0.5 text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
             >
-              fedex.com
+              ✈️ fedex.com
             </button>
           </div>
         </div>
@@ -174,10 +163,10 @@ export default function Home() {
           <button
             type="button"
             onClick={() => {
-              document.cookie = `cargoclear_session_token=; path=/; max-age=0; SameSite=Lax`;
-              window.location.reload();
+              document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+              window.location.href = "/api/auth/logout";
             }}
-            className="text-[11px] text-[var(--cc-text-muted)] hover:text-[var(--cc-text)] underline cursor-pointer"
+            className="text-[11px] text-[var(--cc-text-muted)] hover:text-red-500 underline cursor-pointer"
           >
             Sign out
           </button>
