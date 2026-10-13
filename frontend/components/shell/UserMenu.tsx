@@ -62,6 +62,39 @@ export function UserMenu({ user, onLogin, onLogout }: UserMenuProps) {
                 >
                   Continue with Corporate SSO
                 </button>
+                <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[var(--cc-border)]">
+                  <span className="text-[10px] text-[var(--cc-text-muted)]">Quick demo presets:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onLogin?.("demo-cha@customs.com");
+                      setShowModal(false);
+                    }}
+                    className="text-[10px] rounded bg-[var(--cc-surface-2)] border border-[var(--cc-border)] px-2 py-0.5 text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
+                  >
+                    customs.com
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onLogin?.("agent@dhl.com");
+                      setShowModal(false);
+                    }}
+                    className="text-[10px] rounded bg-[var(--cc-surface-2)] border border-[var(--cc-border)] px-2 py-0.5 text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
+                  >
+                    dhl.com
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onLogin?.("broker@fedex.com");
+                      setShowModal(false);
+                    }}
+                    className="text-[10px] rounded bg-[var(--cc-surface-2)] border border-[var(--cc-border)] px-2 py-0.5 text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
+                  >
+                    fedex.com
+                  </button>
+                </div>
               </form>
             </div>
           </div>
