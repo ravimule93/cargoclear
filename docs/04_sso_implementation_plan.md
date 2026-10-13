@@ -1,50 +1,55 @@
-# CargoClear: Single Sign-On (SSO) Architecture & Implementation Plan
+# CargoClear: Commercial Multi-Tenant Single Sign-On (SSO) Architecture & Plan
 
-**Target Goal**: Implement enterprise-grade Single Sign-On (SSO) for CargoClear, establishing multi-tenant broker authentication, role-based access control (RBAC), and session security across the FastAPI backend and Next.js frontend workbench.
+**Target Goal**: Implement enterprise-grade, commercial Single Sign-On (SSO) and Multi-Tenant Isolation for CargoClear. Ensure Custom House Agent (CHA) brokerages of any corporate domain (e.g. `customs.com`, `dhl.com`, `fedex.com`, `genpact.com`) can seamlessly log in, access their company's workspace, and maintain compliance attribution without locking out commercial users.
 
 ---
 
-## 1. Architecture Overview & Design Principles
+## 1. Commercial User Access: How a User from `customs.com` Operates
 
-CargoClear operates in high-liability, regulated customs adjudication. Every assessment, document view, and reasoning override must be attributable to an authenticated, licensed Customs House Agent (CHA) or customs officer.
+In cross-border trade, Custom House Agents (CHAs) and freight forwarders operate across disparate corporate identity systems:
+* **Company A (`customs.com`)**: Uses Google Workspace or Microsoft Azure AD for enterprise email.
+* **Company B (`dhl.com` / `fedex.com`)**: Uses Microsoft Entra ID (Office 365) or corporate Okta SAML.
+* **Independent Licensed Brokers**: Use professional email addresses.
+
+To prevent blocking commercial users, CargoClear employs **Dynamic Multi-Tenant Domain Derivation**:
 
 ```
-+--------------------------------------------------------------------------------------------------+
-|                                  CARGOCLEAR SSO ARCHITECTURE                                     |
-+--------------------------------------------------------------------------------------------------+
-|                                                                                                  |
-|   [ Browser Client ]                     [ Next.js BFF Proxy ]              [ Identity Provider ] |
-|   - Login View                           - NextAuth / Google OAuth          - Google Identity /  |
-|   - Session Cookie                       - Session Token Exchange           - Workspace / OIDC   |
-|   - Auth Headers                         - Server-side Cookie Guard         - Azure AD / Okta    |
-|            │                                      │                                  │           |
-|            │ (1) User Logs in via OAuth           │                                  │           |
-|            ├─────────────────────────────────────►│ (2) Exchange Auth Code          │           |
-|            │                                      ├─────────────────────────────────►│           |
-|            │                                      │◄─────────────────────────────────┤           |
-|            │                                      │ (3) Return ID Token / JWT        │           |
-|            │◄─────────────────────────────────────┤                                              |
-|            │ (4) Set Encrypted Session Cookie     │                                              |
-|            │                                      │                                              |
-|            │ (5) API Requests (/api/proxy/...)    │                                              |
-|            ├─────────────────────────────────────►│                                              |
-|            │                                      │ (6) Forward Bearer JWT                       |
-|            │                                      ├─────────────────────────┐                    |
-|                                                                             │                    |
-|                                                                             ▼                    |
-|                                                                    [ FastAPI Backend ]           |
-|                                                                    - AuthMiddleware              |
-|                                                                    - JWT Cryptographic Verify    |
-|                                                                    - Tenant / Role Extraction    |
-|                                                                    - Audit Trail Attribution     |
-+--------------------------------------------------------------------------------------------------+
+                                [ Commercial Login Screen ]
+                                             │
+             ┌───────────────────────────────┼───────────────────────────────┐
+             ▼                               ▼                               ▼
+   [ Sign in with Google ]        [ Sign in with Microsoft ]        [ Corporate SAML / OIDC ]
+ (Any company using Google       (Any company using Azure AD/      (Enterprise brokers using 
+    Workspace or Gmail)           Office 365, e.g. customs.com)       Okta / Ping Identity)
+             │                               │                               │
+             └───────────────────────────────┼───────────────────────────────┘
+                                             ▼
+                                  [ OpenID Connect (OIDC) ]
+                                             │
+                                             ▼
+                                [ Standard Verified Payload ]
+                                • email: "john@customs.com"
+                                • domain: "customs.com"  ──► [ Auto-Assigned Tenant ID: "tenant-customs" ]
+                                • name: "John Doe"
+                                • role: "LICENSED_CHA"
+                                             │
+                                             ▼
+                          [ Workspace & Bundle Scoping ]
+                          • Sees only bundles for customs.com
+                          • Cannot see bundles for dhl.com
+                          • Audit trail stamped: "cha:john@customs.com"
 ```
 
-### Key Design Tenets
-1. **Zero-Trust Backend**: The FastAPI backend never trusts client assertions blindly. It validates JWT signatures cryptographically using the identity provider's public keys (JWKS).
-2. **Seamless Local Demo Support**: To ensure local automated testing (`APP_MODE=demo`, unit tests, Playwright) continues passing without requiring real Google Cloud client secrets, an automatic **Mock Dev Identity** will be provided when `AUTH_ENABLED=false` or in demo mode.
-3. **Audit Trail Attribution**: Every audit event in Firestore (`services/audit.py`) currently records `actor_id="system"`. With SSO, audit events will be explicitly tagged with the authenticated user (`actor_id="cha:john.doe@brokerage.com"`, `actor_role="SENIOR_CHA"`).
-4. **BFF Security**: The browser never handles long-lived refresh tokens or raw identity secrets. The Next.js BFF proxy maintains an `HttpOnly, Secure, SameSite=Lax` encrypted session cookie and forwards standard `Authorization: Bearer <JWT>` headers to the backend.
+### The 3 Core Tenets of Commercial Access
+1. **Open Commercial Access (`ALLOWED_EMAIL_DOMAINS = ["*"]`)**:
+   - Any legitimate user from `customs.com` or any corporate domain can authenticate and create their company's workspace immediately.
+   - Enterprise administrators have the optional capability to restrict domains to specific partner brokerages when deployed in private tenancy mode.
+2. **Dynamic Multi-Tenant Isolation**:
+   - The user's corporate domain (`customs.com`) is derived as their `tenant_id`.
+   - All trade bundles, documents, and assessments created by John are scoped to `tenant-customs.com`.
+   - Colleagues within `customs.com` can collaborate on the same shipping files, while competitors cannot inspect or access their trade data.
+3. **Forensic Non-Repudiation**:
+   - Every adjudication decision, reasoning override, and file upload in the Firestore hash chain is stamped with the verified user: `actor_id="cha:john@customs.com"`.
 
 ---
 
@@ -52,72 +57,73 @@ CargoClear operates in high-liability, regulated customs adjudication. Every ass
 
 | Layer | Technology | Key Responsibility |
 |---|---|---|
-| **Identity Provider (IdP)** | Google OAuth 2.0 / Google Identity Services (OIDC) | Enterprise single sign-on with domain restrictions (e.g., `@brokerage.com`, `@customs.gov`). |
-| **Frontend Auth Layer** | NextAuth.js (`next-auth` v5 / Auth.js) + React Context | Login modal/page, user profile avatar, protected routes, session cookies. |
-| **Proxy / BFF Gateway** | `frontend/app/api/proxy/[...path]/route.ts` | Attaches validated Bearer token to all upstream requests to FastAPI. |
-| **Backend Gateway** | `backend/app/gateway/auth.py` | FastAPI ASGI middleware & dependency verifying JWT signature, expiry, and issuer. |
-| **Domain & Audit** | `backend/app/domain/auth.py` & `services/audit.py` | User context model (`UserIdentity`), Tenant ID, and actor attribution in hash chain. |
+| **Identity Protocols** | OpenID Connect (OIDC) / OAuth 2.0 | Standard identity layer supported by Google Workspace, Microsoft Azure AD / Entra ID, and Okta. |
+| **Frontend Auth Layer** | NextAuth.js (`next-auth` v5 / Auth.js) | Universal multi-provider buttons (Google Workspace, Microsoft Work Accounts), session tokens, user avatar, and role pill. |
+| **BFF Proxy Gateway** | `frontend/app/api/proxy/[...path]/route.ts` | Next.js server-side route handler reading session cookies and injecting verified `Authorization: Bearer <JWT>` to backend API. |
+| **Backend Gateway** | `backend/app/gateway/auth.py` | FastAPI ASGI middleware & dependency cryptographically verifying JWT signatures, issuer, and token expiry. |
+| **Multi-Tenant Domain** | `backend/app/domain/auth.py` | Models `UserIdentity(user_id, email, tenant_id, role)` and enforces tenant bundle isolation. |
+| **Audit Integration** | `backend/app/services/audit.py` | Binds authenticated identity into the immutable SHA-256 hash chain. |
 
 ---
 
 ## 3. Detailed Phase-by-Phase Execution Plan
 
-### Phase 1: Backend Auth Gateway & JWT Verification
-* **Step 1.1**: Add Configuration Settings in `backend/app/core/config.py`:
+### Phase 1: Backend Auth Gateway & Multi-Tenant Core
+* **Step 1.1: Configuration Settings** (`backend/app/core/config.py`):
   - `AUTH_ENABLED: bool = True` (Default `False` when `APP_MODE=demo`).
-  - `OAUTH_CLIENT_ID: str`
+  - `OAUTH_CLIENT_ID: str | None = None`
   - `OAUTH_ISSUER: str = "https://accounts.google.com"`
-  - `ALLOWED_EMAIL_DOMAINS: list[str] = ["*"]` (Optional domain restriction for enterprise brokerages).
-* **Step 1.2**: Implement `backend/app/domain/auth.py`:
-  - Pydantic models: `UserIdentity(user_id, email, name, role, tenant_id)`.
-  - Roles: `CHA_OPERATOR` (view & upload), `LICENSED_CUSTOMS_BROKER` (adjudicate & override), `AUDITOR` (read-only audit trail).
-* **Step 1.3**: Implement `backend/app/gateway/auth.py`:
-  - `get_current_user(request: Request) -> UserIdentity`: FastAPI dependency extracting `Authorization: Bearer <token>`.
-  - Verify token using `google-auth` / PyJWT with cached Google public certs (`JWKS`).
-  - Fallback in demo mode: Return mock licensed broker (`demo-cha@cargoclear.internal`).
-* **Step 1.4**: Wire into `backend/app/services/audit.py`:
-  - Replace hardcoded `"actor_id": "system"` with `user.email`.
+  - `ALLOWED_EMAIL_DOMAINS: list[str] = ["*"]` (Wildcard allows any commercial company like `customs.com`).
+* **Step 1.2: Multi-Tenant Identity Model** (`backend/app/domain/auth.py`):
+  - Model `UserIdentity`:
+    ```python
+    class UserIdentity(BaseModel):
+        user_id: str
+        email: str
+        name: str
+        tenant_id: str  # Automatically derived from email domain (e.g. "customs.com")
+        role: Literal["LICENSED_CHA", "OPERATOR", "AUDITOR"] = "LICENSED_CHA"
+    ```
+* **Step 1.3: Token Verification Dependency** (`backend/app/gateway/auth.py`):
+  - `get_current_user(request: Request) -> UserIdentity`:
+    - Reads `Authorization: Bearer <token>`.
+    - Cryptographically validates JWT signature using public key sets (JWKS).
+    - Extracts email and derives `tenant_id = email.split("@")[-1]`.
+    - Checks `ALLOWED_EMAIL_DOMAINS`: permits any commercial domain when set to `["*"]`.
+    - **Demo Mode Seam**: If `AUTH_ENABLED=False` or running in `APP_MODE=demo`, injects `demo-cha@customs.com` with zero network dependency.
+* **Step 1.4: Audit Trail Binding** (`backend/app/services/audit.py`):
+  - Injects `user.email` into `actor_id` across all audit events in the Firestore hash chain.
 
-### Phase 2: Frontend Authentication & BFF Integration
-* **Step 2.1**: Install Frontend Dependencies:
-  - Add `next-auth` (or lightweight session management).
-* **Step 2.2**: Implement Auth Route & Session Provider:
-  - `frontend/app/api/auth/[...nextauth]/route.ts`: Configures Google Provider and JWT session callbacks.
-  - `frontend/components/auth/SessionProvider.tsx`: Wrap app root for reactive session state.
-* **Step 2.3**: Update BFF Proxy (`frontend/app/api/proxy/[...path]/route.ts`):
-  - Read active session on incoming requests.
-  - Inject `Authorization: Bearer <session.idToken>` header when proxying to FastAPI.
-* **Step 2.4**: Implement Login UI & User Indicator:
-  - Add `UserMenu.tsx` to `TopBar`: shows avatar, user name, role badge (`Licensed CHA`), and Sign Out button.
-  - If unauthenticated, redirect to `/login` or prompt the clean Google SSO modal.
+### Phase 2: Frontend Multi-Provider SSO & BFF Integration
+* **Step 2.1: Multi-Provider Auth Handler** (`frontend/app/api/auth/[...nextauth]/route.ts`):
+  - Configure Google Workspace and Microsoft Azure AD OIDC providers.
+  - Return standardized JWT session payload containing email, name, image, and token.
+* **Step 2.2: BFF Proxy Header Injection** (`frontend/app/api/proxy/[...path]/route.ts`):
+  - The Next.js BFF proxy reads the server-side session cookie.
+  - Attaches `Authorization: Bearer <session.idToken>` before proxying to FastAPI.
+* **Step 2.3: TopBar User Profile & Tenant Badge**:
+  - Displays authenticated user avatar, company name (`customs.com`), role pill (`Licensed CHA`), and Sign Out action.
+  - In Demo Mode: Displays `● Demo Mode (Unauthenticated Workspace)`.
 
-### Phase 3: Route Protection & Multi-Tenant Scoping
-* **Step 3.1**: Next.js Middleware Route Protection (`frontend/middleware.ts`):
-  - Protect `/workbench/*` routes, redirecting unauthenticated sessions to `/login`.
-* **Step 3.2**: Backend Bundle Scoping:
-  - Tag bundle creation (`POST /api/v1/bundles`) with `tenant_id` and `created_by`.
-  - Validate that users can only access bundles belonging to their brokerage organization.
+### Phase 3: Multi-Tenant Data Isolation
+* **Step 3.1: Bundle Tenancy Tagging**:
+  - When a user from `customs.com` creates a bundle (`POST /api/v1/bundles`), tag `bundle.tenant_id = "customs.com"`.
+* **Step 3.2: Access Enforcement**:
+  - `GET /api/v1/bundles/{id}` verifies `bundle.tenant_id == user.tenant_id` (or superadmin).
+  - Users from `customs.com` cannot view, stream, or reassess bundles belonging to `other-broker.com`.
 
-### Phase 4: Verification, Automated Tests & CI
-* **Step 4.1**: Backend Unit & Integration Tests:
-  - Test valid Google JWT verification.
-  - Test expired or tampered token returns 401 with standard error envelope (`{"code": "UNAUTHORIZED"}`).
-  - Test domain restriction filtering (`@unauthorized.com` returns 403).
-  - Verify demo mode bypass functions seamlessly without network calls.
-* **Step 4.2**: Frontend Typecheck & Build:
+### Phase 4: Automated Testing & Verification
+* **Step 4.1: Backend Tests**:
+  - Unit test valid token decoding and tenant derivation (`customs.com` $\rightarrow$ `tenant_id="customs.com"`).
+  - Test expired and tampered tokens return HTTP 401 with standard error envelope.
+  - Test multi-tenant isolation (user A cannot access user B's bundle $\rightarrow$ HTTP 403/404).
+  - Verify all 1,581 existing tests pass cleanly with `AUTH_ENABLED=False`.
+* **Step 4.2: Frontend Build & Typecheck**:
   - Run `npm run typecheck && npm run lint && npm run build`.
-* **Step 4.3**: End-to-End Verification:
-  - Verify login $\rightarrow$ bundle creation $\rightarrow$ audit log shows the logged-in user email $\rightarrow$ logout.
 
 ---
 
 ## 4. Rollback & Fail-Safe Strategy
 
-* **Zero-Downtime Feature Flag**: The entire auth layer is controlled by `AUTH_ENABLED`. If Google OAuth credentials are not supplied or if running in local sandbox, the system cleanly defaults to open access with the demo identity.
-* **Regression Guard**: All existing 1,581 backend tests will run with `AUTH_ENABLED=False` to ensure backward compatibility.
-
----
-
-## 5. Review & Approval
-
-Once this plan is approved, we will begin implementation starting with **Phase 1 (Backend Core & Auth Gateway)**.
+* **Zero-Downtime Feature Flag**: The auth layer is completely decoupled via `AUTH_ENABLED`.
+* **Demo Integrity**: Running with `APP_MODE=demo` automatically switches to the mock commercial identity (`demo-cha@customs.com`), ensuring hackathon live demos and offline evaluators are never blocked by missing OAuth credentials.
