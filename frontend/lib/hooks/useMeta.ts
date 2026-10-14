@@ -39,7 +39,7 @@ const DEFAULT_META: Meta = {
     oauth_issuer: "https://accounts.google.com",
     allowed_email_domains: ["*"],
   },
-  user: null,
+  user: undefined,
 };
 
 export function useMeta(): MetaState {

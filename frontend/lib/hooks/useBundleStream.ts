@@ -22,8 +22,6 @@ export interface BundleStream {
   error: string | null;
 }
 
-/** Delay before re-opening a stream the browser gave up on (readyState CLOSED). */
-const REOPEN_DELAY_MS = 3000;
 
 function parseJson(raw: unknown): unknown {
   if (typeof raw !== "string") return null;
