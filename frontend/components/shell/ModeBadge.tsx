@@ -7,9 +7,12 @@ export function ModeBadge() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-[var(--cc-text-muted)] border border-[var(--cc-border)] rounded-full px-2.5 py-0.5">
-        <span className="w-1.5 h-1.5 rounded-full bg-[var(--cc-text-muted)] animate-pulse" />
-        <span className="text-[11px]">Connecting...</span>
+      <div
+        className="flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium border bg-[var(--cc-ok-bg)] text-[var(--cc-ok)] border-[var(--cc-ok-bd)] opacity-85"
+        title="Live GCP Mode: Initializing connection to Vertex AI"
+      >
+        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="text-[11px] font-semibold tracking-wide uppercase">Live GCP</span>
       </div>
     );
   }

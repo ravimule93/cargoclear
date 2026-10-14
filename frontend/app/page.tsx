@@ -17,6 +17,8 @@ const DESTINATIONS = [
   { code: "SG", label: "Singapore (SG)" },
   { code: "IN", label: "India (IN)" },
 ] as const;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 type Destination = (typeof DESTINATIONS)[number]["code"];
 
 export default function Home() {
