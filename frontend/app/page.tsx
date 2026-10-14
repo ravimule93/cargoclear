@@ -16,6 +16,7 @@ type Pending = "empty" | "demo" | "demo-d" | null;
 const DESTINATIONS = [
   { code: "SG", label: "Singapore (SG)" },
   { code: "IN", label: "India (IN)" },
+] as const;
 type Destination = (typeof DESTINATIONS)[number]["code"];
 
 export default function Home() {
