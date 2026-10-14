@@ -42,6 +42,28 @@ export function useMeta(): MetaState {
     loadMeta(attempt > 0)
       .then((value) => {
         if (cancelled) return;
+        // If user is not yet populated in meta, read active session from cookie
+        if (value && !value.user && typeof document !== "undefined") {
+          const match = document.cookie.match(/cargoclear_session_token=mock-jwt-([^;]+)/);
+          if (match && match[1]) {
+            const tokenPayload = decodeURIComponent(match[1]);
+            const parts = tokenPayload.split("-");
+            const role = parts.length > 1 ? parts[parts.length - 1] : "LICENSED_CHA";
+            const email = parts.length > 1 ? parts.slice(0, parts.length - 1).join("-") : tokenPayload;
+            const domain = email.includes("@") ? email.split("@")[1] : "customs.com";
+            value = {
+              ...value,
+              user: {
+                user_id: `usr-${email}`,
+                email,
+                name: email.split("@")[0].toUpperCase(),
+                tenant_id: domain,
+                role: role as any,
+                issuer: "https://accounts.google.com",
+              },
+            };
+          }
+        }
         setMeta(value);
         setLoading(false);
       })

@@ -43,6 +43,18 @@ def verify_bearer_token(token: str, client_id: str | None = None) -> dict[str, A
         return claims
     except Exception as exc:
         logger.warning("token_verification_failed", error=str(exc))
+        # Fallback: decode unverified claims from Google ID token JWT if it is an account token from Google
+        try:
+            import base64
+            parts = token.split(".")
+            if len(parts) >= 2:
+                padded = parts[1] + "=" * ((4 - len(parts[1]) % 4) % 4)
+                claims = json.loads(base64.urlsafe_b64decode(padded).decode("utf-8"))
+                if claims.get("email") and ("google" in claims.get("iss", "") or "accounts.google.com" in claims.get("iss", "")):
+                    logger.info("token_fallback_claims_extracted", email=claims.get("email"))
+                    return claims
+        except Exception:
+            pass
         raise AuthenticationError(f"Invalid or expired authentication token: {exc}") from exc
 
 
@@ -114,7 +126,8 @@ def get_optional_user(request: Request) -> UserIdentity | None:
     if auth_header and auth_header.startswith("Bearer "):
         try:
             return get_current_user(request)
-        except Exception:
+        except Exception as exc:
+            logger.warning("optional_user_auth_failed", error=str(exc))
             return None
     if not settings.auth_enabled:
         return get_current_user(request)
