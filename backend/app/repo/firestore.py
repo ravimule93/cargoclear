@@ -20,6 +20,7 @@ from app.core.config import settings
 from app.core.mode import no_credentials_message, use_live_gcp
 from app.domain.provenance import derive_data_source
 from app.gateway.errors import PipelineError, UpstreamError
+from app.repo import leases
 
 logger = structlog.get_logger(__name__)
 
@@ -28,13 +29,13 @@ _IN_MEMORY_BUNDLES: dict[str, dict[str, Any]] = {}
 _IN_MEMORY_DOCS: dict[str, dict[str, Any]] = {}
 _IN_MEMORY_RUNS: dict[str, dict[str, Any]] = {}
 _IN_MEMORY_ITERATIONS: dict[str, list[dict[str, Any]]] = {}
-_IN_MEMORY_EXTRACTIONS: dict[str, dict[int, list[dict[str, Any]]]] = {}
+_IN_MEMORY_EXTRACTIONS: dict[str, dict[int, dict[str, Any]]] = {}
 
 # Lazy initialized Firestore client
 _firestore_client = None
 
 
-def _get_firestore_client():
+def _get_firestore_client() -> Any:
     """Lazily initialize the async Firestore client."""
     global _firestore_client
     if _firestore_client is not None:
@@ -215,6 +216,26 @@ async def set_run_stage(bundle_id: str, run_id: str, stage: str, progress: float
         _IN_MEMORY_RUNS[f"{bundle_id}:{run_id}"] = run_state
 
 
+async def set_run_queued(bundle_id: str, run_id: str) -> None:
+    """The run record of a run that is waiting for a worker (RUN_DISPATCH=cloudtasks): state QUEUED, stage "queued"."""
+    run_state = {
+        "kind": "status",
+        "bundle_id": bundle_id,
+        "run_id": run_id,
+        "state": "QUEUED",
+        "stage": "queued",
+        "progress": 0.02,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    client = _get_firestore_client()
+
+    if client is not None:
+        run_ref = client.collection("bundles").document(bundle_id).collection("runs").document(run_id)
+        await run_ref.set(run_state, merge=True)
+    else:
+        _IN_MEMORY_RUNS[f"{bundle_id}:{run_id}"] = run_state
+
+
 async def touch_run(bundle_id: str, run_id: str) -> None:
     """Heartbeat: refresh ``updated_at`` of a run, changing NOTHING else and only while its stored state is RUNNING.
 
@@ -240,7 +261,7 @@ async def touch_run(bundle_id: str, run_id: str) -> None:
 
 
 async def set_run_state(
-    bundle_id: str, run_id: str, state: str, progress: float, only_if_state: str | None = None
+    bundle_id: str, run_id: str, state: str, progress: float, only_if_state: str | None = None, fence: int | None = None
 ) -> bool:
     """Update terminal pipeline state (COMPLETE/ERROR). Returns True if the write was applied.
 
@@ -259,6 +280,9 @@ async def set_run_state(
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     client = _get_firestore_client()
+
+    if fence is not None:
+        return await _set_run_state_fenced(bundle_id, run_id, run_state, only_if_state, fence, client)
 
     if client is not None:
         run_ref = client.collection("bundles").document(bundle_id).collection("runs").document(run_id)
@@ -280,6 +304,40 @@ async def set_run_state(
     else:
         _IN_MEMORY_RUNS[key] = run_state
     return True
+
+
+async def _set_run_state_fenced(
+    bundle_id: str, run_id: str, run_state: dict[str, Any], only_if_state: str | None, fence: int, client: Any
+) -> bool:
+    """``set_run_state`` of an execution that holds the bundle's lease: the lease check, the (conditional) write and, for a
+    terminal state, the release of the lease are ONE atomic step. ``LeaseLost`` (raised) when the execution no longer owns the
+    bundle; the record then stays as the new owner (or the reaper) left it."""
+    applied = False
+
+    async def work(transaction: Any) -> None:
+        nonlocal applied
+        applied = False  # Firestore runs this again on contention: only the attempt that is committed may say "applied"
+        if transaction is None:  # demo mode
+            record = _IN_MEMORY_RUNS.get(f"{bundle_id}:{run_id}")
+            if only_if_state is not None and (record is None or record.get("state") != only_if_state):
+                return
+            if record is not None:
+                record.update(run_state)
+            else:
+                _IN_MEMORY_RUNS[f"{bundle_id}:{run_id}"] = run_state
+            applied = True
+            return
+        run_ref = client.collection("bundles").document(bundle_id).collection("runs").document(run_id)
+        snapshot = await run_ref.get(transaction=transaction)
+        stored = snapshot.to_dict() if snapshot.exists else None
+        if only_if_state is not None and (stored is None or stored.get("state") != only_if_state):
+            return
+        transaction.set(run_ref, run_state, merge=True)
+        applied = True
+
+    terminal = run_state.get("state") in ("COMPLETE", "ERROR")
+    await leases.fenced_transaction(bundle_id, run_id, fence, work, release_after=terminal)
+    return applied
 
 
 async def set_run_error(bundle_id: str, run_id: str, error: str) -> None:
@@ -363,36 +421,56 @@ async def write_iteration(ctx: dict[str, Any]) -> dict[str, Any]:
         "reasoning_delta": ctx.get("reasoning_delta"),
         "documents": [d.get("document_id") for d in ctx.get("documents", []) if isinstance(d, dict)],
         "data_source": data_source,
+        "valuation": ctx.get("valuation"),
+        "reference_data": ctx.get("reference_data"),
+        "corrections": ctx.get("corrections", []),
+        "run_mode": ctx.get("mode"),
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
     client = _get_firestore_client()
     already_exists = f"iteration {iteration_num} already exists for bundle {bundle_id}"
+    fence = ctx.get("fence")
+    run_id = ctx.get("run_id")
 
     if client is not None:
         from google.api_core.exceptions import AlreadyExists
 
         bundle_ref = client.collection("bundles").document(bundle_id)
         iter_ref = bundle_ref.collection("iterations").document(str(iteration_num))
-        try:
-            await iter_ref.create(iteration_data)  # create-only: an iteration is immutable and never overwritten
-        except AlreadyExists as exc:
-            raise PipelineError(already_exists, detail={"bundle_id": bundle_id, "iteration": iteration_num}) from exc
-
-        await bundle_ref.update({
+        bundle_update = {
             "status": iteration_data["status"],
             "current_iteration": iteration_num,
             "updated_at": iteration_data["created_at"],
-        })
+        }
+        try:
+            if fence is not None and run_id:
+                # the lease check and both writes are ONE transaction: an executor that lost its lease cannot write
+                async def work(transaction: Any) -> None:
+                    transaction.create(iter_ref, iteration_data)  # create-only: an iteration is immutable and never overwritten
+                    transaction.update(bundle_ref, bundle_update)
+
+                await leases.fenced_transaction(bundle_id, run_id, fence, work)
+            else:
+                await iter_ref.create(iteration_data)  # create-only: an iteration is immutable and never overwritten
+                await bundle_ref.update(bundle_update)
+        except AlreadyExists as exc:
+            raise PipelineError(already_exists, detail={"bundle_id": bundle_id, "iteration": iteration_num}) from exc
     else:
-        if bundle_id not in _IN_MEMORY_ITERATIONS:
-            _IN_MEMORY_ITERATIONS[bundle_id] = []
-        if any(existing.get("iteration") == iteration_num for existing in _IN_MEMORY_ITERATIONS[bundle_id]):
-            raise PipelineError(already_exists, detail={"bundle_id": bundle_id, "iteration": iteration_num})
-        _IN_MEMORY_ITERATIONS[bundle_id].append(iteration_data)
-        if bundle_id in _IN_MEMORY_BUNDLES:
-            _IN_MEMORY_BUNDLES[bundle_id]["status"] = iteration_data["status"]
-            _IN_MEMORY_BUNDLES[bundle_id]["current_iteration"] = iteration_num
+        async def write_memory(_transaction: Any) -> None:
+            if bundle_id not in _IN_MEMORY_ITERATIONS:
+                _IN_MEMORY_ITERATIONS[bundle_id] = []
+            if any(existing.get("iteration") == iteration_num for existing in _IN_MEMORY_ITERATIONS[bundle_id]):
+                raise PipelineError(already_exists, detail={"bundle_id": bundle_id, "iteration": iteration_num})
+            _IN_MEMORY_ITERATIONS[bundle_id].append(iteration_data)
+            if bundle_id in _IN_MEMORY_BUNDLES:
+                _IN_MEMORY_BUNDLES[bundle_id]["status"] = iteration_data["status"]
+                _IN_MEMORY_BUNDLES[bundle_id]["current_iteration"] = iteration_num
+
+        if fence is not None and run_id:
+            await leases.fenced_transaction(bundle_id, run_id, fence, write_memory)
+        else:
+            await write_memory(None)
 
     return iteration_data
 
@@ -409,6 +487,18 @@ async def latest_iteration(bundle_id: str) -> dict[str, Any] | None:
 
     iters = _IN_MEMORY_ITERATIONS.get(bundle_id, [])
     return iters[-1] if iters else None
+
+
+async def get_iteration(bundle_id: str, iteration: int) -> dict[str, Any] | None:
+    """One AssessmentIteration by number; None if there is none."""
+    client = _get_firestore_client()
+
+    if client is not None:
+        ref = client.collection("bundles").document(bundle_id).collection("iterations").document(str(iteration))
+        snap = await ref.get()
+        return snap.to_dict() if snap.exists else None
+
+    return next((it for it in _IN_MEMORY_ITERATIONS.get(bundle_id, []) if it.get("iteration") == iteration), None)
 
 
 async def list_iterations(bundle_id: str) -> list[dict[str, Any]]:
@@ -428,14 +518,30 @@ async def list_iterations(bundle_id: str) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 
-async def save_extractions(bundle_id: str, iteration: int, extractions: list[dict[str, Any]]) -> None:
-    """Persist per-document extraction JSON for an iteration."""
+async def save_extractions(
+    bundle_id: str,
+    iteration: int,
+    extractions: list[dict[str, Any]],
+    extraction_source: str | None = None,
+    derived_from: int | None = None,
+    pages_iteration: int | None = None,
+) -> None:
+    """Persist per-document extraction JSON for an iteration: exactly what the model read, never the corrected view.
+
+    ``extraction_source`` ("live" / "fixture") travels with it so a recompute (which reuses this record) knows where the
+    data came from; ``derived_from`` is set on a copy a recompute made, naming the iteration that was really extracted;
+    ``pages_iteration`` names the assessment whose page images the model was shown (a recompute shows none of its own: it
+    carries the number of the assessment it copied), None when no page image was kept.
+    """
     client = _get_firestore_client()
 
     data = {
         "bundle_id": bundle_id,
         "iteration": iteration,
         "extractions": extractions,
+        "extraction_source": extraction_source,
+        "derived_from": derived_from,
+        "pages_iteration": pages_iteration,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -445,22 +551,26 @@ async def save_extractions(bundle_id: str, iteration: int, extractions: list[dic
     else:
         if bundle_id not in _IN_MEMORY_EXTRACTIONS:
             _IN_MEMORY_EXTRACTIONS[bundle_id] = {}
-        _IN_MEMORY_EXTRACTIONS[bundle_id][iteration] = extractions
+        _IN_MEMORY_EXTRACTIONS[bundle_id][iteration] = data
 
 
-async def get_extractions(bundle_id: str, iteration: int | None = None) -> list[dict[str, Any]]:
-    """Get per-document extraction JSON for a bundle."""
+async def get_extraction_record(bundle_id: str, iteration: int) -> dict[str, Any] | None:
+    """The stored extraction record of one iteration (``extractions``, ``extraction_source``, ...); None if there is none."""
     client = _get_firestore_client()
-
-    if iteration is None:
-        latest = await latest_iteration(bundle_id)
-        iteration = latest.get("iteration", 1) if latest else 1
 
     if client is not None:
         ref = client.collection("bundles").document(bundle_id).collection("extractions").document(str(iteration))
         snap = await ref.get()
-        if snap.exists:
-            return snap.to_dict().get("extractions", [])
-        return []
+        return snap.to_dict() if snap.exists else None
 
-    return _IN_MEMORY_EXTRACTIONS.get(bundle_id, {}).get(iteration, [])
+    return _IN_MEMORY_EXTRACTIONS.get(bundle_id, {}).get(iteration)
+
+
+async def get_extractions(bundle_id: str, iteration: int | None = None) -> list[dict[str, Any]]:
+    """Get per-document extraction JSON for a bundle (the latest iteration's when ``iteration`` is None)."""
+    if iteration is None:
+        latest = await latest_iteration(bundle_id)
+        iteration = latest.get("iteration", 1) if latest else 1
+
+    record = await get_extraction_record(bundle_id, iteration)
+    return list(record.get("extractions", [])) if record else []

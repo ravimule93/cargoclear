@@ -87,8 +87,21 @@ frontend/test-results/
 frontend/blob-report/
 frontend/playwright/.cache/
 
+# Reports written by scripts/preflight_gcp.py, scripts/live_e2e_hosted.py and scripts/live_smoke_extraction.py (they name projects,
+# hosts and bundle ids). Only the sanitized copies that scripts/measured_results.py ingest writes to docs/measurements/ are committed.
+preflight-report*.json
+live-e2e-report*.json
+/report-*.json
+
+# Recorded walkthroughs from scripts/record_demo.sh (video: keep it where the team keeps files, not in git)
+demo-recordings/
+
 # Logs
 *.log
+
+# Left behind by a merge or a patch
+*.orig
+*.rej
 
 # Claude Code: personal settings stay local (a shared .claude/launch.json may be committed)
 .claude/settings.local.json

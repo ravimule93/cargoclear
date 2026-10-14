@@ -145,13 +145,16 @@ def test_model_dump_keys_are_unchanged() -> None:
         "vessel_or_flight", "port_of_loading", "port_of_discharge", "shipment_date", "invoice_value",
         "invoice_currency", "total_net_weight_kg", "total_gross_weight_kg", "tare_weight_kg", "package_count",
         "hs_code_header", "line_items",
+        # terms of sale and valuation inputs, and the material evidence of a certificate (all optional / empty by default)
+        "incoterm", "country_of_origin", "freight_amount", "freight_currency", "insurance_amount", "insurance_currency",
+        "specification", "heat_numbers", "test_results",
     }
     assert set(dumped["consignee"]) == {"value", "confidence", "bbox"}  # a TextRef dumps like a FieldRef
     assert set(dumped["invoice_value"]) == {"value", "confidence", "bbox"}
     assert set(dumped["total_net_weight_kg"]) == {"value", "confidence", "bbox", "unit"}
     assert set(dumped["line_items"][0]) == {
         "description", "quantity", "net_weight_kg", "gross_weight_kg", "hs_code_declared",
-        "unit_price", "total_value", "currency",
+        "unit_price", "total_value", "currency", "unit_price_basis",
     }
 
 
@@ -170,3 +173,38 @@ def test_json_schema_types_text_values_as_strings_and_numeric_values_as_numbers(
     assert {opt.get("type") for opt in text_value["anyOf"]} == {"string", "null"}
     numeric_value = defs["FieldRef"]["properties"]["value"]
     assert {opt.get("type") for opt in numeric_value["anyOf"]} >= {"number", "integer", "string"}
+
+
+def test_an_extraction_stored_before_the_material_and_sale_term_fields_still_loads() -> None:
+    """Iterations are immutable and extractions are persisted per iteration: old JSON has none of the new keys."""
+    legacy = {
+        "document_id": "doc-old",
+        "doc_type": "COMMERCIAL_INVOICE",
+        "doc_type_confidence": 0.99,
+        "consignee": {"value": "ACME", "confidence": 0.9, "bbox": None},
+        "line_items": [
+            {
+                "description": {"value": "pipes", "confidence": 0.9, "bbox": None},
+                "quantity": {"value": "1", "confidence": 0.9, "bbox": None},
+                "net_weight_kg": {"value": 1.0, "confidence": 0.9, "bbox": None, "unit": "KGS"},
+                "gross_weight_kg": {"value": 1.0, "confidence": 0.9, "bbox": None, "unit": "KGS"},
+                "hs_code_declared": {"value": "73041900", "confidence": 0.9, "bbox": None},
+            }
+        ],
+    }
+
+    loaded = ExtractedDocument.model_validate(legacy)
+
+    assert loaded.incoterm is None and loaded.specification is None
+    assert loaded.heat_numbers == [] and loaded.test_results == []
+    assert loaded.line_items[0].unit_price_basis is None
+
+
+def test_a_lab_result_row_reads_numbers_as_printed_text() -> None:
+    """A model that answers a chemistry value as a JSON number still gives text ("0.18"), like every other text field."""
+    from app.domain.schemas import LabResult
+
+    row = LabResult.model_validate({"value": 0.18, "confidence": 0.97, "parameter": "C", "heat_number": "H-1", "unit": "%"})
+
+    assert row.value == "0.18" and row.parameter == "C" and row.heat_number == "H-1" and row.unit == "%"
+    assert LabResult.model_validate({"value": "<0.005", "confidence": 0.9, "parameter": "B"}).value == "<0.005"

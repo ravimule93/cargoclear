@@ -4,7 +4,9 @@ Per v4.0 Specification (US 1.1, US 1.2):
   - Ingests raw PDF documents.
   - Generates transform metadata so bounding box coordinates can be remapped
     accurately to the original PDF pages in the UI canvas layer.
-  - Applies 0/90/180/270 rotation normalization and deskew heuristics.
+  - Applies 0/90/180/270 rotation normalization and (PREPROCESS_DESKEW) a continuous deskew. Every geometric change
+    is recorded as a REVERSIBLE affine (``processed_to_source_affine``, normalized 0-1000 coordinates, aspect-aware), so
+    a box the model reports on the processed page maps back exactly onto the original page.
   - Page count and size limits:
       Threshold: >1 MB or >13 pages triggers sequential sub-document splitting.
   - Provides graceful fallback handling when external image processing libraries
@@ -16,11 +18,16 @@ from __future__ import annotations
 import asyncio
 import io
 import math
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import structlog
 
+from app.core.config import settings
 from app.gateway.errors import PipelineError
+
+if TYPE_CHECKING:  # the image libraries are imported lazily, inside the functions that use them
+    import numpy as np
+    from PIL import Image
 
 logger = structlog.get_logger(__name__)
 
@@ -33,68 +40,177 @@ class PreprocessError(PipelineError):
     """A required compliant preprocessing artifact could not be produced."""
 
 
-def estimate_skew_angle(image_bytes: bytes) -> float:
-    """Estimate document skew angle in degrees.
+_SKEW_SEARCH_DEG = 15.0   # the estimator looks this far either way
+_SKEW_WIDTH = 800         # pages are reduced to this width first: the angle does not need 200 DPI
+_SKEW_MIN_GAIN = 1.02     # the best angle must straighten the text lines at least this much more than 0 degrees does
 
-    Uses OpenCV Hough transform if available, otherwise returns 0.0.
+
+def estimate_skew_angle(image_bytes: bytes) -> float:
+    """The skew of a page in degrees: positive when its text lines slope DOWNWARD to the right (the page was scanned
+    clockwise-tilted). Rotating the page COUNTER-CLOCKWISE by this angle straightens it (``deskew_image``).
+
+    Projection profile: the page is rotated through candidate angles and the angle at which its ink rows are most
+    unevenly filled (text lines horizontal: dense rows between empty ones) wins; a coarse 1-degree sweep, then 0.1 degree.
+    Deterministic, needs no OpenCV, searches a 0.1 degree grid (at most 0.05 degree off on the synthetic test pages; not measured on real scans). Returns 0.0 for a blank page, an unreadable
+    image, or a page where no angle straightens the lines clearly better than none does (photographs, stamps, noise).
     """
     try:
-        import cv2
         import numpy as np
+        from PIL import Image, ImageOps
 
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
-        if img is None:
+        with Image.open(io.BytesIO(image_bytes)) as source:
+            gray = source.convert("L")
+        if gray.width > _SKEW_WIDTH:
+            gray = gray.resize((_SKEW_WIDTH, max(1, round(gray.height * _SKEW_WIDTH / gray.width))), Image.Resampling.BILINEAR)
+        ink = ImageOps.autocontrast(gray, cutoff=1).point(lambda value: 255 if value < 128 else 0)
+        ink_fraction = float(np.asarray(ink, dtype=np.float32).mean()) / 255.0
+        if not 0.0005 < ink_fraction < 0.5:  # a blank page, or one that is mostly ink (black, a dark photograph): no text lines
             return 0.0
 
-        # Edge detection
-        edges = cv2.Canny(img, 50, 150, apertureSize=3)
-        lines = cv2.HoughLinesP(edges, 1, math.pi / 180, threshold=100, minLineLength=100, maxLineGap=10)
-        if lines is None:
+        def score(angle: float) -> float:
+            rotated = ink.rotate(angle, resample=Image.Resampling.BILINEAR, fillcolor=0)
+            return float(np.var(np.asarray(rotated, dtype=np.float32).sum(axis=1)))
+
+        coarse = max(np.arange(-_SKEW_SEARCH_DEG, _SKEW_SEARCH_DEG + 0.01, 1.0), key=score)
+        best = max(np.arange(coarse - 1.0, coarse + 1.01, 0.1), key=score)
+        if score(best) < score(0.0) * _SKEW_MIN_GAIN:
             return 0.0
-
-        angles = []
-        for line in lines:
-            x1, y1, x2, y2 = line[0]
-            if x2 - x1 != 0:
-                angle = math.degrees(math.atan2(y2 - y1, x2 - x1))
-                if -45 < angle < 45:
-                    angles.append(angle)
-
-        if not angles:
-            return 0.0
-
-        # Return median angle
-        angles.sort()
-        return round(angles[len(angles) // 2], 2)
+        return round(float(best), 1)
     except Exception as exc:
-        logger.debug("opencv_skew_skipped", reason=str(exc))
+        logger.debug("skew_estimate_skipped", reason=type(exc).__name__)
         return 0.0
+
+
+def _pixel_affine(angle_deg: float, width: int, height: int) -> tuple[float, float, float, float, float, float]:
+    """PIL's AFFINE data (a, b, c, d, e, f) for the deskew of ``angle_deg``: each OUTPUT pixel (x, y) is read from the INPUT
+    at (a x + b y + c, d x + e y + f). That is exactly the processed -> source mapping of this step, in pixel coordinates:
+    a rotation by ``angle_deg`` counter-clockwise about the page centre (y points down)."""
+    phi = math.radians(angle_deg)
+    cos, sin = math.cos(phi), math.sin(phi)
+    cx, cy = width / 2.0, height / 2.0
+    a, b, d, e = cos, -sin, sin, cos
+    return a, b, cx - (a * cx + b * cy), d, e, cy - (d * cx + e * cy)
+
+
+def deskew_image(image: Image.Image, angle_deg: float) -> Image.Image:
+    """The page rotated COUNTER-CLOCKWISE by ``angle_deg`` about its centre, on a canvas of the same size (the corners that
+    swing out are cropped, the ones that swing in are white). Reversible with ``deskew_to_source_affine``."""
+    from PIL import Image
+
+    return image.transform(
+        image.size, Image.Transform.AFFINE, _pixel_affine(angle_deg, image.width, image.height),
+        resample=Image.Resampling.BICUBIC, fillcolor=255,
+    )
+
+
+def deskew_to_source_affine(angle_deg: float, width: int, height: int) -> list[list[float]]:
+    """The deskew as a 3x3 affine in NORMALIZED coordinates (0-1000 on both axes, origin top-left): a point of the processed
+    page -> the same point of the page before the deskew. Aspect-aware: the pixel affine is conjugated with the page's
+    width and height, so a rectangular page does not turn into a shear."""
+    a, b, c, d, e, f = _pixel_affine(angle_deg, width, height)
+    return [
+        [a, b * height / width, c * 1000.0 / width],
+        [d * width / height, e, f * 1000.0 / height],
+        [0.0, 0.0, 1.0],
+    ]
+
+
+def compose_affines(outer: list[list[float]], inner: list[list[float]]) -> list[list[float]]:
+    """``outer`` after ``inner`` (3x3 matrix product), rounded to 9 places so that the stored matrix is stable and readable."""
+    product = [[sum(outer[i][k] * inner[k][j] for k in range(3)) for j in range(3)] for i in range(3)]
+    return [[round(value, 9) + 0.0 for value in row] for row in product]  # + 0.0: no negative zero
+
+
+def apply_affine(matrix: list[list[float]], x: float, y: float) -> tuple[float, float]:
+    """A normalized point through a normalized affine."""
+    return (
+        matrix[0][0] * x + matrix[0][1] * y + matrix[0][2],
+        matrix[1][0] * x + matrix[1][1] * y + matrix[1][2],
+    )
+
+
+# Orientation is judged on a small copy of the page. First the AXIS: text lines make the ink rows uneven (dense lines between
+# empty gaps), so the rotation pair (0/180 or 90/270) at which the row profile is most uneven holds the horizontal lines. That is
+# measured at every small tilt in the range below, because a page scanned a few degrees crooked has its rows smeared at its true
+# orientation and must not lose to a wrong one for that reason. Then the POLARITY within the axis: pages carry more ink in their
+# top half than their bottom (headings, letterheads), a weak signal, so an upside-down page is only turned when it is clearly
+# bottom-heavy, and a sideways page is turned to the candidate that is more top-heavy.
+_ORIENTATION_TILTS = tuple(float(angle) for angle in range(-12, 13))
+_ORIENTATION_SAMPLE = (256, 360)
+_AXIS_RATIO = 1.6          # one axis must be this much stronger than the other ...
+_AXIS_MIN_GAP = 0.1        # ... and by at least this much, or the page is left as it is
+_FLIP_BIAS_MARGIN = 0.6    # how much more top-heavy the 180-degree turn must be to be trusted
+
+
+def _ink_sample(image: Image.Image) -> np.ndarray:
+    """The page as a small array of ink (0..1, text darker than its LOCAL background, so uneven lighting and a tinted page
+    do not read as ink), in the page's own orientation."""
+    import numpy as np
+    from PIL import ImageFilter
+
+    gray = image.convert("L").resize(_ORIENTATION_SAMPLE)
+    background = np.asarray(gray.filter(ImageFilter.BoxBlur(24)), dtype=np.float32)
+    ink = np.clip(1.0 - np.asarray(gray, dtype=np.float32) / np.maximum(background, 1.0), 0.0, 1.0)
+    return np.where(ink < 0.12, 0.0, ink)  # sensor noise and paper texture are not text
+
+
+def _line_strength(ink: np.ndarray) -> float:
+    """How strongly the rows of ``ink`` look like lines of text, at the best small tilt: the squared coefficient of variation
+    of the row sums (about 1 for a text page, a third of that or less for vertical lines, whatever the contrast)."""
+    import numpy as np
+    from PIL import Image
+
+    picture = Image.fromarray((ink * 255.0).astype(np.uint8), "L")
+    best = 0.0
+    for tilt in _ORIENTATION_TILTS:
+        tilted = picture if tilt == 0.0 else picture.rotate(tilt, resample=Image.Resampling.BILINEAR, fillcolor=0)
+        rows = np.asarray(tilted, dtype=np.float32).sum(axis=1)
+        mean = float(rows.mean())
+        if mean > 0:
+            best = max(best, float(rows.var()) / (mean * mean))
+    return best
+
+
+def _top_bias(ink: np.ndarray) -> float:
+    """+1: all the ink is in the top half; -1: all in the bottom half."""
+    rows = ink.sum(axis=1)
+    total = float(rows.sum())
+    if total == 0:
+        return 0.0
+    half = len(rows) // 2
+    return (float(rows[:half].sum()) - float(rows[half:].sum())) / total
 
 
 def detect_orientation_pass(image_bytes: bytes) -> int:
     """Return the clockwise normalization rotation (0/90/180/270), or identity when uncertain.
 
-    The heuristic first prefers horizontal text-line structure, then uses a deliberately small
-    top-versus-bottom ink bias to distinguish an upright page from its 180-degree inverse.
-    It only rotates when a non-identity candidate is materially better than identity, avoiding
-    unsupported guesses for symmetric, photographic, or otherwise ambiguous pages.
+    Axis first (which rotation pair makes the text lines horizontal, at the best small tilt), then polarity (a weak top-heavy
+    bias). It rotates only on clear evidence: for symmetric, photographic or otherwise ambiguous pages the source orientation
+    is kept, and an upside-down page is turned only when it is clearly bottom-heavy (without OCR the two are hard to tell apart).
     """
+    import numpy as np
     from PIL import Image
 
     try:
         with Image.open(io.BytesIO(image_bytes)) as image:
-            base = image.convert("L")
-            scores = {rotation: _orientation_score(_rotate_clockwise(base, rotation)) for rotation in (0, 90, 180, 270)}
+            ink = _ink_sample(image)
     except Exception:
         return 0
+    if not float(ink.sum()):
+        return 0
 
-    best = max(scores, key=scores.__getitem__)
-    # A weak preference is not evidence: retain the source orientation in that case.
-    return best if best != 0 and scores[best] >= scores[0] + 0.12 else 0
+    horizontal = _line_strength(ink)
+    vertical = _line_strength(np.rot90(ink, -1))
+    if vertical >= horizontal * _AXIS_RATIO and vertical - horizontal >= _AXIS_MIN_GAP:
+        upright_when_turned = {rotation: _top_bias(np.rot90(ink, -(rotation // 90))) for rotation in (90, 270)}
+        return max(upright_when_turned, key=upright_when_turned.__getitem__)
+    if horizontal >= vertical * _AXIS_RATIO and horizontal - vertical >= _AXIS_MIN_GAP:
+        if _top_bias(np.rot90(ink, 2)) - _top_bias(ink) >= _FLIP_BIAS_MARGIN:
+            return 180
+    return 0
 
 
-def _rotate_clockwise(image, rotation: int):
+def _rotate_clockwise(image: Image.Image, rotation: int) -> Image.Image:
     from PIL import Image
 
     transpose = {
@@ -104,27 +220,6 @@ def _rotate_clockwise(image, rotation: int):
         270: Image.Transpose.ROTATE_90,
     }.get(rotation)
     return image if transpose is None else image.transpose(transpose)
-
-
-def _orientation_score(image) -> float:
-    """A compact document-layout score; positive values favour upright horizontal text."""
-    sample = image.resize((128, 180)).convert("L")
-    pixels = list(sample.get_flattened_data())
-    rows = [0.0] * sample.height
-    columns = [0.0] * sample.width
-    for index, value in enumerate(pixels):
-        ink = (255 - value) / 255
-        rows[index // sample.width] += ink
-        columns[index % sample.width] += ink
-    row_mean = sum(rows) / len(rows)
-    col_mean = sum(columns) / len(columns)
-    row_variance = sum((value - row_mean) ** 2 for value in rows) / len(rows)
-    col_variance = sum((value - col_mean) ** 2 for value in columns) / len(columns)
-    total = sum(rows)
-    if total == 0:
-        return 0.0
-    top_bias = (sum(rows[: len(rows) // 2]) - sum(rows[len(rows) // 2 :])) / total
-    return (row_variance - col_variance) / (row_variance + col_variance + 1e-9) + (top_bias * 0.2)
 
 
 def _processed_to_source_affine(rotation: int) -> list[list[int]]:
@@ -151,6 +246,7 @@ def _render_pages(
 
     images = convert_from_bytes(raw, dpi=TARGET_DPI, fmt="png")
 
+    mode = settings.page_image_mode
     for idx, img in enumerate(images, start=1):
         buf = io.BytesIO()
         source_gray = img.convert("L")
@@ -158,11 +254,29 @@ def _render_pages(
         source_gray.save(source_buffer, format="PNG")
         rotation = detect_orientation_pass(source_buffer.getvalue())
         normalized = _rotate_clockwise(source_gray, rotation)
-        # Exact deskew inversion needs crop/translation geometry that the current pipeline does not create.
-        # Keep it as a no-op rather than claiming a transform that was never applied.
-        detected_skew = estimate_skew_angle(source_buffer.getvalue())
-        bw_img = normalized.point(lambda value: 0 if value < 200 else 255, mode="1")
-        bw_img.save(buf, format="PNG")
+
+        # The skew is measured on the UPRIGHT page (on a sideways one the text lines are vertical).
+        upright = io.BytesIO()
+        normalized.save(upright, format="PNG")
+        detected_skew = estimate_skew_angle(upright.getvalue())
+        affine: list[list[float]] | list[list[int]] = _processed_to_source_affine(rotation)
+        applied_skew, skipped = 0.0, None
+        if not settings.preprocess_deskew:
+            skipped = "disabled"
+        elif abs(detected_skew) < settings.deskew_min_degrees:
+            skipped = "below_threshold"
+        elif abs(detected_skew) > settings.deskew_max_degrees:
+            skipped = "above_limit"  # a skew this large is more likely a misreading than a scan: leave the page alone
+        else:
+            normalized = deskew_image(normalized, detected_skew)
+            applied_skew = detected_skew
+            affine = compose_affines(
+                [[float(v) for v in row] for row in affine],
+                deskew_to_source_affine(applied_skew, normalized.width, normalized.height),
+            )
+
+        shown = normalized if mode == "gray" else normalized.point(lambda value: 0 if value < 200 else 255, mode="1")
+        shown.save(buf, format="PNG")
         img_bytes = buf.getvalue()
 
         transforms.append({
@@ -170,19 +284,21 @@ def _render_pages(
             "source_page": idx,
             "processed_page": idx,
             "document_id": document_id,
-            "deskew_deg": 0.0,
+            "deskew_deg": applied_skew,
             "deskew_detected_deg": detected_skew,
-            "deskew_applied": False,
+            "deskew_applied": applied_skew != 0.0,
+            "deskew_skipped": skipped,
             "rotation": rotation,
             "rotation_applied": rotation != 0,
-            "processed_to_source_affine": _processed_to_source_affine(rotation),
+            "processed_to_source_affine": affine,
             "crop": None,
             "split_offset": 0,
             "artifact_index": 0,
             "artifact_page": idx,
             "artifact_id": None,
-            "width": bw_img.width,
-            "height": bw_img.height,
+            "image_mode": mode,
+            "width": shown.width,
+            "height": shown.height,
         })
         processed_pages.append({
             "page": idx,

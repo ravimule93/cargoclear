@@ -1,0 +1,1259 @@
+{
+  "$defs": {
+    "AppliedCorrection": {
+      "description": "A correction by the authorised agent as one assessment used it (stored on the iteration).\n\n``applied`` means the value now stands in the extraction the checks ran on; ``skipped`` means the correction could not\nbe placed (its document or row is no longer there, after a fresh extraction) and was NOT used: ``note`` says why.",
+      "properties": {
+        "anchor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "identity of the row for list addresses (see domain/corrections.py)",
+          "title": "Anchor"
+        },
+        "correction_id": {
+          "title": "Correction Id",
+          "type": "string"
+        },
+        "created_at": {
+          "title": "Created At",
+          "type": "string"
+        },
+        "document_id": {
+          "title": "Document Id",
+          "type": "string"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "original_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Original Unit"
+        },
+        "original_value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "what the model read",
+          "title": "Original Value"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "seq": {
+          "title": "Seq",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "applied",
+            "skipped"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "the value that replaced the extracted one; null = cleared",
+          "title": "Value"
+        }
+      },
+      "required": [
+        "correction_id",
+        "seq",
+        "document_id",
+        "path",
+        "created_at",
+        "status"
+      ],
+      "title": "AppliedCorrection",
+      "type": "object"
+    },
+    "BBox": {
+      "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
+      "properties": {
+        "page": {
+          "description": "1-indexed page number within the processed document",
+          "title": "Page",
+          "type": "integer"
+        },
+        "xmax": {
+          "title": "Xmax",
+          "type": "number"
+        },
+        "xmin": {
+          "title": "Xmin",
+          "type": "number"
+        },
+        "ymax": {
+          "title": "Ymax",
+          "type": "number"
+        },
+        "ymin": {
+          "title": "Ymin",
+          "type": "number"
+        }
+      },
+      "required": [
+        "page",
+        "ymin",
+        "xmin",
+        "ymax",
+        "xmax"
+      ],
+      "title": "BBox",
+      "type": "object"
+    },
+    "DutyLine": {
+      "description": "One line of the indicative duty estimate.",
+      "properties": {
+        "amount": {
+          "description": "duty in the destination currency",
+          "title": "Amount",
+          "type": "number"
+        },
+        "base": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "amount the rate applies to, in the destination currency",
+          "title": "Base"
+        },
+        "name": {
+          "description": "BCD, SWS, IGST, ADD, GST, ...",
+          "title": "Name",
+          "type": "string"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "rate_pct": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rate Pct"
+        }
+      },
+      "required": [
+        "name",
+        "amount"
+      ],
+      "title": "DutyLine",
+      "type": "object"
+    },
+    "PrefillAlternative": {
+      "description": "What another document states for the same field.",
+      "properties": {
+        "doc_type": {
+          "description": "its document type",
+          "title": "Doc Type",
+          "type": "string"
+        },
+        "document_id": {
+          "description": "the other document",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "its unit, as printed",
+          "title": "Unit"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "what it states, as printed",
+          "title": "Value"
+        }
+      },
+      "required": [
+        "document_id",
+        "doc_type"
+      ],
+      "title": "PrefillAlternative",
+      "type": "object"
+    },
+    "PrefillAssessment": {
+      "properties": {
+        "blocking": {
+          "description": "MATERIAL findings: contradictions to resolve",
+          "items": {
+            "$ref": "#/$defs/PrefillFinding"
+          },
+          "title": "Blocking",
+          "type": "array"
+        },
+        "created_at": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "when the assessment was made (ISO-8601)",
+          "title": "Created At"
+        },
+        "data_source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "live, or fixture when synthetic demo data was used",
+          "title": "Data Source"
+        },
+        "iteration": {
+          "description": "the assessment this pack is made from",
+          "title": "Iteration",
+          "type": "integer"
+        },
+        "missing_documents": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Documents",
+          "type": "array"
+        },
+        "pending_corrections": {
+          "default": 0,
+          "description": "corrections the agent made that this assessment does not include yet",
+          "title": "Pending Corrections",
+          "type": "integer"
+        },
+        "review": {
+          "description": "WARN findings: a specialist should look",
+          "items": {
+            "$ref": "#/$defs/PrefillFinding"
+          },
+          "title": "Review",
+          "type": "array"
+        },
+        "run_mode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "full, reassess or recompute",
+          "title": "Run Mode"
+        },
+        "status": {
+          "description": "COMPLIANT_FOR_SUBMISSION, MISSING_EVIDENCE, MATERIAL_CONTRADICTION or SPECIALIST_REVIEW_REQUIRED",
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "iteration",
+        "status"
+      ],
+      "title": "PrefillAssessment",
+      "type": "object"
+    },
+    "PrefillCommercial": {
+      "properties": {
+        "freight_amount": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "freight_currency": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "insurance_amount": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "insurance_currency": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "invoice_currency": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "invoice_value": {
+          "$ref": "#/$defs/PrefillValue"
+        }
+      },
+      "required": [
+        "invoice_value",
+        "invoice_currency",
+        "freight_amount",
+        "freight_currency",
+        "insurance_amount",
+        "insurance_currency"
+      ],
+      "title": "PrefillCommercial",
+      "type": "object"
+    },
+    "PrefillDeclaration": {
+      "properties": {
+        "declaration": {
+          "description": "what the destination calls it, from the curated reference data (unverified until reviewed)",
+          "title": "Declaration",
+          "type": "string"
+        },
+        "destination_country": {
+          "description": "ISO 3166-1 alpha-2 code of the destination",
+          "title": "Destination Country",
+          "type": "string"
+        },
+        "regulation_ref": {
+          "description": "where that reference data comes from, in the words it states",
+          "title": "Regulation Ref",
+          "type": "string"
+        },
+        "rule_set": {
+          "description": "label of that reference data, e.g. demo-curated: never presented as official",
+          "title": "Rule Set",
+          "type": "string"
+        }
+      },
+      "required": [
+        "destination_country",
+        "declaration",
+        "rule_set",
+        "regulation_ref"
+      ],
+      "title": "PrefillDeclaration",
+      "type": "object"
+    },
+    "PrefillDocument": {
+      "properties": {
+        "bytes": {
+          "description": "size of the uploaded file",
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "doc_type": {
+          "description": "document type as classified",
+          "title": "Doc Type",
+          "type": "string"
+        },
+        "document_id": {
+          "description": "id of the document (content-addressed)",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "filename": {
+          "description": "file name as uploaded",
+          "title": "Filename",
+          "type": "string"
+        },
+        "sha256": {
+          "description": "SHA-256 of the uploaded file",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id",
+        "filename",
+        "doc_type",
+        "sha256",
+        "bytes"
+      ],
+      "title": "PrefillDocument",
+      "type": "object"
+    },
+    "PrefillFinding": {
+      "properties": {
+        "check_id": {
+          "description": "the check, e.g. M-001",
+          "title": "Check Id",
+          "type": "string"
+        },
+        "message": {
+          "description": "what the check found, in words",
+          "title": "Message",
+          "type": "string"
+        },
+        "severity": {
+          "description": "MATERIAL (a contradiction) or WARN (a specialist should look)",
+          "title": "Severity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "check_id",
+        "severity",
+        "message"
+      ],
+      "title": "PrefillFinding",
+      "type": "object"
+    },
+    "PrefillInput": {
+      "properties": {
+        "id": {
+          "description": "short identifier, e.g. IEC",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "description": "what the declarant must supply",
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "title": "PrefillInput",
+      "type": "object"
+    },
+    "PrefillIntegrity": {
+      "properties": {
+        "content_sha256": {
+          "description": "SHA-256 of this document's canonical JSON with this block removed",
+          "title": "Content Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "content_sha256"
+      ],
+      "title": "PrefillIntegrity",
+      "type": "object"
+    },
+    "PrefillLine": {
+      "description": "One commodity line, as the invoice (else the packing list) states it.",
+      "properties": {
+        "currency": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "description": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "document_id": {
+          "description": "the document the lines are read from (the invoice, else the packing list)",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "gross_weight": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "hs_code": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "line_no": {
+          "description": "1-indexed position on the source document",
+          "title": "Line No",
+          "type": "integer"
+        },
+        "line_value": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "net_weight": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "quantity": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "unit_price": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "unit_price_basis": {
+          "$ref": "#/$defs/PrefillValue"
+        }
+      },
+      "required": [
+        "line_no",
+        "document_id",
+        "description",
+        "hs_code",
+        "quantity",
+        "unit_price",
+        "unit_price_basis",
+        "line_value",
+        "currency",
+        "net_weight",
+        "gross_weight"
+      ],
+      "title": "PrefillLine",
+      "type": "object"
+    },
+    "PrefillMaterial": {
+      "description": "What the mill test certificate states (empty when the bundle has none).",
+      "properties": {
+        "certificate_document_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "the mill test certificate the values are read from; null when the bundle has none",
+          "title": "Certificate Document Id"
+        },
+        "heat_numbers": {
+          "description": "every heat number the certificate prints, each once",
+          "items": {
+            "type": "string"
+          },
+          "title": "Heat Numbers",
+          "type": "array"
+        },
+        "specification": {
+          "$ref": "#/$defs/PrefillValue",
+          "description": "product standard / grade as printed on the certificate"
+        }
+      },
+      "required": [
+        "specification"
+      ],
+      "title": "PrefillMaterial",
+      "type": "object"
+    },
+    "PrefillParties": {
+      "properties": {
+        "consignee": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "consignor": {
+          "$ref": "#/$defs/PrefillValue"
+        }
+      },
+      "required": [
+        "consignee",
+        "consignor"
+      ],
+      "title": "PrefillParties",
+      "type": "object"
+    },
+    "PrefillProvenance": {
+      "properties": {
+        "audit_chain_verified": {
+          "description": "whether the audit chain verified when the pack was made",
+          "title": "Audit Chain Verified",
+          "type": "boolean"
+        },
+        "audit_events": {
+          "description": "events in the bundle's audit chain when the pack was made",
+          "title": "Audit Events",
+          "type": "integer"
+        },
+        "audit_head_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "hash of the newest audit event: ties the pack to the trail",
+          "title": "Audit Head Hash"
+        },
+        "reference_data": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "the curated tables the assessment used (file -> sha256 prefix)",
+          "title": "Reference Data"
+        }
+      },
+      "required": [
+        "audit_events",
+        "audit_chain_verified"
+      ],
+      "title": "PrefillProvenance",
+      "type": "object"
+    },
+    "PrefillShipment": {
+      "properties": {
+        "bill_of_lading_number": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "country_of_origin": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "incoterm": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "invoice_number": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "package_count": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "packing_list_number": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "port_of_discharge": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "port_of_loading": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "shipment_date": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "total_gross_weight": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "total_net_weight": {
+          "$ref": "#/$defs/PrefillValue"
+        },
+        "vessel_or_flight": {
+          "$ref": "#/$defs/PrefillValue"
+        }
+      },
+      "required": [
+        "invoice_number",
+        "bill_of_lading_number",
+        "packing_list_number",
+        "vessel_or_flight",
+        "port_of_loading",
+        "port_of_discharge",
+        "shipment_date",
+        "incoterm",
+        "country_of_origin",
+        "package_count",
+        "total_gross_weight",
+        "total_net_weight"
+      ],
+      "title": "PrefillShipment",
+      "type": "object"
+    },
+    "PrefillSource": {
+      "properties": {
+        "bbox": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BBox"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "doc_type": {
+          "description": "what kind of document it is, e.g. COMMERCIAL_INVOICE",
+          "title": "Doc Type",
+          "type": "string"
+        },
+        "document_id": {
+          "description": "id of the document the value was read from",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "filename": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "its file name as uploaded",
+          "title": "Filename"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "1-indexed page the value is on, when the extraction located it",
+          "title": "Page"
+        }
+      },
+      "required": [
+        "document_id",
+        "doc_type"
+      ],
+      "title": "PrefillSource",
+      "type": "object"
+    },
+    "PrefillValue": {
+      "description": "One value of the declaration with its provenance.",
+      "properties": {
+        "alternatives": {
+          "description": "what the other documents state for this field",
+          "items": {
+            "$ref": "#/$defs/PrefillAlternative"
+          },
+          "title": "Alternatives",
+          "type": "array"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "extraction confidence 0-1; 1.0 for a value the agent corrected or confirmed",
+          "title": "Confidence"
+        },
+        "conflict": {
+          "default": false,
+          "description": "true when the documents disagree on this field",
+          "title": "Conflict",
+          "type": "boolean"
+        },
+        "corrected": {
+          "default": false,
+          "description": "true when the agent corrected this value (the model read something else)",
+          "title": "Corrected",
+          "type": "boolean"
+        },
+        "review": {
+          "description": "why a person should check this value before using it; empty = nothing flagged",
+          "items": {
+            "type": "string"
+          },
+          "title": "Review",
+          "type": "array"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PrefillSource"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "where the value was read from; null when no document states it"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "unit as printed, for weights and certificate values",
+          "title": "Unit"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "as printed on the source document; null = no document states it",
+          "title": "Value"
+        }
+      },
+      "title": "PrefillValue",
+      "type": "object"
+    },
+    "ValuationEstimate": {
+      "description": "INDICATIVE assessable value and duty exposure. Decision support for the authorised agent: not a duty\ndetermination, not an amount payable. Never changes the assessment status; every guess it made is listed.",
+      "properties": {
+        "assessable_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "CIF basis, in the destination currency",
+          "title": "Assessable Value"
+        },
+        "assumptions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Assumptions",
+          "type": "array"
+        },
+        "destination_country": {
+          "title": "Destination Country",
+          "type": "string"
+        },
+        "destination_currency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Destination Currency"
+        },
+        "disclaimer": {
+          "default": "Indicative estimate for the authorised Custom House Agent. Not a customs determination and not an amount payable; rates and rules come from the reference data named above.",
+          "title": "Disclaimer",
+          "type": "string"
+        },
+        "duties": {
+          "items": {
+            "$ref": "#/$defs/DutyLine"
+          },
+          "title": "Duties",
+          "type": "array"
+        },
+        "exchange_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exchange Rate"
+        },
+        "exchange_rate_note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exchange Rate Note"
+        },
+        "freight": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "added freight, in the invoice currency",
+          "title": "Freight"
+        },
+        "hs_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hs Code"
+        },
+        "implied_hs_code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "the subheading the certificate's chemistry points to, when it differs from the declared code",
+          "title": "Implied Hs Code"
+        },
+        "implied_total_duty": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "the same estimate under the implied subheading, for comparison",
+          "title": "Implied Total Duty"
+        },
+        "incoterm": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Incoterm"
+        },
+        "insurance": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "added insurance, in the invoice currency",
+          "title": "Insurance"
+        },
+        "invoice_currency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Invoice Currency"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "why a figure is missing, for PARTIAL / NOT_AVAILABLE",
+          "title": "Reason"
+        },
+        "regulation_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Regulation Ref"
+        },
+        "rule_set": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rule Set"
+        },
+        "status": {
+          "enum": [
+            "ESTIMATED",
+            "PARTIAL",
+            "NOT_AVAILABLE"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "total_duty": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "sum of the duty lines, in the destination currency",
+          "title": "Total Duty"
+        },
+        "transaction_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "invoice value, in the invoice currency",
+          "title": "Transaction Value"
+        }
+      },
+      "required": [
+        "destination_country",
+        "status"
+      ],
+      "title": "ValuationEstimate",
+      "type": "object"
+    }
+  },
+  "$id": "cargoclear.declaration-prefill/1.0",
+  "description": "CargoClear declaration pre-fill pack. Not a government format; see docs/PREFILL_PACK.md. Schema version 1.0.",
+  "properties": {
+    "assessment": {
+      "$ref": "#/$defs/PrefillAssessment"
+    },
+    "banner": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "set when the bundle is NOT cleared: say so before anything else is read",
+      "title": "Banner"
+    },
+    "bundle_id": {
+      "description": "the CargoClear bundle",
+      "title": "Bundle Id",
+      "type": "string"
+    },
+    "commercial": {
+      "$ref": "#/$defs/PrefillCommercial"
+    },
+    "corrections": {
+      "description": "the agent's corrections this pack's values include",
+      "items": {
+        "$ref": "#/$defs/AppliedCorrection"
+      },
+      "title": "Corrections",
+      "type": "array"
+    },
+    "declaration": {
+      "$ref": "#/$defs/PrefillDeclaration"
+    },
+    "disclaimer": {
+      "default": "Pre-fill for the authorised declarant. These are values READ from the trade documents by CargoClear (and corrected by the agent where stated), not a filed declaration and not a customs determination. Check every value against the source document before it is used; fields marked for review need a person's eyes. The duty figures are an indicative estimate, never an amount payable.",
+      "description": "what this pack is and is not; always present",
+      "title": "Disclaimer",
+      "type": "string"
+    },
+    "documents": {
+      "items": {
+        "$ref": "#/$defs/PrefillDocument"
+      },
+      "title": "Documents",
+      "type": "array"
+    },
+    "generated_at": {
+      "description": "when the pack was made (ISO-8601, UTC)",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "integrity": {
+      "$ref": "#/$defs/PrefillIntegrity"
+    },
+    "lines": {
+      "items": {
+        "$ref": "#/$defs/PrefillLine"
+      },
+      "title": "Lines",
+      "type": "array"
+    },
+    "material": {
+      "$ref": "#/$defs/PrefillMaterial"
+    },
+    "parties": {
+      "$ref": "#/$defs/PrefillParties"
+    },
+    "provenance": {
+      "$ref": "#/$defs/PrefillProvenance"
+    },
+    "reference": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "the bundle's human-readable reference (e.g. a shipment number)",
+      "title": "Reference"
+    },
+    "schema_id": {
+      "default": "cargoclear.declaration-prefill",
+      "title": "Schema Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "shipment": {
+      "$ref": "#/$defs/PrefillShipment"
+    },
+    "to_be_supplied": {
+      "description": "what the declarant must supply: no trade document carries it",
+      "items": {
+        "$ref": "#/$defs/PrefillInput"
+      },
+      "title": "To Be Supplied",
+      "type": "array"
+    },
+    "valuation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ValuationEstimate"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "the indicative duty estimate of the assessment; never an amount payable"
+    }
+  },
+  "required": [
+    "generated_at",
+    "bundle_id",
+    "declaration",
+    "assessment",
+    "parties",
+    "shipment",
+    "commercial",
+    "material",
+    "provenance",
+    "integrity"
+  ],
+  "title": "PrefillPack",
+  "type": "object"
+}

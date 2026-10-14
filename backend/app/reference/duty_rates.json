@@ -1,0 +1,23 @@
+{
+  "rule_set": "demo-curated",
+  "regulation_ref": "Customs duty structure of the destination as encoded for this prototype; the rates are placeholders for a reviewer to confirm against the current customs tariff, not an official source",
+  "verification": {"status": "unverified", "reviewer": null, "date": null},
+  "destinations": {
+    "IN": {
+      "currency": "INR",
+      "model": "IN_BCD_SWS_IGST",
+      "note": "Basic customs duty (BCD) on the assessable value; social welfare surcharge (SWS) on the BCD; integrated GST (IGST) on assessable value + BCD + SWS + any anti-dumping duty",
+      "entries": [
+        {"prefix": "7304", "bcd_pct": 7.5, "sws_pct_of_bcd": 10.0, "igst_pct": 18.0}
+      ]
+    },
+    "SG": {
+      "currency": "SGD",
+      "model": "SG_GST",
+      "note": "No customs duty on this tariff area (customs duty applies to a few goods only); GST on the CIF value plus any duty",
+      "entries": [
+        {"prefix": "", "customs_duty_pct": 0.0, "gst_pct": 9.0}
+      ]
+    }
+  }
+}

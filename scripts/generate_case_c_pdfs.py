@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Generate the Case C sample PDFs into fixtures/case_c/.
+"""Generate the Case C and Case D sample PDFs into fixtures/case_c/ and fixtures/case_d/.
+
+Case C: India -> Singapore, the Missing Evidence -> Compliant journey. Case D: a Chinese-origin shipment imported into
+India whose certificate chemistry contradicts the declared (non-alloy) HS code. Both are synthetic.
 
 The PDFs are *drawn from the offline extraction fixtures*: every value is printed inside the
 bounding box the fixture reports for it (0-1000 normalised, top-left origin), so the UI's
@@ -8,7 +11,7 @@ Values therefore have a single source of truth.
 
 Run from anywhere with the backend dependencies installed (needs ``reportlab``):
 
-    backend/venv/bin/python scripts/generate_case_c_pdfs.py [--out DIR]
+    backend/venv/bin/python scripts/generate_case_c_pdfs.py [--case case_c|case_d] [--out DIR]
 
 Output is deterministic (reportlab invariant mode, uncompressed streams): identical inputs give
 identical bytes, which tests/unit/test_case_c_pdfs.py enforces against the committed files.
@@ -24,6 +27,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BACKEND_DIR = REPO_ROOT / "backend"
 DEFAULT_OUT_DIR = REPO_ROOT / "fixtures" / "case_c"
+FIXTURES_DIR = REPO_ROOT / "fixtures"
 
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
@@ -54,6 +58,17 @@ DOCUMENTS: dict[str, str] = {
     "packing_list.pdf": "PACKING LIST",
     "mtc_pipe_test_cert.pdf": "MILL TEST CERTIFICATE",
 }
+CASE_D_DOCUMENTS: dict[str, str] = {
+    "case_d_commercial_invoice.pdf": "COMMERCIAL INVOICE",
+    "case_d_bill_of_lading.pdf": "BILL OF LADING",
+    "case_d_packing_list.pdf": "PACKING LIST",
+    "case_d_mtc_test_cert.pdf": "MILL TEST CERTIFICATE",
+}
+# case name -> (its documents, the label printed in the PDF metadata)
+CASES: dict[str, tuple[dict[str, str], str]] = {
+    "case_c": (DOCUMENTS, "Case C"),
+    "case_d": (CASE_D_DOCUMENTS, "Case D"),
+}
 
 LABELS = {
     "document_number": "Document No.",
@@ -78,6 +93,15 @@ LABELS = {
     "unit_price": "Unit Price",
     "total_value": "Total Value",
     "currency": "Cur.",
+    "incoterm": "Incoterm",
+    "country_of_origin": "Country of Origin",
+    "freight_amount": "Freight",
+    "freight_currency": "Cur.",
+    "insurance_amount": "Insurance",
+    "insurance_currency": "Cur.",
+    "specification": "Specification",
+    "unit_price_basis": "Price per",
+    "heat_numbers": "Heat No.",
 }
 
 # (label, text, bbox) with the bbox in 0-1000 page coordinates
@@ -85,19 +109,24 @@ Box = tuple[str, str, BBox]
 
 
 def collect_boxes(doc: ExtractedDocument) -> list[Box]:
-    """Every field that has both a value and a bbox, header fields first, then line items."""
+    """Every field that has both a value and a bbox: header fields, the heat numbers and test results of a certificate,
+    then the line items."""
     boxes: list[Box] = []
 
-    def add(name: str, ref: FieldRef | None) -> None:
+    def add(name: str, ref: FieldRef | None, label: str | None = None) -> None:
         if ref is not None and ref.bbox is not None and ref.value is not None:
             # a weight prints its unit after the value ("14000.0 KGS"); everything else prints as before
             text = f"{ref.value} {ref.unit}" if isinstance(ref, QuantityRef) and ref.unit else str(ref.value)
-            boxes.append((LABELS.get(name, name.replace("_", " ").title()), text, ref.bbox))
+            boxes.append((label or LABELS.get(name, name.replace("_", " ").title()), text, ref.bbox))
 
     for name in ExtractedDocument.model_fields:
         value = getattr(doc, name)
         if isinstance(value, FieldRef):
             add(name, value)
+    for heat in doc.heat_numbers:
+        add("heat_numbers", heat)
+    for result in doc.test_results:
+        add("test_results", result, label=result.parameter)  # a table cell prints its value; the column heading is its label
     for item in doc.line_items:
         for name in LineItem.model_fields:
             add(name, getattr(item, name))
@@ -160,8 +189,13 @@ def _draw_labels(c: Canvas, boxes: list[Box]) -> None:
 
 
 def render_pdf(filename: str) -> bytes:
-    """Render one Case C sample document to PDF bytes (deterministic)."""
-    title = DOCUMENTS[filename]
+    """Render one sample document (Case C or Case D) to PDF bytes (deterministic)."""
+    for documents, case_label in CASES.values():
+        if filename in documents:
+            title = documents[filename]
+            break
+    else:
+        raise KeyError(f"{filename} is not a known sample document")
     doc = _generate_fixture_for_file(f"doc-{Path(filename).stem}", filename)
     boxes = collect_boxes(doc)
     off_page = [b for _, _, b in boxes if b.page != 1]
@@ -170,9 +204,9 @@ def render_pdf(filename: str) -> bytes:
 
     buf = io.BytesIO()
     c = Canvas(buf, pagesize=A4, invariant=1, pageCompression=0)
-    c.setTitle(f"{title} (CargoClear Case C sample)")
+    c.setTitle(f"{title} (CargoClear {case_label} sample)")
     c.setAuthor("CargoClear demo fixtures")
-    c.setSubject("Synthetic sample document for the CargoClear Case C demo")
+    c.setSubject(f"Synthetic sample document for the CargoClear {case_label} demo")
     c.setCreator("scripts/generate_case_c_pdfs.py")
 
     c.setFillColorRGB(0, 0, 0)
@@ -191,11 +225,12 @@ def render_pdf(filename: str) -> bytes:
     return buf.getvalue()
 
 
-def generate(out_dir: Path) -> list[Path]:
-    """Write the four sample PDFs into ``out_dir`` and return their paths."""
+def generate(out_dir: Path, case: str = "case_c") -> list[Path]:
+    """Write the four sample PDFs of ``case`` into ``out_dir`` and return their paths."""
+    documents, _label = CASES[case]
     out_dir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
-    for filename in DOCUMENTS:
+    for filename in documents:
         path = out_dir / filename
         path.write_bytes(render_pdf(filename))
         written.append(path)
@@ -204,10 +239,14 @@ def generate(out_dir: Path) -> list[Path]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--out", type=Path, default=DEFAULT_OUT_DIR, help="output directory")
+    parser.add_argument("--case", choices=sorted(CASES), default=None, help="one case (default: both)")
+    parser.add_argument("--out", type=Path, default=None, help="output directory (only with --case; default fixtures/<case>)")
     args = parser.parse_args()
-    for path in generate(args.out):
-        print(f"wrote {path} ({path.stat().st_size} bytes)")
+    if args.out is not None and args.case is None:
+        parser.error("--out needs --case")
+    for case in [args.case] if args.case else sorted(CASES):
+        for path in generate(args.out or FIXTURES_DIR / case, case):
+            print(f"wrote {path} ({path.stat().st_size} bytes)")
     return 0
 
 

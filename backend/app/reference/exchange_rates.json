@@ -1,0 +1,9 @@
+{
+  "rule_set": "demo-curated",
+  "regulation_ref": "ILLUSTRATIVE exchange rates. They are NOT customs notifications and NOT market rates: round placeholders so that the estimate has a shape. Replace with the rate the destination's customs authority notifies, with its date and reference",
+  "verification": {"status": "unverified", "reviewer": null, "date": null},
+  "rates": [
+    {"from": "USD", "to": "INR", "rate": 85.0, "effective_from": null, "reference": null, "illustrative": true},
+    {"from": "USD", "to": "SGD", "rate": 1.30, "effective_from": null, "reference": null, "illustrative": true}
+  ]
+}

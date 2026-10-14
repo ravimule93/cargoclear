@@ -1,6 +1,8 @@
 /**
  * Domain types for CargoClear-JAPAC frontend.
- * Mirrors backend/app/domain/schemas.py and backend/app/domain/events.py.
+ * HAND-MAINTAINED mirror of backend/app/domain/schemas.py and of the SSE payloads backend/app/api/v1/stream.py
+ * sends (the run record as repo/firestore.py writes it, and a full AssessmentIteration). Nothing generates this
+ * file: change the backend model and this file in the same change.
  */
 
 export type Status =
@@ -27,10 +29,16 @@ export interface EvidenceRef {
   /** document_id of the document the evidence points into */
   doc: string;
   field: string;
+  /** index of the line item, for a line-item field */
+  line_item?: number | null;
+  /** index of the row, for a field that is a list on the document ("test_results", "heat_numbers") */
+  row?: number | null;
   page?: number | null;
   /** 0-1000 normalised, top-left origin; the backend sends null when a field has no box */
   bbox?: BBox | null;
   raw_value?: string | number | null;
+  /** unit as printed, for a weight or a lab value */
+  unit?: string | null;
 }
 
 export interface CheckResult {
@@ -40,6 +48,13 @@ export interface CheckResult {
   delta?: number | null;
   tolerance?: number | null;
   evidence?: EvidenceRef[] | null;
+  /** Every assumption the result depends on; a check with assumptions is never PASS or MATERIAL. */
+  assumptions?: string[];
+  /** Set when the check uses curated reference data: which rule set, and where it comes from (never "official" unless it is). */
+  rule_set?: string | null;
+  regulation_ref?: string | null;
+  /** The document to look at first for this finding (the engine says; else the first document its evidence cites). Absent on older assessments. */
+  focus_document?: string | null;
 }
 
 export interface GroundingFinding {
@@ -80,6 +95,58 @@ export interface ConfidenceResult {
   action: "AUTO_ACCEPT" | "AUTO_FLAG" | "INTERACTIVE_REVIEW" | "MANUAL_ENTRY";
 }
 
+export interface DutyLine {
+  name: string;
+  rate_pct?: number | null;
+  base?: number | null;
+  amount: number;
+  note?: string | null;
+}
+
+/** Indicative assessable value and duty exposure: decision support, never a determination, never the status. */
+export interface ValuationEstimate {
+  destination_country: string;
+  status: "ESTIMATED" | "PARTIAL" | "NOT_AVAILABLE";
+  reason?: string | null;
+  incoterm?: string | null;
+  invoice_currency?: string | null;
+  destination_currency?: string | null;
+  exchange_rate?: number | null;
+  exchange_rate_note?: string | null;
+  transaction_value?: number | null;
+  freight?: number | null;
+  insurance?: number | null;
+  assessable_value?: number | null;
+  hs_code?: string | null;
+  duties: DutyLine[];
+  total_duty?: number | null;
+  implied_hs_code?: string | null;
+  implied_total_duty?: number | null;
+  assumptions: string[];
+  rule_set?: string | null;
+  regulation_ref?: string | null;
+  disclaimer: string;
+}
+
+/** A correction by the authorised agent as one assessment used it. `skipped` = it could not be placed and was NOT used. */
+export interface AppliedCorrection {
+  correction_id: string;
+  seq: number;
+  document_id: string;
+  path: string;
+  anchor?: string | null;
+  /** the value that replaced the extracted one; null = cleared */
+  value?: string | null;
+  unit?: string | null;
+  /** what the model read */
+  original_value?: string | null;
+  original_unit?: string | null;
+  reason?: string | null;
+  created_at: string;
+  status: "applied" | "skipped";
+  note?: string | null;
+}
+
 export interface AssessmentIteration {
   iteration: number;
   bundle_id: string;
@@ -91,7 +158,56 @@ export interface AssessmentIteration {
   reasoning_delta?: ReasoningDelta | null;
   documents: string[];
   created_at?: string | null;
-  data_source?: "fixture" | "live";
+  /** null when unknown (iterations stored before the field existed) */
+  data_source?: "fixture" | "live" | null;
+  /** null / absent on iterations stored before the estimate existed */
+  valuation?: ValuationEstimate | null;
+  /** file name -> sha256 prefix of the curated reference data the checks used */
+  reference_data?: Record<string, string> | null;
+  /** corrections in force when this assessment ran; absent on iterations stored before they existed */
+  corrections?: AppliedCorrection[];
+  /** "full" | "reassess" | "recompute"; null / absent on older iterations */
+  run_mode?: string | null;
+}
+
+export interface CorrectionRequest {
+  document_id: string;
+  path: string;
+  value?: string | null;
+  unit?: string | null;
+  /** true = the document does not state this value */
+  clear?: boolean;
+  reason?: string | null;
+}
+
+/** One entry of the correction history, read back from the audit chain. */
+export interface CorrectionRecord {
+  correction_id: string;
+  kind: "correction" | "confirmation" | "revert";
+  seq: number;
+  created_at: string;
+  iteration: number;
+  document_id: string;
+  path: string;
+  anchor?: string | null;
+  value?: string | null;
+  unit?: string | null;
+  original_value?: string | null;
+  original_unit?: string | null;
+  previous_value?: string | null;
+  previous_unit?: string | null;
+  reverts?: string | null;
+  reason?: string | null;
+  actor: string;
+}
+
+export interface CorrectionsResponse {
+  corrections: CorrectionRecord[];
+  /** the overlay in force now */
+  effective: CorrectionRecord[];
+  /** changes to the overlay that the latest assessment does not include yet */
+  pending: number;
+  latest_iteration?: number | null;
 }
 
 export interface DocumentRecord {
@@ -120,6 +236,14 @@ export interface TransformMetadata {
   rotation_applied?: boolean;
   /** Normalized processed-to-source affine matrix, present for newly transformed records. */
   processed_to_source_affine?: number[][];
+  /** the skew that was measured, whether or not it was corrected (`deskew_deg` is what was applied; 0 when none) */
+  deskew_detected_deg?: number;
+  /** why no deskew was applied: "disabled" | "below_threshold" | "above_limit" */
+  deskew_skipped?: string | null;
+  /** what the model was shown: "bw" (1-bit) or "gray" */
+  image_mode?: "bw" | "gray";
+  /** where the page image the model was shown is stored */
+  processed_uri?: string | null;
   artifact_index?: number;
   artifact_page?: number;
   artifact_id?: string | null;
@@ -196,8 +320,40 @@ export interface AuditEvent {
   hash: string;
 }
 
+/** One AUDIT_HEAD_SIGNED event, checked: `valid` is null when the public key could not be retrieved. */
+export interface SignatureCheck {
+  event_seq: number;
+  signed_seq: number;
+  signed_hash: string;
+  signed_at?: string | null;
+  /** "kms" (Cloud KMS) or "local-demo" (a throwaway key: proves the chain was not edited, not who signed) */
+  signer: string;
+  key: string;
+  algorithm: string;
+  valid: boolean | null;
+  reason?: string | null;
+}
+
+export type SignatureStatus = "NOT_CONFIGURED" | "UNSIGNED" | "SIGNED" | "PARTIAL" | "INVALID" | "UNVERIFIED";
+
+/** What the chain's signatures say: tamper-evidence under the operator's key (never legal non-repudiation). */
+export interface AuditSignature {
+  status: SignatureStatus;
+  configured: boolean;
+  signer?: string | null;
+  key?: string | null;
+  signed_seq?: number | null;
+  /** events after the newest signed one */
+  unsigned_events: number;
+  /** AUDIT_SIGNING_FAILED events recorded */
+  failures: number;
+  signatures: SignatureCheck[];
+  meaning: string;
+}
+
 export interface AuditResponse {
   events: AuditEvent[];
   verified: boolean;
   error: string | null;
+  signature?: AuditSignature;
 }

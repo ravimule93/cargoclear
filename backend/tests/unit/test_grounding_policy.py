@@ -420,7 +420,7 @@ def test_bigquery_rows_without_the_columns_get_the_prototype_wording(monkeypatch
          "rule_set": "own-set", "regulation_ref": "Own ref"},
         {"hs_code": "10019910", "description": "d", "required_documents": [], "distance": 0.07},  # older table
     ]
-    job = SimpleNamespace(result=lambda: rows)
+    job = SimpleNamespace(result=lambda timeout=None: rows)
     monkeypatch.setattr(bq_tariff, "_get_bq_client", lambda: SimpleNamespace(query=lambda *_a, **_k: job))
 
     hits, source = bq_tariff.lookup_tariff_with_source("pipes", "SG")
@@ -440,12 +440,14 @@ def test_vector_sql_selects_the_provenance_columns_and_keeps_its_filter() -> Non
     sql = bq_tariff.VECTOR_SQL
     assert "base.rule_set" in sql
     assert "base.regulation_ref" in sql
-    assert "base.destination_country = @dest" in sql
+    # a PRE-filter: inside the base-table subquery, so top_k is taken from the destination's rows only
+    assert "(SELECT * FROM `{tariff_table}` WHERE destination_country = @dest)" in sql
+    assert "base.destination_country" not in sql
 
 
 def test_seed_rows_all_carry_the_prototype_provenance() -> None:
     rows = json.loads((REPO / "infra" / "bigquery" / "seed" / "sample_tariff.json").read_text(encoding="utf-8"))
-    assert len(rows) == 4
+    assert len(rows) == 7  # four for Singapore (Case C and others) and three for India (Case D)
     for row in rows:
         assert row["rule_set"] == RULE_SET
         assert row["regulation_ref"] == REG_REF
@@ -645,7 +647,9 @@ async def test_certificate_lines_are_not_grounded(monkeypatch, cert_type) -> Non
     ctx = await ground(bundle("73041900") + [cert], monkeypatch, hits=[cand("73041900", 0.08)])
 
     assert [f["document_id"] for f in ctx["grounding"]] == ["inv-001", "pl-001"]
-    assert ctx["_fake"].queries == [DESCRIPTION, DESCRIPTION]  # no lookup for the certificate's description
+    # ONE lookup: the invoice and packing-list lines share a description (looked up once), and the certificate's own
+    # description (a test report, not goods) is never looked up
+    assert ctx["_fake"].queries == [DESCRIPTION]
     assert ctx["grounding_ambiguous"] is False
     assert g001(ctx)["severity"] == "PASS"
 
@@ -864,3 +868,24 @@ def test_grounding_finding_carries_better_match_hs_and_old_findings_still_load()
     assert finding.better_match_hs is None
     assert finding.model_dump()["better_match_hs"] is None
     assert GroundingFinding(**old, better_match_hs="09012110").better_match_hs == "09012110"
+
+
+def test_the_bigquery_seed_and_the_offline_seed_hold_the_same_rows() -> None:
+    """Two copies of the demo tariff exist (demo mode reads the JSON, BigQuery is loaded from the SQL): keep them in step."""
+    import re
+
+    rows = json.loads((REPO / "infra" / "bigquery" / "seed" / "sample_tariff.json").read_text(encoding="utf-8"))
+    sql = (REPO / "infra" / "bigquery" / "seed" / "seed_master_tariff.sql").read_text(encoding="utf-8")
+
+    in_json = {f"{r['destination_country']}:{r['hs_code']}" for r in rows}
+    in_sql = set(re.findall(r"SELECT '([A-Z]{2}:\d+)'", sql))  # the embedding sub-select lists the same keys
+    assert in_json == in_sql and len(in_json) == len(rows), "a (destination, hs_code) pair must be unique"
+    for row in rows:  # the descriptions are what gets embedded: they must match too
+        assert row["description"] in sql, row["hs_code"]
+        assert row["destination_country"] in {"SG", "IN"}
+
+
+def test_the_seed_join_cannot_multiply_rows_when_a_code_has_two_destinations() -> None:
+    sql = (REPO / "infra" / "bigquery" / "seed" / "seed_master_tariff.sql").read_text(encoding="utf-8")
+
+    assert ") e ON t.k = e.k;" in sql and "ON t.hs_code = e.hs_code" not in sql

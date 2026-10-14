@@ -10,6 +10,9 @@ PROJECT_ID="${PROJECT_ID:?PROJECT_ID must identify the target GCP project}"
 REGION="${REGION:-asia-south1}"
 SA_NAME="cargoclear-sa"
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+# The UI's own identity. It holds NO project role: deploy_ui.sh grants it roles/run.invoker on the (private) API only.
+UI_SA_NAME="cargoclear-ui-sa"
+UI_SA_EMAIL="${UI_SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 BUCKET_NAME="cargoclear-raw-pdfs"
 BQ_DATASET="ahtn"
 
@@ -25,17 +28,27 @@ gcloud services enable \
     bigquery.googleapis.com \
     run.googleapis.com \
     eventarc.googleapis.com \
-    cloudbuild.googleapis.com
+    cloudbuild.googleapis.com \
+    cloudtasks.googleapis.com \
+    cloudkms.googleapis.com
 
 echo "=== [3/7] Creating Service Account & IAM Bindings ==="
 gcloud iam service-accounts create "${SA_NAME}" \
     --display-name="CargoClear Cloud Run Runtime Service Account" || true
 
+# Signs the OIDC token of every dispatched run (infra/tasks/setup_queue.sh binds it: roles/run.invoker on the API only)
+gcloud iam service-accounts create "cargoclear-tasks-sa" \
+    --display-name="CargoClear Cloud Tasks caller: may only invoke the worker endpoint of the private API" || true
+
+gcloud iam service-accounts create "${UI_SA_NAME}" \
+    --display-name="CargoClear UI (Cloud Run) service account: may only invoke the private API" || true
+
 # Bind least-privilege roles
 # datastore.user is required for the Firestore bundle/run/audit records that
-# the live API persists. No runtime Cloud Run-to-Cloud Run call exists, so the
+# the live API persists. bigquery.jobUser is required to START the tariff VECTOR_SEARCH query job
+# (dataViewer alone reads tables but cannot run queries). No runtime Cloud Run-to-Cloud Run call exists, so the
 # specification's conditional roles/run.invoker grant is intentionally omitted.
-for ROLE in roles/aiplatform.user roles/storage.objectAdmin roles/bigquery.dataViewer roles/datastore.user; do
+for ROLE in roles/aiplatform.user roles/storage.objectAdmin roles/bigquery.dataViewer roles/bigquery.jobUser roles/datastore.user; do
     gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
         --member="serviceAccount:${SA_EMAIL}" \
         --role="${ROLE}"
@@ -52,3 +65,10 @@ bq --location="${REGION}" mk -d "${BQ_DATASET}" || true
 
 echo "=== [7/7] Bootstrap Complete ==="
 echo "GCP Project ${PROJECT_ID} is ready for deployment."
+echo
+echo "Deploy with these identities (the deployer needs iam.serviceAccounts.actAs on both):"
+echo "  export PROJECT_ID=${PROJECT_ID}"
+echo "  export RUNTIME_SERVICE_ACCOUNT=${SA_EMAIL}     # API runtime: Vertex AI, Storage, BigQuery, Firestore"
+echo "  export UI_SERVICE_ACCOUNT=${UI_SA_EMAIL}      # UI runtime: may only invoke the API"
+echo "Next: infra/bigquery/setup_tariff.sh (tariff table + embedding model), then docs/GCP_VERIFICATION.md."
+echo "To scale beyond one instance (docs/GCP_VERIFICATION.md section 9): infra/tasks/setup_queue.sh and infra/firestore/setup_ttl.sh."

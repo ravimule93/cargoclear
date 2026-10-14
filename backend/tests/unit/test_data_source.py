@@ -153,7 +153,7 @@ def test_lookup_tariff_with_source_reports_bigquery_when_the_client_answers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     row = {"hs_code": "73041900", "description": "pipe", "required_documents": [], "distance": 0.05}
-    job = SimpleNamespace(result=lambda: [row])
+    job = SimpleNamespace(result=lambda timeout=None: [row])
     monkeypatch.setattr(bq_tariff, "_get_bq_client", lambda: SimpleNamespace(query=lambda *_a, **_k: job))
 
     hits, source = bq_tariff.lookup_tariff_with_source("pipe", "SG")
@@ -214,10 +214,15 @@ async def test_grounding_marks_bigquery_when_every_lookup_came_from_bigquery(
 @pytest.mark.asyncio
 async def test_grounding_source_is_seed_if_any_lookup_used_the_seed(monkeypatch: pytest.MonkeyPatch) -> None:
     hit = {"hs_code": "73041900", "description": "pipe", "required_documents": [], "distance": 0.05}
-    answers = iter([([hit], "bigquery"), ([hit], "seed")])
-    monkeypatch.setattr(grounding, "lookup_tariff_with_source", lambda *_a, **_k: next(answers))
-    docs = [_invoice(), _invoice().model_copy(update={"document_id": "doc-inv-2"})]
-    result = await grounding.run_grounding_agent({"extracted": docs, "destination_country": "SG"})
+
+    def lookup(description: str, destination_country: str = "SG"):
+        # two DIFFERENT descriptions, so two lookups happen (an identical description is looked up once)
+        return ([hit], "seed" if "wheat" in description.lower() else "bigquery")
+
+    monkeypatch.setattr(grounding, "lookup_tariff_with_source", lookup)
+    second = _invoice().model_copy(deep=True, update={"document_id": "doc-inv-2"})
+    second.line_items[0].description = _ref("Wheat grains for human consumption")
+    result = await grounding.run_grounding_agent({"extracted": [_invoice(), second], "destination_country": "SG"})
     assert result["grounding_source"] == "seed"
 
 

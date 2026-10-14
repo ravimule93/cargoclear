@@ -57,7 +57,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           <button
             type="button"
             onClick={wb.retry}
-            className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 cursor-pointer"
+            className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-90 cursor-pointer"
           >
             Retry
           </button>
@@ -68,7 +68,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
 
   const { bundle, assessment } = wb;
   const actionError = wb.actionError ?? wb.streamError;
-  const auditRefreshKey = `${assessment?.iteration ?? 0}:${wb.run?.run_id ?? ""}:${wb.run?.state ?? ""}:${wb.documents.length}`;
+  const auditRefreshKey = `${assessment?.iteration ?? 0}:${wb.run?.run_id ?? ""}:${wb.run?.state ?? ""}:${wb.documents.length}:${wb.corrections?.corrections.length ?? 0}`;
 
   return (
     <>
@@ -102,6 +102,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           documents={wb.documents}
           activeDocumentId={wb.activeDocumentId}
           highlights={wb.highlights}
+          iteration={assessment?.iteration ?? null}
         />
       </main>
 
@@ -116,6 +117,11 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           actionError={actionError}
           appMode={meta?.app_mode}
           onDocumentUploaded={wb.handleUploaded}
+          corrections={wb.corrections}
+          extractions={wb.extractions}
+          onCorrect={wb.submitCorrection}
+          onRevertCorrection={wb.revertCorrection}
+          onRecompute={wb.recompute}
         />
       </section>
 

@@ -17,6 +17,8 @@ interface DocumentViewerProps {
   /** Controlled by the page: the DocumentRail selection drives which PDF is shown. */
   activeDocumentId: string | null;
   highlights?: Highlight[];
+  /** The assessment on screen: "What the model saw" is the page image THAT assessment's extraction was shown (latest when absent). */
+  iteration?: number | null;
 }
 
 type LoadState = "idle" | "loading" | "ready" | "error";
@@ -39,6 +41,7 @@ export function DocumentViewer({
   documents,
   activeDocumentId,
   highlights = [],
+  iteration = null,
 }: DocumentViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -216,6 +219,17 @@ export function DocumentViewer({
   const hasDocument = documents.length > 0 && activeDocumentId !== null;
   const filename = activeDocument?.filename ?? activeDocumentId ?? "";
 
+  // What the model was shown for this page (when the page image was kept), and whether the page was straightened for it
+  const pageTransform =
+    transformMetadata.status === "ready"
+      ? transformMetadata.data.transform_meta.find((t) => (t.source_page ?? t.page) === page)
+      : undefined;
+  const modelView = pageTransform?.processed_uri
+    ? `/api/proxy/bundles/${encodeURIComponent(bundleId)}/documents/${encodeURIComponent(activeDocumentId ?? "")}/pages/${page}${
+        iteration ? `?iteration=${iteration}` : ""
+      }`
+    : null;
+
   return (
     <div className="flex flex-col items-center justify-start p-4 h-full">
       {!hasDocument && (
@@ -251,6 +265,27 @@ export function DocumentViewer({
           >
             {filename}
           </span>
+          {pageTransform?.deskew_applied && (
+            <span
+              data-testid="deskew-note"
+              className="pl-2 ml-1 border-l border-[var(--cc-border)]"
+              title="The page was straightened before the model read it; evidence boxes are mapped back onto this original page."
+            >
+              straightened {pageTransform.deskew_deg?.toFixed(1)}°
+            </span>
+          )}
+          {modelView && (
+            <a
+              data-testid="model-view-link"
+              href={modelView}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pl-2 ml-1 border-l border-[var(--cc-border)] font-semibold text-[var(--cc-focus)] hover:underline"
+              title="The page image exactly as the extraction saw it (after orientation, straightening and the image mode)"
+            >
+              What the model saw
+            </a>
+          )}
         </div>
       )}
 

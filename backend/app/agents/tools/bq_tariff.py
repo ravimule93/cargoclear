@@ -6,7 +6,7 @@ ML.GENERATE_EMBEDDING to embed the query commodity description.
 Per v4.0 Specification Appendix D:
   - Table: `cargoclear-hackathon.ahtn.master_tariff`
   - Index: `tariff_vector_index` (TREE_AH, COSINE distance)
-  - Pre-filter: `destination_country = @dest`
+  - Pre-filter: `destination_country = @dest` (inside the base-table subquery, so top_k applies after it)
   - Returns: hs_code, description, required_documents, cosine distance.
 
 Provides an offline local seed matching fallback when in demo mode.
@@ -15,6 +15,7 @@ Provides an offline local seed matching fallback when in demo mode.
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 from typing import Any, Literal
 
@@ -29,6 +30,9 @@ logger = structlog.get_logger(__name__)
 
 AMBIGUITY_THRESHOLD = 0.35  # Cosine distance > 0.35 considered ambiguous
 
+# The destination filter is a PRE-filter: it sits in the base-table subquery, so the top-k come from that country's rows
+# only. A WHERE on the outer query would filter AFTER the top-k were chosen and could return fewer than k (or none) as
+# soon as the table holds more than one destination.
 VECTOR_SQL = """
 SELECT
     base.hs_code,
@@ -38,7 +42,7 @@ SELECT
     base.regulation_ref,
     distance
 FROM VECTOR_SEARCH(
-    TABLE `{tariff_table}`,
+    (SELECT * FROM `{tariff_table}` WHERE destination_country = @dest),
     'description_embedding',
     (SELECT ml_generate_embedding_result AS embedding
      FROM ML.GENERATE_EMBEDDING(
@@ -48,15 +52,16 @@ FROM VECTOR_SEARCH(
     top_k => 5,
     distance_type => 'COSINE'
 )
-WHERE base.destination_country = @dest
 ORDER BY distance
 """
 
 _bq_client = None
+# Lookups run in worker threads (see agents/grounding.py): two of them must not both build the client.
+_bq_client_lock = threading.Lock()
 
 
 def _get_bq_client():
-    """Lazily initialize BigQuery client."""
+    """Lazily initialize BigQuery client (thread-safe: the tariff lookup runs in worker threads)."""
     global _bq_client
     if _bq_client is not None:
         return _bq_client
@@ -67,16 +72,19 @@ def _get_bq_client():
         logger.info("bq_client_mock_mode", reason="Running in demo mode without GCP credentials")
         return None
 
-    try:
-        from google.cloud import bigquery
+    with _bq_client_lock:
+        if _bq_client is not None:
+            return _bq_client
+        try:
+            from google.cloud import bigquery
 
-        _bq_client = bigquery.Client(project=settings.project_id, location=settings.region)
-        return _bq_client
-    except Exception as exc:
-        if settings.app_mode == "live":
-            raise UpstreamError(f"BigQuery client init failed in live mode: {type(exc).__name__}") from exc
-        logger.warning("bq_client_init_failed", error=str(exc), fallback="seed_lookup")
-        return None
+            _bq_client = bigquery.Client(project=settings.project_id, location=settings.region)
+            return _bq_client
+        except Exception as exc:
+            if settings.app_mode == "live":
+                raise UpstreamError(f"BigQuery client init failed in live mode: {type(exc).__name__}") from exc
+            logger.warning("bq_client_init_failed", error=str(exc), fallback="seed_lookup")
+            return None
 
 
 def lookup_tariff(
@@ -105,6 +113,9 @@ def lookup_tariff_with_source(
 ) -> tuple[list[dict[str, Any]], Literal["bigquery", "seed"]]:
     """Like :func:`lookup_tariff`, but also reports which backend answered.
 
+    This function BLOCKS (a BigQuery job, bounded by BQ_QUERY_TIMEOUT_SECONDS): call it with
+    ``await asyncio.to_thread(...)`` from async code, as the grounding agent does.
+
     Returns:
         ``(hits, source)`` where source is ``"bigquery"`` when the vector search answered and
         ``"seed"`` when the offline local seed did (demo mode only; live mode raises instead).
@@ -128,7 +139,8 @@ def lookup_tariff_with_source(
                     ]
                 ),
             )
-            results = [_with_provenance(dict(row)) for row in job.result()]
+            # BLOCKING and bounded: callers run this in a worker thread (grounding does), never on the event loop
+            results = [_with_provenance(dict(row)) for row in job.result(timeout=settings.bq_query_timeout_seconds)]
             logger.info("bq_vector_search_success", count=len(results), desc=description[:30])
             return results, "bigquery"
         except Exception as exc:

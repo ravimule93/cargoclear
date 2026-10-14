@@ -20,7 +20,7 @@
   /* --- Text: all ≥ 4.5:1 on --cc-surface --- */
   --cc-text:          #12161C;   /* 16.9:1 */
   --cc-text-muted:    #4A5462;   /*  8.1:1 */
-  --cc-text-subtle:   #6B7684;   /*  4.9:1 */
+  --cc-text-subtle:   #5F6B7A;   /*  5.2:1 on --cc-surface-2 (#6B7684 was 4.45:1 there: below AA) */
 
   /* --- Focus ring: 3:1 against every surface --- */
   --cc-focus:         #1A56DB;   /* 5.1:1 on white */

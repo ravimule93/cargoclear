@@ -1,0 +1,38 @@
+{
+  "rule_set": "demo-curated",
+  "regulation_ref": "What a customs declaration typically needs that trade documents do not carry, as encoded for this prototype; the reviewer is to confirm each entry against the current declaration form; not an official source",
+  "verification": {"status": "unverified", "reviewer": null, "date": null},
+  "destinations": {
+    "IN": {
+      "declaration": "Import declaration (Bill of Entry)",
+      "inputs": [
+        {"id": "IEC", "label": "Importer-Exporter Code (IEC) of the importer"},
+        {"id": "GSTIN", "label": "GSTIN of the importer"},
+        {"id": "CHA", "label": "Customs House Agent licence / broker code of the declarant"},
+        {"id": "PORT", "label": "Customs port (station) of import"},
+        {"id": "VALUATION_METHOD", "label": "Valuation method and related-party (relationship) declaration"},
+        {"id": "EXEMPTION", "label": "Exemption notification or preferential-origin claim, if one is made"},
+        {"id": "BOE_NUMBER", "label": "Bill of Entry number and date (assigned when the declaration is filed)"}
+      ]
+    },
+    "SG": {
+      "declaration": "Import declaration (permit)",
+      "inputs": [
+        {"id": "UEN", "label": "UEN of the importer"},
+        {"id": "DECLARANT", "label": "Declaring agent identification"},
+        {"id": "PERMIT_TYPE", "label": "Permit type and cargo category"},
+        {"id": "PAYMENT", "label": "GST / duty payment arrangement"},
+        {"id": "PERMIT_NUMBER", "label": "Permit number (assigned when the declaration is approved)"}
+      ]
+    }
+  },
+  "default": {
+    "declaration": "Customs declaration",
+    "inputs": [
+      {"id": "IDENTITY", "label": "Importer and declarant identification numbers required by the destination's customs authority"},
+      {"id": "PORT", "label": "Customs office or port of entry"},
+      {"id": "VALUATION_METHOD", "label": "Valuation method and related-party declaration"},
+      {"id": "REFERENCE", "label": "Declaration number (assigned when the declaration is filed)"}
+    ]
+  }
+}

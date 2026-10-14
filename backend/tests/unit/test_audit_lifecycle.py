@@ -83,9 +83,9 @@ async def test_finalize_order_is_stage_then_iteration_then_audit_then_complete(
         calls.append(("write_iteration", ctx["iteration"]))
         return await real_write(ctx)
 
-    async def spy_state(bundle_id, run_id, state, progress, only_if_state=None):
+    async def spy_state(bundle_id, run_id, state, progress, only_if_state=None, fence=None):
         calls.append(("run_state", (state, progress)))
-        return await real_state(bundle_id, run_id, state=state, progress=progress, only_if_state=only_if_state)
+        return await real_state(bundle_id, run_id, state=state, progress=progress, only_if_state=only_if_state, fence=fence)
 
     async def spy_record(ctx):
         calls.append(("audit", ctx.get("audit_event_type")))

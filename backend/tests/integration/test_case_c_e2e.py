@@ -77,8 +77,21 @@ async def test_case_c_hero_demo_journey() -> None:
         assert severities["G-001"] == "PASS"  # the declared HS code is confirmed against the tariff at 8 digits
         assert not [i for i in severities if i.startswith("H-003")], "no certificate is in the bundle yet"
         # the entities agree on invoice, BoL and packing list; only the BoL states a vessel, so there is no E-vessel
-        assert set(severities) == {"W-001", "W-002", "H-002", "E-consignee", "E-consignor", "G-001"}
-        assert severities["E-consignee"] == severities["E-consignor"] == "PASS"
+        # invoice arithmetic (I-*) and the origin on invoice + packing list (E-origin) run from the first analysis; the
+        # certificate checks (M-*) need a certificate
+        assert set(severities) == {"W-001", "W-002", "H-002", "E-consignee", "E-consignor", "E-origin", "I-001", "I-002",
+                                   "I-003", "G-001"}
+        assert severities["E-consignee"] == severities["E-consignor"] == severities["E-origin"] == "PASS"
+        assert severities["I-001"] == severities["I-002"] == severities["I-003"] == "PASS"  # 120 x 700.0 = 84,000.0 USD
+        # the indicative estimate: CIF invoice (nothing to add), India -> Singapore: no customs duty, GST 9 % of the
+        # (illustrative) SGD value; it is information, it never changed the status above
+        valuation = first["valuation"]
+        assert valuation["status"] == "ESTIMATED" and valuation["incoterm"] == "CIF"
+        assert valuation["destination_country"] == "SG" and valuation["total_duty"] == 9828.0
+        assert [line["name"] for line in valuation["duties"]] == ["Customs duty", "GST"]
+        assert any("ILLUSTRATIVE" in a for a in valuation["assumptions"]), "the exchange rate is a stated assumption"
+        assert set(first["reference_data"]) == {"hs_rules.json", "specs.json", "duty_rates.json", "valuation_defaults.json",
+                                                "exchange_rates.json", "anti_dumping.json", "declaration_inputs.json"}
         assert all(c["assumptions"] == [] for c in first["checks"])  # the demo verdict rests on no assumption
         assert [m["id"] for m in first["missing_evidence"]] == ["ME-MILL_TEST_CERTIFICATE"]
         assert first["reasoning_delta"]["kind"] == "INITIAL"
@@ -99,7 +112,12 @@ async def test_case_c_hero_demo_journey() -> None:
         assert second_checks["H-003-MILL_TEST_CERTIFICATE"]["severity"] == "PASS"  # the MTC states the invoice's code
         assert second_checks["H-003-MILL_TEST_CERTIFICATE"]["assumptions"] == []
         assert set(second_checks) == {"W-001", "W-002", "H-002", "H-003-MILL_TEST_CERTIFICATE", "E-consignee",
-                                      "E-consignor", "G-001"}
+                                      "E-consignor", "E-origin", "I-001", "I-002", "I-003", "M-001", "M-002", "M-003",
+                                      "M-004", "G-001"}
+        # the certificate: chemistry inside API 5L PSL2 Grade B, CE(IIW) under 0.43, both heats on the packing list
+        for check_id in ("M-001", "M-002", "M-003", "M-004"):
+            assert second_checks[check_id]["severity"] == "PASS", second_checks[check_id]["message"]
+        assert second_checks["M-002"]["rule_set"] == "demo-curated"  # a check that uses curated data names it
         assert len(second_checks["E-consignee"]["evidence"]) == 4  # invoice, BoL, packing list and the MTC
         assert second["confidence"]["action"] == "AUTO_ACCEPT"
         assert {c["severity"] for c in second["checks"]} == {"PASS"}

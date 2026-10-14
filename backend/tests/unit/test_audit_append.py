@@ -311,3 +311,48 @@ async def test_a_broken_link_is_detected() -> None:
     ok, reason = audit.verify_audit_chain(events)
 
     assert ok is False and reason.startswith("Broken link at seq=2")
+
+
+# --- a conditional append: "only if the chain is still as I read it" --------------------------------------------------------
+
+
+def record_after(seq: int, event_type: str = "FIELD_CORRECTED"):
+    return audit.record({"bundle_id": BUNDLE, "iteration": 1, "audit_event_type": event_type, "audit_payload": {}, "actor": "user", "after_seq": seq})
+
+
+@pytest.mark.asyncio
+async def test_an_append_that_requires_the_head_it_read_is_written_when_the_chain_has_not_moved(fake) -> None:
+    await record()
+    await record("DOCUMENT_UPLOADED")
+    event = (await record_after(2))["audit_event"]
+    assert event["seq"] == 3 and len(chain(fake)) == 3
+
+
+@pytest.mark.asyncio
+async def test_an_append_that_requires_a_head_the_chain_has_moved_past_is_refused_and_writes_nothing(fake) -> None:
+    await record()
+    await record("DOCUMENT_UPLOADED")
+    with pytest.raises(audit.ChainMoved):
+        await record_after(1)
+    assert len(chain(fake)) == 2
+
+
+@pytest.mark.asyncio
+async def test_losing_the_race_to_another_process_is_a_moved_chain_for_a_conditional_append(fake) -> None:
+    """An unconditional append re-reads the tail and goes on; one that depends on what it read must not."""
+    await record()
+    rival_writer(fake, times=1)
+    with pytest.raises(audit.ChainMoved):
+        await record_after(1)
+    assert [e["event_type"] for e in chain(fake)] == ["BUNDLE_CREATED", "RIVAL_EVENT"], "its event was not written behind the rival's"
+
+
+@pytest.mark.asyncio
+async def test_the_conditional_append_works_on_the_in_memory_chain_too() -> None:
+    audit._IN_MEMORY_AUDIT.pop("bnd-mem", None)
+    base = {"bundle_id": "bnd-mem", "iteration": 0, "audit_payload": {}, "actor": "system"}
+    await audit.record({**base, "audit_event_type": "BUNDLE_CREATED"})
+    with pytest.raises(audit.ChainMoved):
+        await audit.record({**base, "audit_event_type": "X", "after_seq": 5})
+    assert (await audit.record({**base, "audit_event_type": "X", "after_seq": 1}))["audit_event"]["seq"] == 2
+    audit._IN_MEMORY_AUDIT.pop("bnd-mem", None)
