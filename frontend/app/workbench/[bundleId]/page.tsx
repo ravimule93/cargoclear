@@ -101,10 +101,13 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         onRun={wb.runAnalysis}
         onFilesSelected={wb.uploadFiles}
         onLogin={(email) => {
-          document.cookie = `cargoclear_session_token=mock-jwt-${email}-LICENSED_CHA; path=/; max-age=86400; SameSite=Lax`;
+          const token = `mock-jwt-${email}-LICENSED_CHA`;
+          document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
+          document.cookie = `cargoclear_session_token=${token}; path=/; max-age=86400; SameSite=Lax`;
           window.location.reload();
         }}
         onLogout={() => {
+          document.cookie = "__session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
           document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
           window.location.href = "/api/auth/logout";
         }}

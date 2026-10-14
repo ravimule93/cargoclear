@@ -11,6 +11,7 @@ interface UserMenuProps {
 
 export function UserMenu({ user, onLogout }: UserMenuProps) {
   const handleLogout = () => {
+    document.cookie = "__session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     if (onLogout) {
       onLogout();

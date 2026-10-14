@@ -38,6 +38,7 @@ function SignInContent() {
   const finalizeAuth = (token: string) => {
     const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
     const secureFlag = isHttps ? "; Secure" : "";
+    document.cookie = `__session=${token}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
     document.cookie = `cargoclear_session_token=${token}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
     window.location.href = returnTo;
   };

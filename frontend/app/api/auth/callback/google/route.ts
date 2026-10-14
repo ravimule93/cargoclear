@@ -125,11 +125,19 @@ export async function GET(request: NextRequest) {
     const targetUrl = new URL(returnTo, origin);
     const response = NextResponse.redirect(targetUrl);
 
-    response.cookies.set("cargoclear_session_token", sessionToken, {
+    // Set both __session (required by Firebase Hosting CDN) and cargoclear_session_token
+    response.cookies.set("__session", sessionToken, {
       path: "/",
       httpOnly: false, // Accessible to client-side identity UI
       sameSite: "lax",
       maxAge: 86400 * 7, // 7 days
+    });
+
+    response.cookies.set("cargoclear_session_token", sessionToken, {
+      path: "/",
+      httpOnly: false,
+      sameSite: "lax",
+      maxAge: 86400 * 7,
     });
 
     response.cookies.set("cargoclear_google_id_token", idToken, {

@@ -60,8 +60,11 @@ async function handleProxy(
     const headers = new Headers(request.headers);
     headers.delete("host");
 
-    // Read active auth session from cookie if Authorization header is not explicitly present
-    const sessionToken = request.cookies.get("cargoclear_session_token")?.value;
+    // Read active auth session from cookie if Authorization header is not explicitly present.
+    // Firebase Hosting CDN rewrites forward ONLY the '__session' cookie, so we check both.
+    const sessionToken =
+      request.cookies.get("__session")?.value ||
+      request.cookies.get("cargoclear_session_token")?.value;
     if (sessionToken && !headers.has("authorization")) {
       headers.set("authorization", `Bearer ${sessionToken}`);
     }
