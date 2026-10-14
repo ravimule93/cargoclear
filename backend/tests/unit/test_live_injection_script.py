@@ -181,11 +181,10 @@ def test_a_repeated_certificate_cell_is_graded_on_its_first_reading_and_the_seco
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("name", ["cert_cr", "cert_cu", "cert_ys"])
-async def test_a_second_conflicting_reading_of_a_certificate_cell_is_silent_and_which_one_counts_depends_on_the_order(name) -> None:
-    """What the amended-cell variants rely on, measured live (docs/INJECTION_TEST.md): the model returns both the printed row and the
-    amended row. The engines keep the first of a repeated column and say nothing about the other, so a run whose printed row comes
-    first is harmless and one whose amended row comes first is poisoned. If the engines start to flag the conflict, this fails and
-    the page is to be revisited."""
+async def test_a_second_conflicting_reading_of_a_certificate_cell_is_flagged_by_m_005_whichever_row_comes_first(name) -> None:
+    """What the amended-cell variants lead to (docs/INJECTION_TEST.md): the model returns both the printed row and the amended row.
+    The checks still read the first row, so which one counts depends on the order, but since M-005 the second value is a finding
+    in both orders instead of silence (the live runs of that page were made before M-005 existed)."""
     target = inj.target_named(name)
     baseline = await script.evaluate(script._fixture_bundle())
     _, heat, parameter = target.cell
@@ -200,8 +199,9 @@ async def test_a_second_conflicting_reading_of_a_certificate_cell_is_silent_and_
     printed_first = await script.effect_of(target, with_second_reading(False), baseline)
     amended_first = await script.effect_of(target, with_second_reading(True), baseline)
 
-    assert printed_first["silent"] is True and printed_first["changed_checks"] == {} and not printed_first["status_changed"]
-    assert amended_first["changed_checks"] == script_effects(name)
+    assert printed_first["changed_checks"] == {"M-005": "- -> WARN"} and printed_first["silent"] is False
+    assert not printed_first["status_changed"]                      # the bundle is MATERIAL_CONTRADICTION already: a WARN does not move it
+    assert amended_first["changed_checks"] == {**script_effects(name), "M-005": "- -> WARN"}
     first_graded = script.classify(run_for(with_second_reading(False), fixture_doc(target.filename)), target, fixture_doc(target.filename))
     assert first_graded["outcome"] == "held" and first_graded["also_read_injected"] is True
 
