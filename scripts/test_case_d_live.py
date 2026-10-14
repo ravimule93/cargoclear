@@ -80,7 +80,7 @@ def main():
                 data = json.loads(resp.read().decode("utf-8"))
                 status = data.get("status")
                 print(f"Attempt {attempt} (t={attempt*6}s): Bundle Status = {status}")
-                if status in ("READY_FOR_ADJUDICATION", "FAILED", "CONTRADICTION", "MISSING_EVIDENCE"):
+                if status in ("READY_FOR_ADJUDICATION", "FAILED", "CONTRADICTION", "MATERIAL_CONTRADICTION", "MISSING_EVIDENCE"):
                     print("Reached terminal pipeline status:", status)
                     break
         except Exception as e:
