@@ -191,54 +191,57 @@ export default function Home() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 text-sm text-[var(--cc-text-muted)]">
-          Destination
-          <select
-            data-testid="destination-select"
-            value={destination}
-            disabled={pending !== null}
-            onChange={(e) => setDestination(e.target.value as Destination)}
-            className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] bg-transparent px-2 py-1.5 text-sm text-[var(--cc-text)] cursor-pointer"
-          >
-            {DESTINATIONS.map((d) => (
-              <option key={d.code} value={d.code}>
-                {d.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          disabled={pending !== null}
-          onClick={() => start("empty", () => api.createBundle(undefined, destination))}
-          className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-4 py-2 text-sm font-semibold text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 cursor-pointer"
-        >
-          {pending === "empty" ? "Creating bundle..." : "New empty bundle"}
-        </button>
-
-        {showDemo && (
+      {/* Bundle creation controls: only shown when signed in or auth is disabled */}
+      {(!meta?.auth?.enabled || meta?.user) && (
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-[var(--cc-text-muted)]">
+            Destination
+            <select
+              data-testid="destination-select"
+              value={destination}
+              disabled={pending !== null}
+              onChange={(e) => setDestination(e.target.value as Destination)}
+              className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] bg-transparent px-2 py-1.5 text-sm text-[var(--cc-text)] cursor-pointer"
+            >
+              {DESTINATIONS.map((d) => (
+                <option key={d.code} value={d.code}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             disabled={pending !== null}
-            onClick={() => start("demo", () => api.createCaseCDemo())}
-            className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-4 py-2 text-sm font-semibold text-white hover:brightness-90 disabled:opacity-50 cursor-pointer"
+            onClick={() => start("empty", () => api.createBundle(undefined, destination))}
+            className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-4 py-2 text-sm font-semibold text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 cursor-pointer"
           >
-            {pending === "demo" ? "Starting demo..." : "Start Case C demo"}
+            {pending === "empty" ? "Creating bundle..." : "New empty bundle"}
           </button>
-        )}
 
-        {showDemo && (
-          <button
-            type="button"
-            disabled={pending !== null}
-            onClick={() => start("demo-d", () => api.createCaseDDemo())}
-            className="rounded-[var(--cc-radius)] border border-[var(--cc-focus)] px-4 py-2 text-sm font-semibold text-[var(--cc-focus)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 cursor-pointer"
-          >
-            {pending === "demo-d" ? "Starting demo..." : "Start Case D demo (India import)"}
-          </button>
-        )}
-      </div>
+          {showDemo && (
+            <button
+              type="button"
+              disabled={pending !== null}
+              onClick={() => start("demo", () => api.createCaseCDemo())}
+              className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-4 py-2 text-sm font-semibold text-white hover:brightness-90 disabled:opacity-50 cursor-pointer"
+            >
+              {pending === "demo" ? "Starting demo..." : "Start Case C demo"}
+            </button>
+          )}
+
+          {showDemo && (
+            <button
+              type="button"
+              disabled={pending !== null}
+              onClick={() => start("demo-d", () => api.createCaseDDemo())}
+              className="rounded-[var(--cc-radius)] border border-[var(--cc-focus)] px-4 py-2 text-sm font-semibold text-[var(--cc-focus)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 cursor-pointer"
+            >
+              {pending === "demo-d" ? "Starting demo..." : "Start Case D demo (India import)"}
+            </button>
+          )}
+        </div>
+      )}
 
       {metaLoading && (
         <p role="status" className="text-xs text-[var(--cc-text-muted)]">
