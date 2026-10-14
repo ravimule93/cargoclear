@@ -109,6 +109,43 @@ async def get_bundle(bundle_id: str) -> dict[str, Any] | None:
     return bundle
 
 
+async def list_bundles(tenant_id: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
+    """List recent bundles with optional tenant scoping. Returns list of bundle dicts."""
+    client = _get_firestore_client()
+
+    if client is not None:
+        try:
+            from google.cloud.firestore import Query
+
+            col = client.collection("bundles")
+            query = col
+            if tenant_id and tenant_id != "*":
+                query = query.where("tenant_id", "==", tenant_id)
+            query = query.order_by("created_at", direction=Query.DESCENDING).limit(limit)
+            snapshots = await query.get()
+            return [doc.to_dict() for doc in snapshots]
+        except Exception as exc:
+            logger.warning("firestore_list_bundles_order_query_failed", error=str(exc))
+            try:
+                col = client.collection("bundles")
+                query = col
+                if tenant_id and tenant_id != "*":
+                    query = query.where("tenant_id", "==", tenant_id)
+                snapshots = await query.limit(limit).get()
+                bundles = [doc.to_dict() for doc in snapshots]
+                bundles.sort(key=lambda b: b.get("created_at", ""), reverse=True)
+                return bundles
+            except Exception as e2:
+                logger.error("firestore_list_bundles_failed", error=str(e2))
+                return []
+
+    bundles = list(_IN_MEMORY_BUNDLES.values())
+    if tenant_id and tenant_id != "*":
+        bundles = [b for b in bundles if b.get("tenant_id") == tenant_id]
+    bundles.sort(key=lambda b: b.get("created_at", ""), reverse=True)
+    return bundles[:limit]
+
+
 # ---------------------------------------------------------------------------
 # Document operations
 # ---------------------------------------------------------------------------

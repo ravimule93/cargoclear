@@ -51,3 +51,21 @@ async def test_get_bundle_not_found():
         data = resp.json()
         assert data["code"] == "NOT_FOUND"
         assert "not found" in data["message"].lower()
+
+
+@pytest.mark.asyncio
+async def test_list_bundles_success():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # Create a bundle
+        await client.post(
+            "/api/v1/bundles",
+            json={"reference": "REF-LIST-001", "destination_country": "IN"},
+        )
+        resp = await client.get("/api/v1/bundles?limit=10")
+        assert resp.status_code == 200
+        bundles = resp.json()
+        assert isinstance(bundles, list)
+        assert len(bundles) >= 1
+        assert any(b.get("reference") == "REF-LIST-001" for b in bundles)
+

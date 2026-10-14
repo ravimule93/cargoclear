@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
@@ -19,12 +19,140 @@ const DESTINATIONS = [
 ] as const;
 type Destination = (typeof DESTINATIONS)[number]["code"];
 
+function RecentBundlesList({
+  bundles,
+  loading,
+  error,
+  onRefresh,
+}: {
+  bundles: Bundle[];
+  loading: boolean;
+  error: string | null;
+  onRefresh: () => void;
+}) {
+  return (
+    <div className="rounded-lg border border-[var(--cc-border)] bg-[var(--cc-surface-2)] p-4 shadow-xs space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-[var(--cc-text)] flex items-center gap-1.5">
+          <span>📁</span> Recent Bundles & Assessments
+        </h2>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={loading}
+          className="text-xs text-[var(--cc-text-muted)] hover:text-[var(--cc-text)] disabled:opacity-50 cursor-pointer flex items-center gap-1"
+        >
+          {loading ? "Refreshing..." : "↻ Refresh"}
+        </button>
+      </div>
+
+      {loading && bundles.length === 0 && (
+        <p className="text-xs text-[var(--cc-text-muted)] py-3 text-center">Loading recent bundles...</p>
+      )}
+
+      {error && (
+        <p className="text-xs text-red-500 py-1">{error}</p>
+      )}
+
+      {!loading && bundles.length === 0 && (
+        <div className="rounded border border-dashed border-[var(--cc-border-strong)] p-4 text-center">
+          <p className="text-xs text-[var(--cc-text-muted)]">
+            No bundles created yet in this workspace.
+          </p>
+          <p className="text-[11px] text-[var(--cc-text-muted)] mt-1">
+            Click <strong>&quot;New empty bundle&quot;</strong> or choose a demo case above to run your first clearance assessment.
+          </p>
+        </div>
+      )}
+
+      {bundles.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-[var(--cc-border)] text-[11px] text-[var(--cc-text-muted)] uppercase tracking-wider font-semibold">
+                <th className="py-2 px-2.5">Bundle ID</th>
+                <th className="py-2 px-2.5">Destination</th>
+                <th className="py-2 px-2.5">Documents</th>
+                <th className="py-2 px-2.5">Status</th>
+                <th className="py-2 px-2.5">Created</th>
+                <th className="py-2 px-2.5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--cc-border)]">
+              {bundles.map((b) => (
+                <tr key={b.id} className="hover:bg-[var(--cc-surface-3)] transition-colors">
+                  <td className="py-2 px-2.5 font-mono font-medium text-[var(--cc-text)]">
+                    <Link href={`/workbench/${b.id}`} className="hover:underline text-[var(--cc-focus)]">
+                      {b.id}
+                    </Link>
+                    {b.reference && (
+                      <span className="block text-[10px] text-[var(--cc-text-muted)] font-sans">{b.reference}</span>
+                    )}
+                  </td>
+                  <td className="py-2 px-2.5 text-[var(--cc-text-muted)]">
+                    <span className="rounded bg-[var(--cc-surface)] px-1.5 py-0.5 border border-[var(--cc-border)] font-semibold">
+                      {b.destination_country}
+                    </span>
+                  </td>
+                  <td className="py-2 px-2.5 text-[var(--cc-text-muted)]">
+                    {b.documents?.length ?? 0} {b.documents?.length === 1 ? "doc" : "docs"}
+                  </td>
+                  <td className="py-2 px-2.5">
+                    <span className="rounded bg-[var(--cc-surface)] px-2 py-0.5 border border-[var(--cc-border)] text-[10px] font-semibold text-[var(--cc-text)]">
+                      {b.status || "DRAFT"}
+                    </span>
+                  </td>
+                  <td className="py-2 px-2.5 text-[var(--cc-text-muted)] text-[11px]">
+                    {b.created_at ? new Date(b.created_at).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" }) : "—"}
+                  </td>
+                  <td className="py-2 px-2.5 text-right">
+                    <Link
+                      href={`/workbench/${b.id}`}
+                      className="inline-flex items-center gap-1 rounded bg-[var(--cc-surface)] border border-[var(--cc-border-strong)] px-2.5 py-1 text-[11px] font-medium text-[var(--cc-text)] hover:bg-[var(--cc-focus)] hover:text-white transition-colors"
+                    >
+                      Open →
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const { meta, loading: metaLoading, error: metaError, retry: retryMeta } = useMeta();
   const [pending, setPending] = useState<Pending>(null);
   const [error, setError] = useState<string | null>(null);
   const [destination, setDestination] = useState<Destination>("SG");
+
+  const [bundles, setBundles] = useState<Bundle[]>([]);
+  const [bundlesLoading, setBundlesLoading] = useState(false);
+  const [bundlesError, setBundlesError] = useState<string | null>(null);
+
+  const loadBundles = useCallback(async () => {
+    setBundlesLoading(true);
+    setBundlesError(null);
+    try {
+      const data = await api.listBundles(15);
+      setBundles(data);
+    } catch (err: unknown) {
+      console.warn("Could not load recent bundles", err);
+      setBundlesError("Could not load recent bundles");
+    } finally {
+      setBundlesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!meta?.auth?.enabled || meta?.user) {
+      loadBundles();
+    }
+  }, [meta, loadBundles]);
 
   const start = async (kind: Exclude<Pending, null>, create: () => Promise<Bundle>) => {
     if (meta?.auth?.enabled && !meta?.user) {
@@ -50,7 +178,7 @@ export default function Home() {
   const showDemo = meta?.app_mode === "demo";
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-6 p-6">
+    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center gap-6 p-6">
       <header className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-[var(--cc-text)]">CargoClear-JAPAC</h1>
@@ -241,6 +369,15 @@ export default function Home() {
             </button>
           )}
         </div>
+      )}
+
+      {(!meta?.auth?.enabled || meta?.user) && (
+        <RecentBundlesList
+          bundles={bundles}
+          loading={bundlesLoading}
+          error={bundlesError}
+          onRefresh={loadBundles}
+        />
       )}
 
       {metaLoading && (

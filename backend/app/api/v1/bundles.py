@@ -71,6 +71,33 @@ async def create_bundle(
 
 
 @router.get(
+    "/bundles",
+    response_model=list[BundleResponse],
+    summary="List recent trade assessment bundles",
+)
+async def list_bundles(
+    limit: int = Query(default=30, ge=1, le=100),
+    current_user: UserIdentity = Depends(get_current_user),
+) -> list[BundleResponse]:
+    """Retrieve recent bundles scoped to the authenticated tenant."""
+    bundles = await firestore.list_bundles(tenant_id=current_user.tenant_id, limit=limit)
+    return [
+        BundleResponse(
+            id=b["id"],
+            reference=b.get("reference"),
+            destination_country=b.get("destination_country", "SG"),
+            status=b.get("status", "PENDING"),
+            current_iteration=b.get("current_iteration", 0),
+            documents=b.get("documents", []),
+            created_at=b.get("created_at", ""),
+            tenant_id=b.get("tenant_id") or current_user.tenant_id,
+            created_by=b.get("created_by") or current_user.email,
+        )
+        for b in bundles
+    ]
+
+
+@router.get(
     "/bundles/{bundle_id}",
     response_model=BundleResponse,
     summary="Get bundle details and attached documents",
