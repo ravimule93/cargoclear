@@ -240,9 +240,9 @@ async def test_a_stage_is_claim_checked_then_announced_then_worked_then_logged(m
     order: list[str] = []
     real_claim, real_stage, real_dispatch = orchestrator._ensure_claim, firestore.set_run_stage, orchestrator.dispatch
 
-    async def claim(bundle_id: str, run_id: str) -> None:
+    async def claim(bundle_id: str, run_id: str, fence: int | None = None) -> None:
         order.append("claim")
-        await real_claim(bundle_id, run_id)
+        await real_claim(bundle_id, run_id, fence)
 
     async def stage_write(bundle_id, run_id, stage, progress):
         order.append(f"progress:{stage}")

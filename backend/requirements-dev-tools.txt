@@ -14,6 +14,4 @@ ruff==0.17.0
 # Type checking
 mypy==2.4.0
 
-# Case C sample PDF generator (scripts/generate_case_c_pdfs.py). KEEP EXACT: the drift-guard test
-# tests/unit/test_case_c_pdfs.py compares generated PDFs byte-for-byte with fixtures/case_c/*.pdf.
-reportlab==5.0.1
+# reportlab (the sample-PDF generator and the pre-fill summary) is a RUNTIME dependency now: see requirements.in

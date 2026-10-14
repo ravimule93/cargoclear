@@ -1,6 +1,11 @@
 """SYSTEM_INSTRUCTION: weights are returned as printed, with the printed unit, never converted (D1)."""
 
-from app.agents.extraction import SYSTEM_INSTRUCTION
+from app.agents.extraction import (
+    CERTIFICATE_SENTENCE,
+    SALE_TERMS_SENTENCE,
+    SYSTEM_INSTRUCTION,
+    TEST_RESULT_SENTENCE,
+)
 
 NEW_WEIGHT_SENTENCE = (
     "For every weight, return the number exactly as printed in `value` (keep it as printed; do not convert units) "
@@ -39,7 +44,8 @@ def test_prompt_tells_the_model_to_keep_weights_as_printed_with_their_unit() -> 
 
 
 def test_every_original_sentence_is_unchanged() -> None:
-    added = (NEW_WEIGHT_SENTENCE, PAGE_SENTENCE, DATA_SENTENCE)  # the only lines that were added to the original
+    # the only lines that were added to the original
+    added = (NEW_WEIGHT_SENTENCE, PAGE_SENTENCE, DATA_SENTENCE, SALE_TERMS_SENTENCE, CERTIFICATE_SENTENCE, TEST_RESULT_SENTENCE)
     stripped = SYSTEM_INSTRUCTION
     for sentence in added:
         stripped = stripped.replace(sentence + "\n", "")
@@ -77,3 +83,16 @@ def test_the_label_format_the_prompt_mentions_is_the_one_the_request_uses() -> N
     assert page_count == 2
     assert [p.text for p in parts if p.text][:2] == ["Page 1 of 2.", "Page 2 of 2."]
     assert "'Page N of M' labels" in SYSTEM_INSTRUCTION
+
+
+def test_the_prompt_describes_the_material_and_sale_term_fields_next_to_the_data_sentence() -> None:
+    lines = SYSTEM_INSTRUCTION.splitlines()
+    start = lines.index(DATA_SENTENCE) + 1
+    assert lines[start:start + 3] == [SALE_TERMS_SENTENCE, CERTIFICATE_SENTENCE, TEST_RESULT_SENTENCE]
+    assert lines[start + 3] == "Classify the doc_type as one of:"
+
+
+def test_the_prompt_tells_the_model_not_to_derive_values() -> None:
+    assert "Never compute a derived value" in TEST_RESULT_SENTENCE
+    for field in ("`test_results`", "`heat_numbers`", "`specification`", "`incoterm`", "`country_of_origin`", "`unit_price_basis`"):
+        assert field in SYSTEM_INSTRUCTION

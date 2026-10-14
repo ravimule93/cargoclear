@@ -1,0 +1,8 @@
+# Cloud Build source upload filter (used by `gcloud builds submit`).
+#
+# gcloud's generated default also excludes `.gitignore`, but the backend tests read it
+# (tests/unit/test_deployment_contract.py), so it must reach the build. Everything else
+# matches the default: skip .git and anything .gitignore already excludes.
+.gcloudignore
+.git
+#!include:.gitignore

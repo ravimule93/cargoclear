@@ -50,6 +50,20 @@ class ConflictError(CargoClearError):
     http_status = 409
 
 
+class UnauthorizedError(CargoClearError):
+    """The caller of an internal endpoint did not prove who it is."""
+
+    code = "UNAUTHORIZED"
+    http_status = 401
+
+
+class ForbiddenError(CargoClearError):
+    """The caller of an internal endpoint is known and not allowed."""
+
+    code = "FORBIDDEN"
+    http_status = 403
+
+
 class PayloadTooLargeError(CargoClearError):
     """A request body or an uploaded file is larger than the configured limit."""
 

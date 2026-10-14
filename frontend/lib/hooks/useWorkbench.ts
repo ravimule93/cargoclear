@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api";
 import { isNotFound, runErrorMessage, toErrorEnvelope } from "../errors";
+import { findingDocumentId } from "../finding-document";
 import { buildHighlights, type Highlight } from "../highlights";
-import type { AssessmentIteration, Bundle, DocumentRecord } from "../types";
+import type { ExtractedDoc } from "../corrections";
+import type { AssessmentIteration, Bundle, CorrectionRequest, CorrectionsResponse, DocumentRecord } from "../types";
 import { useBundleStream, type StreamConnection, type StreamRunState } from "./useBundleStream";
 
 export type LoadState = "loading" | "ready" | "not_found" | "error";
@@ -31,6 +33,15 @@ export interface Workbench {
   runMode: "analyze" | "reassess";
   currentIteration: number;
   runAnalysis: () => Promise<void>;
+
+  /** Corrections by the authorised agent (null until loaded) and the extraction of the shown assessment, corrections laid on. */
+  corrections: CorrectionsResponse | null;
+  extractions: ExtractedDoc[];
+  /** Record a correction; resolves to an error message to show beside the field, or null on success. */
+  submitCorrection: (request: CorrectionRequest) => Promise<string | null>;
+  revertCorrection: (correctionId: string) => Promise<string | null>;
+  /** Re-run the checks on the stored extraction with the corrections applied (no document is read again). */
+  recompute: () => Promise<void>;
 
   uploadFiles: (files: File[]) => Promise<void>;
   /** Call after documents were uploaded elsewhere (e.g. the dropzone). One refresh, one run action. */
@@ -66,6 +77,9 @@ export function useWorkbench(bundleId: string): Workbench {
   const [fetchedIterations, setFetchedIterations] = useState<AssessmentIteration[]>([]);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
 
+  const [corrections, setCorrections] = useState<CorrectionsResponse | null>(null);
+  const [extractions, setExtractions] = useState<ExtractedDoc[]>([]);
+
   const [startingRun, setStartingRun] = useState(false);
   const [pendingRunId, setPendingRunId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -85,6 +99,8 @@ export function useWorkbench(bundleId: string): Workbench {
     setSelectedDocumentId(null);
     setPendingRunId(null);
     setActionError(null);
+    setCorrections(null);
+    setExtractions([]);
     handledIterationRef.current = null;
 
     (async () => {
@@ -174,15 +190,91 @@ export function useWorkbench(bundleId: string): Workbench {
 
   const highlights = useMemo(() => buildHighlights(assessment), [assessment]);
 
+  // Refreshes can overlap (a new iteration arrives while an undo is being recorded): only the newest request may set the state,
+  // otherwise a slow older answer would put a stale list back on screen.
+  const correctionsRequest = useRef(0);
+  const refreshCorrections = useCallback(async () => {
+    const mine = ++correctionsRequest.current;
+    try {
+      const next = await api.getCorrections(bundleId);
+      if (mine === correctionsRequest.current) setCorrections(next);
+    } catch (err: unknown) {
+      console.warn("Could not refresh corrections", err);
+    }
+  }, [bundleId]);
+
+  // The extraction behind the shown assessment (what its checks saw, corrections laid on) and the correction list follow it.
+  const shownIteration = assessment?.iteration ?? 0;
+  useEffect(() => {
+    if (loadState !== "ready") return;
+    if (shownIteration === 0) {
+      setExtractions([]);
+      setCorrections(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .getExtractions(bundleId, shownIteration)
+      .then((docs) => {
+        if (!cancelled) setExtractions(docs);
+      })
+      .catch(() => {
+        if (!cancelled) setExtractions([]);
+      });
+    void refreshCorrections();
+    return () => {
+      cancelled = true;
+    };
+  }, [loadState, bundleId, shownIteration, refreshCorrections]);
+
+  const submitCorrection = useCallback(
+    async (request: CorrectionRequest): Promise<string | null> => {
+      try {
+        await api.createCorrection(bundleId, request);
+        await refreshCorrections();
+        return null;
+      } catch (err: unknown) {
+        return toErrorEnvelope(err).message;
+      }
+    },
+    [bundleId, refreshCorrections]
+  );
+
+  const revertCorrection = useCallback(
+    async (correctionId: string): Promise<string | null> => {
+      try {
+        await api.revertCorrection(bundleId, correctionId);
+        await refreshCorrections();
+        return null;
+      } catch (err: unknown) {
+        return toErrorEnvelope(err).message;
+      }
+    },
+    [bundleId, refreshCorrections]
+  );
+
   const documents = useMemo(() => bundle?.documents ?? [], [bundle]);
 
-  // Keep the user's selection unless that document disappeared; otherwise fall back to the first.
+  // The document the most serious finding is about: what a person should see first when nothing was chosen. Only data of the
+  // bundle on screen counts: while another bundle loads, the state of the previous one is still in place for a render.
+  const findingDocument = useMemo(
+    () => (bundle?.id === bundleId ? findingDocumentId(assessment?.checks, documents.map((d) => d.document_id)) : null),
+    [bundle, bundleId, assessment, documents]
+  );
+
+  // Keep the user's selection unless that document disappeared; otherwise the document of the first material finding,
+  // otherwise the first document.
   const activeDocumentId = useMemo(() => {
     if (selectedDocumentId && documents.some((d) => d.document_id === selectedDocumentId)) {
       return selectedDocumentId;
     }
-    return documents[0]?.document_id ?? null;
-  }, [selectedDocumentId, documents]);
+    return findingDocument ?? documents[0]?.document_id ?? null;
+  }, [selectedDocumentId, documents, findingDocument]);
+
+  // Once the viewer has opened the finding's document, it stays there: a recompute that clears the finding must not move the page under the reader.
+  useEffect(() => {
+    if (selectedDocumentId === null && findingDocument) setSelectedDocumentId(findingDocument);
+  }, [selectedDocumentId, findingDocument]);
 
   const currentIteration = Math.max(bundle?.current_iteration ?? 0, assessment?.iteration ?? 0);
   const runMode = currentIteration === 0 ? "analyze" : "reassess";
@@ -209,6 +301,19 @@ export function useWorkbench(bundleId: string): Workbench {
       setStartingRun(false);
     }
   }, [bundleId, runMode]);
+
+  const recompute = useCallback(async () => {
+    setActionError(null);
+    setStartingRun(true);
+    try {
+      const started = await api.recompute(bundleId);
+      setPendingRunId(started.run_id);
+    } catch (err: unknown) {
+      setActionError(runErrorMessage(err));
+    } finally {
+      setStartingRun(false);
+    }
+  }, [bundleId]);
 
   // One refresh and at most one run action per upload batch; only auto-reassess once an
   // assessment exists (iteration 0 waits for the user to press "Run analysis").
@@ -267,6 +372,11 @@ export function useWorkbench(bundleId: string): Workbench {
     runMode,
     currentIteration,
     runAnalysis,
+    corrections,
+    extractions,
+    submitCorrection,
+    revertCorrection,
+    recompute,
     uploadFiles,
     handleUploaded,
     isUploading,

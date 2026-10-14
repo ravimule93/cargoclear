@@ -419,5 +419,8 @@ def test_a_weight_without_a_bbox_is_still_evidence_with_page_1_and_no_box() -> N
     )
     r = check_weight_parity(p, bol(gross=14280.0))
     net_entry = next(e for e in r.evidence if e["field"] == "total_net_weight_kg")
-    assert net_entry == {"doc": "pl-001", "field": "total_net_weight_kg", "page": 1, "bbox": None}
+    # the printed value and unit travel with the entry (the UI shows them, and edits them in place)
+    assert net_entry == {
+        "doc": "pl-001", "field": "total_net_weight_kg", "page": 1, "bbox": None, "raw_value": 14000, "unit": "KGS",
+    }
     assert r.severity == "PASS"

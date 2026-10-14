@@ -1,0 +1,413 @@
+{
+  "case": "d",
+  "declared": {
+    "model": null,
+    "note": "demo mode, one local uvicorn process on a laptop, poppler page rendering, no model call"
+  },
+  "kind": "e2e",
+  "label": "local-demo-case-d-corrections",
+  "options": {
+    "corrections": true,
+    "expect_signer": null
+  },
+  "recorded_at": "2026-10-13T20:47:39.756763+00:00",
+  "runs": [
+    {
+      "failures": [],
+      "index": 1,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.58
+        },
+        "recompute": {
+          "finalize": 0.0,
+          "ground": 0.0
+        },
+        "recompute_after_undo": {
+          "finalize": 0.0,
+          "ground": 0.0
+        }
+      },
+      "statuses": {
+        "analyze": "MATERIAL_CONTRADICTION",
+        "recompute": "SPECIALIST_REVIEW_REQUIRED",
+        "recompute_after_undo": "MATERIAL_CONTRADICTION"
+      },
+      "steps": {
+        "analyze": 1.586,
+        "audit": 0.001,
+        "correction": 0.001,
+        "create_bundle": 0.001,
+        "prefill_json": 0.001,
+        "prefill_pdf": 0.011,
+        "recompute": 0.005,
+        "recompute_after_undo": 0.004,
+        "upload:case_d_bill_of_lading.pdf": 0.016,
+        "upload:case_d_commercial_invoice.pdf": 0.016,
+        "upload:case_d_mtc_test_cert.pdf": 0.015,
+        "upload:case_d_packing_list.pdf": 0.016
+      }
+    },
+    {
+      "failures": [],
+      "index": 2,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.58
+        },
+        "recompute": {
+          "finalize": 0.0,
+          "ground": 0.0
+        },
+        "recompute_after_undo": {
+          "finalize": 0.0,
+          "ground": 0.0
+        }
+      },
+      "statuses": {
+        "analyze": "MATERIAL_CONTRADICTION",
+        "recompute": "SPECIALIST_REVIEW_REQUIRED",
+        "recompute_after_undo": "MATERIAL_CONTRADICTION"
+      },
+      "steps": {
+        "analyze": 1.585,
+        "audit": 0.001,
+        "correction": 0.001,
+        "create_bundle": 0.001,
+        "prefill_json": 0.001,
+        "prefill_pdf": 0.011,
+        "recompute": 0.004,
+        "recompute_after_undo": 0.004,
+        "upload:case_d_bill_of_lading.pdf": 0.016,
+        "upload:case_d_commercial_invoice.pdf": 0.017,
+        "upload:case_d_mtc_test_cert.pdf": 0.016,
+        "upload:case_d_packing_list.pdf": 0.015
+      }
+    },
+    {
+      "failures": [],
+      "index": 3,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.58
+        },
+        "recompute": {
+          "finalize": 0.0,
+          "ground": 0.0
+        },
+        "recompute_after_undo": {
+          "finalize": 0.0,
+          "ground": 0.0
+        }
+      },
+      "statuses": {
+        "analyze": "MATERIAL_CONTRADICTION",
+        "recompute": "SPECIALIST_REVIEW_REQUIRED",
+        "recompute_after_undo": "MATERIAL_CONTRADICTION"
+      },
+      "steps": {
+        "analyze": 1.59,
+        "audit": 0.001,
+        "correction": 0.001,
+        "create_bundle": 0.001,
+        "prefill_json": 0.002,
+        "prefill_pdf": 0.011,
+        "recompute": 0.005,
+        "recompute_after_undo": 0.004,
+        "upload:case_d_bill_of_lading.pdf": 0.016,
+        "upload:case_d_commercial_invoice.pdf": 0.017,
+        "upload:case_d_mtc_test_cert.pdf": 0.016,
+        "upload:case_d_packing_list.pdf": 0.016
+      }
+    },
+    {
+      "failures": [],
+      "index": 4,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.59
+        },
+        "recompute": {
+          "finalize": 0.0,
+          "ground": 0.0
+        },
+        "recompute_after_undo": {
+          "finalize": 0.0,
+          "ground": 0.0
+        }
+      },
+      "statuses": {
+        "analyze": "MATERIAL_CONTRADICTION",
+        "recompute": "SPECIALIST_REVIEW_REQUIRED",
+        "recompute_after_undo": "MATERIAL_CONTRADICTION"
+      },
+      "steps": {
+        "analyze": 1.593,
+        "audit": 0.001,
+        "correction": 0.001,
+        "create_bundle": 0.001,
+        "prefill_json": 0.002,
+        "prefill_pdf": 0.012,
+        "recompute": 0.004,
+        "recompute_after_undo": 0.004,
+        "upload:case_d_bill_of_lading.pdf": 0.016,
+        "upload:case_d_commercial_invoice.pdf": 0.017,
+        "upload:case_d_mtc_test_cert.pdf": 0.016,
+        "upload:case_d_packing_list.pdf": 0.016
+      }
+    },
+    {
+      "failures": [],
+      "index": 5,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.59
+        },
+        "recompute": {
+          "finalize": 0.0,
+          "ground": 0.0
+        },
+        "recompute_after_undo": {
+          "finalize": 0.0,
+          "ground": 0.0
+        }
+      },
+      "statuses": {
+        "analyze": "MATERIAL_CONTRADICTION",
+        "recompute": "SPECIALIST_REVIEW_REQUIRED",
+        "recompute_after_undo": "MATERIAL_CONTRADICTION"
+      },
+      "steps": {
+        "analyze": 1.593,
+        "audit": 0.001,
+        "correction": 0.001,
+        "create_bundle": 0.001,
+        "prefill_json": 0.001,
+        "prefill_pdf": 0.011,
+        "recompute": 0.004,
+        "recompute_after_undo": 0.004,
+        "upload:case_d_bill_of_lading.pdf": 0.017,
+        "upload:case_d_commercial_invoice.pdf": 0.018,
+        "upload:case_d_mtc_test_cert.pdf": 0.017,
+        "upload:case_d_packing_list.pdf": 0.016
+      }
+    },
+    {
+      "failures": [],
+      "index": 6,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.58
+        },
+        "recompute": {
+          "finalize": 0.0,
+          "ground": 0.0
+        },
+        "recompute_after_undo": {
+          "finalize": 0.0,
+          "ground": 0.0
+        }
+      },
+      "statuses": {
+        "analyze": "MATERIAL_CONTRADICTION",
+        "recompute": "SPECIALIST_REVIEW_REQUIRED",
+        "recompute_after_undo": "MATERIAL_CONTRADICTION"
+      },
+      "steps": {
+        "analyze": 1.588,
+        "audit": 0.001,
+        "correction": 0.001,
+        "create_bundle": 0.001,
+        "prefill_json": 0.001,
+        "prefill_pdf": 0.011,
+        "recompute": 0.004,
+        "recompute_after_undo": 0.004,
+        "upload:case_d_bill_of_lading.pdf": 0.015,
+        "upload:case_d_commercial_invoice.pdf": 0.017,
+        "upload:case_d_mtc_test_cert.pdf": 0.016,
+        "upload:case_d_packing_list.pdf": 0.015
+      }
+    },
+    {
+      "failures": [],
+      "index": 7,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.58
+        },
+        "recompute": {
+          "finalize": 0.0,
+          "ground": 0.0
+        },
+        "recompute_after_undo": {
+          "finalize": 0.0,
+          "ground": 0.0
+        }
+      },
+      "statuses": {
+        "analyze": "MATERIAL_CONTRADICTION",
+        "recompute": "SPECIALIST_REVIEW_REQUIRED",
+        "recompute_after_undo": "MATERIAL_CONTRADICTION"
+      },
+      "steps": {
+        "analyze": 1.586,
+        "audit": 0.001,
+        "correction": 0.001,
+        "create_bundle": 0.001,
+        "prefill_json": 0.001,
+        "prefill_pdf": 0.011,
+        "recompute": 0.004,
+        "recompute_after_undo": 0.004,
+        "upload:case_d_bill_of_lading.pdf": 0.016,
+        "upload:case_d_commercial_invoice.pdf": 0.017,
+        "upload:case_d_mtc_test_cert.pdf": 0.016,
+        "upload:case_d_packing_list.pdf": 0.016
+      }
+    },
+    {
+      "failures": [],
+      "index": 8,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.58
+        },
+        "recompute": {
+          "finalize": 0.0,
+          "ground": 0.0
+        },
+        "recompute_after_undo": {
+          "finalize": 0.0,
+          "ground": 0.0
+        }
+      },
+      "statuses": {
+        "analyze": "MATERIAL_CONTRADICTION",
+        "recompute": "SPECIALIST_REVIEW_REQUIRED",
+        "recompute_after_undo": "MATERIAL_CONTRADICTION"
+      },
+      "steps": {
+        "analyze": 1.589,
+        "audit": 0.001,
+        "correction": 0.001,
+        "create_bundle": 0.001,
+        "prefill_json": 0.001,
+        "prefill_pdf": 0.011,
+        "recompute": 0.004,
+        "recompute_after_undo": 0.004,
+        "upload:case_d_bill_of_lading.pdf": 0.016,
+        "upload:case_d_commercial_invoice.pdf": 0.017,
+        "upload:case_d_mtc_test_cert.pdf": 0.016,
+        "upload:case_d_packing_list.pdf": 0.016
+      }
+    },
+    {
+      "failures": [],
+      "index": 9,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.59
+        },
+        "recompute": {
+          "finalize": 0.0,
+          "ground": 0.0
+        },
+        "recompute_after_undo": {
+          "finalize": 0.0,
+          "ground": 0.0
+        }
+      },
+      "statuses": {
+        "analyze": "MATERIAL_CONTRADICTION",
+        "recompute": "SPECIALIST_REVIEW_REQUIRED",
+        "recompute_after_undo": "MATERIAL_CONTRADICTION"
+      },
+      "steps": {
+        "analyze": 1.593,
+        "audit": 0.001,
+        "correction": 0.001,
+        "create_bundle": 0.001,
+        "prefill_json": 0.001,
+        "prefill_pdf": 0.011,
+        "recompute": 0.005,
+        "recompute_after_undo": 0.004,
+        "upload:case_d_bill_of_lading.pdf": 0.016,
+        "upload:case_d_commercial_invoice.pdf": 0.017,
+        "upload:case_d_mtc_test_cert.pdf": 0.016,
+        "upload:case_d_packing_list.pdf": 0.016
+      }
+    },
+    {
+      "failures": [],
+      "index": 10,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.58
+        },
+        "recompute": {
+          "finalize": 0.0,
+          "ground": 0.0
+        },
+        "recompute_after_undo": {
+          "finalize": 0.0,
+          "ground": 0.0
+        }
+      },
+      "statuses": {
+        "analyze": "MATERIAL_CONTRADICTION",
+        "recompute": "SPECIALIST_REVIEW_REQUIRED",
+        "recompute_after_undo": "MATERIAL_CONTRADICTION"
+      },
+      "steps": {
+        "analyze": 1.588,
+        "audit": 0.001,
+        "correction": 0.001,
+        "create_bundle": 0.001,
+        "prefill_json": 0.001,
+        "prefill_pdf": 0.012,
+        "recompute": 0.004,
+        "recompute_after_undo": 0.004,
+        "upload:case_d_bill_of_lading.pdf": 0.016,
+        "upload:case_d_commercial_invoice.pdf": 0.017,
+        "upload:case_d_mtc_test_cert.pdf": 0.016,
+        "upload:case_d_packing_list.pdf": 0.016
+      }
+    }
+  ],
+  "schema": "cargoclear.measurement/1",
+  "stack": {
+    "app_mode": "demo",
+    "pipeline_engine": "native",
+    "where": "local"
+  },
+  "tool": "scripts/live_e2e_hosted.py"
+}

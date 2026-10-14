@@ -39,6 +39,6 @@
     "name": "description_embedding",
     "type": "FLOAT64",
     "mode": "REPEATED",
-    "description": "768-dimensional multimodal text embedding generated via ML.GENERATE_EMBEDDING"
+    "description": "Text embedding of the description, generated with the remote embedding model (ML.GENERATE_EMBEDDING). The dimension is whatever that model returns; stored and query vectors must come from the same model."
   }
 ]

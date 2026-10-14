@@ -19,7 +19,7 @@ router = APIRouter(tags=["assessment"])
 async def analyze(
     bundle_id: str = Path(..., description="Target bundle ID"),
 ) -> RunResponse:
-    """Initiates the 7-stage assessment pipeline in the background.
+    """Initiates the six-stage assessment pipeline (plus its finalize step) in the background.
 
     Returns run_id immediately with 202 Accepted.
     Progress is streamed via SSE on /bundles/{id}/stream.
@@ -63,6 +63,34 @@ async def reassess(
         bundle_id=bundle_id,
         state="RUNNING",
         message="Reassessment initiated. Subscribe to /stream for updated findings.",
+    )
+
+
+@router.post(
+    "/bundles/{bundle_id}/recompute",
+    response_model=RunResponse,
+    status_code=202,
+    summary="Re-run the checks on the stored extraction, with the agent's corrections applied",
+)
+async def recompute(
+    bundle_id: str = Path(..., description="Target bundle ID"),
+) -> RunResponse:
+    """Starts a ``recompute`` run: no document is read again and no model is called; the extraction of the latest
+    assessment is reused, the corrections in force are laid over it, and every check runs again.
+
+    409 when there is no assessment yet, when documents were added since (use /reassess), or while a run is in progress.
+    """
+    bundle = await firestore.get_bundle(bundle_id)
+    if bundle is None:
+        raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
+
+    run_id = await orchestrator.start_run(bundle_id, mode="recompute")
+
+    return RunResponse(
+        run_id=run_id,
+        bundle_id=bundle_id,
+        state="RUNNING",
+        message="Recompute initiated. The stored extraction is reused with your corrections applied.",
     )
 
 

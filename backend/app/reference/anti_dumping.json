@@ -1,0 +1,19 @@
+{
+  "rule_set": "demo-curated",
+  "regulation_ref": "ILLUSTRATIVE anti-dumping entries. They are NOT notifications: the scope, the origin and above all the rate are placeholders. Real anti-dumping duties are product-, producer- and date-specific and need the notification number. A reviewer replaces every entry with a verified one",
+  "verification": {"status": "unverified", "reviewer": null, "date": null},
+  "entries": [
+    {
+      "id": "ADD-IN-7304-CN-ILLUSTRATIVE",
+      "destination": "IN",
+      "origins": ["CN"],
+      "hs_prefixes": ["7304"],
+      "scope": "Seamless tubes, pipes and hollow profiles of iron or steel (ILLUSTRATIVE scope)",
+      "rate_pct_of_assessable_value": 12.0,
+      "notification_ref": null,
+      "valid_from": null,
+      "valid_until": null,
+      "producer_specific": true
+    }
+  ]
+}

@@ -5,12 +5,17 @@ Per v4.0 Specification (Epic 5, US 5.2 & hardening requirements):
   - Pinpoints newly uploaded documents and cites their filename and doc_type.
   - Pinpoints satisfied missing evidence requirements with exact document provenance.
   - Highlights check severity improvements (e.g., MATERIAL -> PASS).
+  - Names every correction by the authorised agent that is new (or gone) since the previous iteration, with the value it
+    replaced and the reason given, so a changed verdict is never attributed to anything but its cause.
   - Synthesizes a transparent, human-readable narrative for the Custom House Agent.
 """
 
 from __future__ import annotations
 
+import re
 from typing import Any
+
+from app.domain.corrections import path_label
 
 
 
@@ -61,6 +66,12 @@ def _snapshot(ctx: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _plain(value: Any) -> str:
+    """A status as a person reads it: MATERIAL_CONTRADICTION -> Material Contradiction (anything else is shown as it is)."""
+    text = str(value)
+    return text.replace("_", " ").title() if re.fullmatch(r"[A-Z]+(_[A-Z]+)+", text) else text
+
+
 def _narrate(changes: list[dict[str, Any]]) -> str:
     """Build a concise, professional explanation narrative from structured changes."""
     if not changes:
@@ -72,15 +83,81 @@ def _narrate(changes: list[dict[str, Any]]) -> str:
         from_val = c.get("from", "")
         to_val = c.get("to", "")
         because = c.get("because", "")
+        reason = str(because).rstrip().rstrip(".")  # a check's message ends with a full stop: do not add a second one
 
-        if field == "status":
-            explanations.append(f"Compliance status updated from {from_val} to {to_val} ({because}).")
+        if field.startswith("correction."):
+            explanations.append(f"{because}")
+        elif field == "status":
+            explanations.append(f"Compliance status updated from {_plain(from_val)} to {_plain(to_val)} ({reason}).")
         elif "missing_evidence" in field:
             explanations.append(f"Evidence requirement {field.replace('missing_evidence.', '')}: {because}")
         else:
-            explanations.append(f"Check {field} changed from {from_val} to {to_val}: {because}.")
+            explanations.append(f"Check {field} changed from {from_val} to {to_val}: {reason}.")
 
     return " ".join(explanations)
+
+
+def _shown(value: Any, unit: Any = None) -> str:
+    if value is None or str(value).strip() == "":
+        return "(not stated)"
+    text = str(value).strip()
+    if unit and not text.upper().endswith(str(unit).strip().upper()):  # "0.35 %" already says its unit
+        return f"{text} {str(unit).strip()}"
+    return text
+
+
+def _where(path: str, document_id: Any, documents: list[dict[str, Any]]) -> str:
+    """What a person calls an address, in a sentence: "certificate cell 21 of case_d_mtc_test_cert.pdf", never
+    "test_results[20] in doc-4f2a". The label is the one the Corrections card shows (``corrections.path_label``, one table of test
+    vectors for both); the machine address stays in the change's field."""
+    label = path_label(path)
+    label = label[:1].lower() + label[1:]
+    name = next((d.get("filename") for d in documents if d.get("document_id") == document_id and d.get("filename")), None)
+    return f"{label} of {name}" if name else label
+
+
+def _correction_changes(prev: dict[str, Any], ctx: dict[str, Any]) -> list[dict[str, Any]]:
+    """One change per correction that is new since ``prev`` and one per correction that was undone.
+
+    "New" is by correction id against the applied corrections stored on ``prev`` (an older iteration has none). A correction
+    that could not be placed is not narrated as a change: nothing changed for it.
+    """
+    before = {
+        c.get("correction_id"): c
+        for c in (prev.get("corrections") or [])
+        if isinstance(c, dict) and c.get("status") == "applied"
+    }
+    now = {
+        c.get("correction_id"): c
+        for c in (ctx.get("corrections") or [])
+        if isinstance(c, dict) and c.get("status") == "applied"
+    }
+    changes: list[dict[str, Any]] = []
+    documents = [d for d in (ctx.get("documents") or []) if isinstance(d, dict)]
+    for correction_id, c in now.items():
+        if correction_id in before:
+            continue
+        because = f"Correction by the authorised agent to {_where(str(c.get('path')), c.get('document_id'), documents)}"
+        if c.get("reason"):
+            because += f" ({c['reason']})"
+        changes.append({
+            "field": f"correction.{c.get('document_id')}.{c.get('path')}",
+            "from": _shown(c.get("original_value"), c.get("original_unit")),
+            "to": _shown(c.get("value"), c.get("unit") or c.get("original_unit")),  # a correction that gives no unit keeps the printed one
+            "because": f"{because}: {_shown(c.get('original_value'), c.get('original_unit'))} became "
+                       f"{_shown(c.get('value'), c.get('unit') or c.get('original_unit'))}.",
+        })
+    for correction_id, c in before.items():
+        if correction_id in now:
+            continue
+        changes.append({
+            "field": f"correction.{c.get('document_id')}.{c.get('path')}",
+            "from": _shown(c.get("value"), c.get("unit") or c.get("original_unit")),
+            "to": _shown(c.get("original_value"), c.get("original_unit")),
+            "because": f"A correction to {_where(str(c.get('path')), c.get('document_id'), documents)} was undone: the value is back to "
+                       f"{_shown(c.get('original_value'), c.get('original_unit'))}.",
+        })
+    return changes
 
 
 async def build(ctx: dict[str, Any]) -> dict[str, Any]:
@@ -155,11 +232,16 @@ async def build(ctx: dict[str, Any]) -> dict[str, Any]:
                 "because": because_msg,
             })
 
+        # 1b. Corrections by the authorised agent (new or undone since the previous iteration)
+        correction_changes = _correction_changes(prev, ctx)
+
         # 2. Status transition check
         prev_status = prev.get("status")
         curr_status = curr.get("status")
         if prev_status != curr_status:
             reason = ctx.get("status_reason")
+            if not reason and correction_changes:
+                reason = f"{len(correction_changes)} correction(s) by the authorised agent changed the inputs"
             if not reason:
                 # Cite new documents only if their type is one a resolved requirement asked for.
                 cited_docs = [d for d in newly_added_docs if d.get("doc_type") in resolved_types]
@@ -191,6 +273,7 @@ async def build(ctx: dict[str, Any]) -> dict[str, Any]:
                     "because": check.get("message", "Rule evaluation result changed."),
                 })
 
+        changes.extend(correction_changes)
         delta = {
             "kind": "REASSESSMENT",
             "changes": changes,

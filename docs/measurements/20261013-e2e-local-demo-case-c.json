@@ -1,0 +1,333 @@
+{
+  "case": "c",
+  "declared": {
+    "model": null,
+    "note": "demo mode, one local uvicorn process on a laptop, poppler page rendering, no model call"
+  },
+  "kind": "e2e",
+  "label": "local-demo-case-c",
+  "options": {
+    "corrections": false,
+    "expect_signer": null
+  },
+  "recorded_at": "2026-10-13T20:47:06.020078+00:00",
+  "runs": [
+    {
+      "failures": [],
+      "index": 1,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.16
+        },
+        "reassess": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.57
+        }
+      },
+      "statuses": {
+        "analyze": "MISSING_EVIDENCE",
+        "reassess": "COMPLIANT_FOR_SUBMISSION"
+      },
+      "steps": {
+        "analyze": 1.16,
+        "audit": 0.001,
+        "create_bundle": 0.001,
+        "reassess": 1.571,
+        "upload:bill_of_lading.pdf": 0.014,
+        "upload:commercial_invoice.pdf": 0.016,
+        "upload:mtc_pipe_test_cert.pdf": 0.015,
+        "upload:packing_list.pdf": 0.014
+      }
+    },
+    {
+      "failures": [],
+      "index": 2,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.16
+        },
+        "reassess": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.57
+        }
+      },
+      "statuses": {
+        "analyze": "MISSING_EVIDENCE",
+        "reassess": "COMPLIANT_FOR_SUBMISSION"
+      },
+      "steps": {
+        "analyze": 1.165,
+        "audit": 0.001,
+        "create_bundle": 0.001,
+        "reassess": 1.571,
+        "upload:bill_of_lading.pdf": 0.014,
+        "upload:commercial_invoice.pdf": 0.015,
+        "upload:mtc_pipe_test_cert.pdf": 0.015,
+        "upload:packing_list.pdf": 0.015
+      }
+    },
+    {
+      "failures": [],
+      "index": 3,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.16
+        },
+        "reassess": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.57
+        }
+      },
+      "statuses": {
+        "analyze": "MISSING_EVIDENCE",
+        "reassess": "COMPLIANT_FOR_SUBMISSION"
+      },
+      "steps": {
+        "analyze": 1.17,
+        "audit": 0.001,
+        "create_bundle": 0.001,
+        "reassess": 1.577,
+        "upload:bill_of_lading.pdf": 0.015,
+        "upload:commercial_invoice.pdf": 0.016,
+        "upload:mtc_pipe_test_cert.pdf": 0.017,
+        "upload:packing_list.pdf": 0.015
+      }
+    },
+    {
+      "failures": [],
+      "index": 4,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.16
+        },
+        "reassess": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.58
+        }
+      },
+      "statuses": {
+        "analyze": "MISSING_EVIDENCE",
+        "reassess": "COMPLIANT_FOR_SUBMISSION"
+      },
+      "steps": {
+        "analyze": 1.17,
+        "audit": 0.001,
+        "create_bundle": 0.001,
+        "reassess": 1.585,
+        "upload:bill_of_lading.pdf": 0.016,
+        "upload:commercial_invoice.pdf": 0.016,
+        "upload:mtc_pipe_test_cert.pdf": 0.015,
+        "upload:packing_list.pdf": 0.016
+      }
+    },
+    {
+      "failures": [],
+      "index": 5,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.17
+        },
+        "reassess": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.58
+        }
+      },
+      "statuses": {
+        "analyze": "MISSING_EVIDENCE",
+        "reassess": "COMPLIANT_FOR_SUBMISSION"
+      },
+      "steps": {
+        "analyze": 1.173,
+        "audit": 0.001,
+        "create_bundle": 0.001,
+        "reassess": 1.583,
+        "upload:bill_of_lading.pdf": 0.015,
+        "upload:commercial_invoice.pdf": 0.016,
+        "upload:mtc_pipe_test_cert.pdf": 0.016,
+        "upload:packing_list.pdf": 0.014
+      }
+    },
+    {
+      "failures": [],
+      "index": 6,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.16
+        },
+        "reassess": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.57
+        }
+      },
+      "statuses": {
+        "analyze": "MISSING_EVIDENCE",
+        "reassess": "COMPLIANT_FOR_SUBMISSION"
+      },
+      "steps": {
+        "analyze": 1.167,
+        "audit": 0.001,
+        "create_bundle": 0.001,
+        "reassess": 1.579,
+        "upload:bill_of_lading.pdf": 0.014,
+        "upload:commercial_invoice.pdf": 0.015,
+        "upload:mtc_pipe_test_cert.pdf": 0.017,
+        "upload:packing_list.pdf": 0.015
+      }
+    },
+    {
+      "failures": [],
+      "index": 7,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.16
+        },
+        "reassess": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.57
+        }
+      },
+      "statuses": {
+        "analyze": "MISSING_EVIDENCE",
+        "reassess": "COMPLIANT_FOR_SUBMISSION"
+      },
+      "steps": {
+        "analyze": 1.17,
+        "audit": 0.001,
+        "create_bundle": 0.001,
+        "reassess": 1.578,
+        "upload:bill_of_lading.pdf": 0.014,
+        "upload:commercial_invoice.pdf": 0.015,
+        "upload:mtc_pipe_test_cert.pdf": 0.017,
+        "upload:packing_list.pdf": 0.014
+      }
+    },
+    {
+      "failures": [],
+      "index": 8,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.16
+        },
+        "reassess": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.57
+        }
+      },
+      "statuses": {
+        "analyze": "MISSING_EVIDENCE",
+        "reassess": "COMPLIANT_FOR_SUBMISSION"
+      },
+      "steps": {
+        "analyze": 1.17,
+        "audit": 0.001,
+        "create_bundle": 0.001,
+        "reassess": 1.578,
+        "upload:bill_of_lading.pdf": 0.015,
+        "upload:commercial_invoice.pdf": 0.016,
+        "upload:mtc_pipe_test_cert.pdf": 0.017,
+        "upload:packing_list.pdf": 0.014
+      }
+    },
+    {
+      "failures": [],
+      "index": 9,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.17
+        },
+        "reassess": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.58
+        }
+      },
+      "statuses": {
+        "analyze": "MISSING_EVIDENCE",
+        "reassess": "COMPLIANT_FOR_SUBMISSION"
+      },
+      "steps": {
+        "analyze": 1.174,
+        "audit": 0.001,
+        "create_bundle": 0.001,
+        "reassess": 1.584,
+        "upload:bill_of_lading.pdf": 0.015,
+        "upload:commercial_invoice.pdf": 0.016,
+        "upload:mtc_pipe_test_cert.pdf": 0.017,
+        "upload:packing_list.pdf": 0.014
+      }
+    },
+    {
+      "failures": [],
+      "index": 10,
+      "ok": true,
+      "stages": {
+        "analyze": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.17
+        },
+        "reassess": {
+          "finalize": 0.0,
+          "ground": 0.0,
+          "preprocess": 1.57
+        }
+      },
+      "statuses": {
+        "analyze": "MISSING_EVIDENCE",
+        "reassess": "COMPLIANT_FOR_SUBMISSION"
+      },
+      "steps": {
+        "analyze": 1.171,
+        "audit": 0.001,
+        "create_bundle": 0.001,
+        "reassess": 1.579,
+        "upload:bill_of_lading.pdf": 0.015,
+        "upload:commercial_invoice.pdf": 0.015,
+        "upload:mtc_pipe_test_cert.pdf": 0.016,
+        "upload:packing_list.pdf": 0.014
+      }
+    }
+  ],
+  "schema": "cargoclear.measurement/1",
+  "stack": {
+    "app_mode": "demo",
+    "pipeline_engine": "native",
+    "where": "local"
+  },
+  "tool": "scripts/live_e2e_hosted.py"
+}

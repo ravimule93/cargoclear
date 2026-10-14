@@ -3,9 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { toErrorEnvelope } from "@/lib/errors";
-import type { AppMode, AssessmentIteration, DocumentRecord } from "@/lib/types";
+import type { ExtractedDoc } from "@/lib/corrections";
+import type { AppMode, AssessmentIteration, CorrectionRequest, CorrectionsResponse, DocumentRecord } from "@/lib/types";
 import type { StreamRunState } from "@/lib/hooks/useBundleStream";
 import { CheckList } from "./CheckList";
+import { CorrectionsCard } from "./CorrectionsCard";
+import { PrefillCard } from "./PrefillCard";
+import { ValuationCard } from "./ValuationCard";
 import { MissingEvidenceCard } from "./MissingEvidenceCard";
 import { UploadDropzone } from "../upload/UploadDropzone";
 import { useAnnounce } from "../a11y/LiveRegion";
@@ -22,6 +26,12 @@ interface AssessmentPanelProps {
   actionError?: string | null;
   appMode?: AppMode;
   onDocumentUploaded?: () => void;
+  /** Corrections by the authorised agent: the list, the extraction behind this assessment, and the actions. */
+  corrections?: CorrectionsResponse | null;
+  extractions?: ExtractedDoc[];
+  onCorrect?: (request: CorrectionRequest) => Promise<string | null>;
+  onRevertCorrection?: (correctionId: string) => Promise<string | null>;
+  onRecompute?: () => void;
 }
 
 const MTC_MISSING_ID = "ME-MILL_TEST_CERTIFICATE";
@@ -77,6 +87,11 @@ export function AssessmentPanel({
   actionError = null,
   appMode,
   onDocumentUploaded,
+  corrections = null,
+  extractions = [],
+  onCorrect,
+  onRevertCorrection,
+  onRecompute,
 }: AssessmentPanelProps) {
   const announce = useAnnounce();
   const status = assessment?.status ?? null;
@@ -93,7 +108,9 @@ export function AssessmentPanel({
 
     if (assessment.status === "MATERIAL_CONTRADICTION") {
       announce(
-        `Adjudication alert: Material contradiction detected. ${assessment.checks[0]?.message || ""}`,
+        `Assessment alert: Material contradiction detected. ${
+          assessment.checks.find((check) => check.severity === "MATERIAL")?.message || ""
+        }`,
         "assertive"
       );
     } else if (assessment.status === "COMPLIANT_FOR_SUBMISSION") {
@@ -152,9 +169,19 @@ export function AssessmentPanel({
           Compliance Assessment
         </h2>
         <div className="flex items-center justify-between text-xs text-[var(--cc-text-muted)] mt-1">
-          <span>Iteration {assessment.iteration}</span>
           <span>
-            Extraction Confidence:{" "}
+            Iteration {assessment.iteration}
+            {assessment.run_mode === "recompute" && (
+              <span data-testid="recompute-badge" className="ml-1.5 rounded border border-[var(--cc-border-strong)] px-1 py-px text-[10px] font-semibold text-[var(--cc-text)]">
+                recomputed
+              </span>
+            )}
+          </span>
+          <span
+            data-testid="extraction-confidence"
+            title="The lowest confidence the extraction model reported for the values these checks rest on. A self-reported score, not a measured accuracy."
+          >
+            Lowest reported confidence:{" "}
             {assessment.confidence
               ? `${(assessment.confidence.min_field_confidence * 100).toFixed(0)}%`
               : "N/A"}
@@ -165,8 +192,20 @@ export function AssessmentPanel({
       {/* Prominent Action Error Banner (e.g. Gemini token limits or validation failures) */}
       {actionError && <ActionErrorBanner error={actionError} />}
 
-      {/* Real-time SSE execution progress indicator */}
+      {/* Live progress of the run, from the SSE status events */}
       {isRunning && <RunProgress run={run} />}
+
+      {/* Corrections by the authorised agent: what they replaced, and whether this assessment includes them */}
+      {corrections && onRevertCorrection && onRecompute && (
+        <CorrectionsCard
+          corrections={corrections}
+          assessment={assessment}
+          documents={documents}
+          isRunning={isRunning}
+          onRevert={onRevertCorrection}
+          onRecompute={onRecompute}
+        />
+      )}
 
       {/* Deterministic Rules Checklist */}
       <div className="flex flex-col gap-2">
@@ -177,8 +216,19 @@ export function AssessmentPanel({
           checks={assessment.checks}
           documents={documents}
           onSelectDocument={onSelectDocument}
+          extractions={extractions}
+          corrections={corrections}
+          appliedCorrections={assessment.corrections ?? []}
+          onCorrect={onCorrect}
+          editingDisabled={isRunning}
         />
       </div>
+
+      {/* Indicative duty exposure: information only, it never changes the status above */}
+      {assessment.valuation && <ValuationCard valuation={assessment.valuation} />}
+
+      {/* The values of this assessment for the person who keys the declaration */}
+      <PrefillCard bundleId={bundleId} assessment={assessment} pendingCorrections={corrections?.pending ?? 0} />
 
       {/* Missing Evidence / Regulatory Grounding */}
       {assessment.missing_evidence.length > 0 && (

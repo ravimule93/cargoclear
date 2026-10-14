@@ -19,11 +19,15 @@ certifi==2026.7.22
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
 charset-normalizer==3.5.2
-    # via requests
+    # via
+    #   reportlab
+    #   requests
 click==8.5.0
     # via uvicorn
 cryptography==50.0.2
-    # via google-auth
+    # via
+    #   -r requirements.in
+    #   google-auth
 distro==1.9.0
     # via google-genai
 fastapi==0.143.0
@@ -33,14 +37,18 @@ google-api-core==2.42.0
     #   google-cloud-bigquery
     #   google-cloud-core
     #   google-cloud-firestore
+    #   google-cloud-kms
     #   google-cloud-storage
+    #   google-cloud-tasks
 google-auth==2.61.0
     # via
     #   google-api-core
     #   google-cloud-bigquery
     #   google-cloud-core
     #   google-cloud-firestore
+    #   google-cloud-kms
     #   google-cloud-storage
+    #   google-cloud-tasks
     #   google-genai
 google-cloud-bigquery==3.46.1
     # via -r requirements.in
@@ -51,7 +59,11 @@ google-cloud-core==2.8.0
     #   google-cloud-storage
 google-cloud-firestore==2.34.1
     # via -r requirements.in
+google-cloud-kms==3.18.0
+    # via -r requirements.in
 google-cloud-storage==3.17.0
+    # via -r requirements.in
+google-cloud-tasks==2.26.0
     # via -r requirements.in
 google-crc32c==1.9.0
     # via
@@ -66,11 +78,20 @@ google-resumable-media==2.11.0
 googleapis-common-protos==1.75.5
     # via
     #   google-api-core
+    #   grpc-google-iam-v1
     #   grpcio-status
+grpc-google-iam-v1==0.14.5
+    # via
+    #   google-cloud-kms
+    #   google-cloud-tasks
 grpcio==1.84.0
     # via
     #   google-api-core
     #   google-cloud-firestore
+    #   google-cloud-kms
+    #   google-cloud-tasks
+    #   googleapis-common-protos
+    #   grpc-google-iam-v1
     #   grpcio-status
 grpcio-status==1.84.0
     # via google-api-core
@@ -109,15 +130,21 @@ pillow==12.3.0
     # via
     #   -r requirements.in
     #   pdf2image
+    #   reportlab
 proto-plus==1.29.0
     # via
     #   google-api-core
     #   google-cloud-firestore
+    #   google-cloud-kms
+    #   google-cloud-tasks
 protobuf==7.36.2
     # via
     #   google-api-core
     #   google-cloud-firestore
+    #   google-cloud-kms
+    #   google-cloud-tasks
     #   googleapis-common-protos
+    #   grpc-google-iam-v1
     #   grpcio-status
     #   proto-plus
 pyasn1==0.6.4
@@ -146,6 +173,8 @@ python-multipart==0.0.32
     # via -r requirements.in
 pyyaml==6.0.3
     # via uvicorn
+reportlab==5.0.1
+    # via -r requirements.in
 requests==2.34.2
     # via
     #   google-api-core
