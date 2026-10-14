@@ -150,3 +150,22 @@ To prevent blocking commercial users, CargoClear employs **Dynamic Multi-Tenant 
 | **Phase 5** | Cloud Run UI Deployment | Google Cloud Run `cargoclear-ui` (`asia-south1`) | **Completed & Verified** | Revision `cargoclear-ui-00016-nqd` serving 100% traffic at `https://cargoclear-ui-448522365737.asia-south1.run.app`. BFF proxy configured with `API_BASE`. |
 | **Phase 5** | Live Multi-Tenant Cloud Verification | Cloud Run Production URLs | **Completed & Verified** | Verified live via curl & BFF: (1) Unauthenticated `/meta` returns `user: null`, (2) Authenticated session returns `user: {tenant_id: "customs.com"}`, (3) Bundle created with `tenant_id: "customs.com"`, (4) Cross-tenant access from `dhl.com` returned HTTP 403 Forbidden, (5) Unauthenticated access returned HTTP 401 Unauthorized. |
 | **Phase 6** | PDF Worker & Google OAuth Redirection | Google Cloud Run & Frontend UI | **Completed & Verified** | (1) Bundled `pdf.worker.min.mjs` directly in image (serving 200 OK, 1.37MB), resolving PDF viewer module fetch error; (2) Implemented live OAuth 2.0 / OIDC provider redirection (`/api/auth/signin/google` -> `https://accounts.google.com/o/oauth2/v2/auth`) and callback handler (`/api/auth/callback/google`) with automatic tenant onboarding. |
+| **Phase 7** | User Registration, Password Auth & Audit Ledger | Backend API & Firestore | **Completed & Verified** | Implemented `users` and `users/{email}/audit` subcollection in Firestore. Added endpoints: `/check` (user existence), `/signup` (PBKDF2 salted hash password creation, 409 conflict handling, `USER_REGISTERED` audit), `/signin` (hash verification, `USER_LOGIN_SUCCESS`/`USER_LOGIN_FAILED` audit), and `/audit` (user audit log retrieval). |
+| **Phase 7** | Server-Side Logout & Host Origin Resolution | Frontend BFF & Cloud Run | **Completed & Verified** | Fixed Cloud Run internal container reverse proxy origin resolution (`getPublicOrigin`) so redirects never target `localhost:8080`. Added `/api/auth/logout` route issuing `Set-Cookie: cargoclear_session_token=; Max-Age=0` and wired to all client logout triggers. |
+| **Phase 7** | Dual-Tab Auth Portal & Landing Page Entry | Frontend UI | **Completed & Verified** | Updated `/auth/signin` with "🔑 Sign In" and "📝 Sign Up (New User)" tabs, live error switching, Google SSO buttons, password verification, and tamper-evident audit badge. Added explicit "Sign In" and "Register" buttons in landing page header and portal card. |
+| **Phase 7** | Cloud Deployment Revisions | Google Cloud Run (`asia-south1`) | **Completed & Live** | `cargoclear-api` revision `cargoclear-api-00018-68t` and `cargoclear-ui` revision `cargoclear-ui-00017-r66` deployed and serving 100% of production traffic. |
+
+---
+
+## 6. What is Pending / External Configuration
+
+1. **Google Cloud Console OAuth 2.0 Client Credentials (One-time GCP configuration)**:
+   - The application code, routing, and token handling for Google SSO are 100% complete and deployed.
+   - For live 1-click Google login without manual client ID entry, an administrator needs to:
+     - Register an OAuth 2.0 Web Client in GCP Console under project `cargoclear-hackathon`.
+     - Whitelist the redirect URI:
+       `https://cargoclear-ui-448522365737.asia-south1.run.app/api/auth/callback/google`
+     - Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in Cloud Run env vars.
+   - *Fallback already operational*: Until those env vars are set, the UI displays dynamic client ID entry, full Email + Password registration & login, and 1-click demo presets.
+2. **Git Branch Merge**:
+   - All changes are currently committed and pushed to `feature/sso-authentication`. Ready for merge to `development` or `main`.
