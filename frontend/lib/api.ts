@@ -7,6 +7,11 @@ import {
   Meta,
   RunResponse,
   TransformMetadataResponse,
+  CheckUserResponse,
+  AuthResponse,
+  SignUpRequest,
+  SignInRequest,
+  UserAuditResponse,
 } from "./types";
 
 /** Browser calls go through the Next route handler, which forwards to the FastAPI backend. */
@@ -125,5 +130,29 @@ export const api = {
 
   async getMeta(): Promise<Meta> {
     return request<Meta>("/meta");
+  },
+
+  async checkUser(email: string): Promise<CheckUserResponse> {
+    return request<CheckUserResponse>(`/auth/check?email=${encodeURIComponent(email)}`);
+  },
+
+  async signUp(data: SignUpRequest): Promise<AuthResponse> {
+    return request<AuthResponse>("/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async signIn(data: SignInRequest): Promise<AuthResponse> {
+    return request<AuthResponse>("/auth/signin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getUserAudit(): Promise<UserAuditResponse> {
+    return request<UserAuditResponse>("/auth/audit");
   },
 };

@@ -16,6 +16,7 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN mkdir -p /app/public
+RUN node scripts/copy-pdf-worker.mjs
 RUN npm run build
 
 # 3. Production runner

@@ -7,7 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.v1 import bundles, demo, documents, assessment, stream, meta
+from app.api.v1 import bundles, demo, documents, assessment, stream, meta, auth
 from app.core.config import settings
 from app.gateway.ids import validate_path_ids
 from app.gateway.limits import BodySizeLimitMiddleware, RateLimitMiddleware
@@ -76,6 +76,7 @@ def create_app() -> FastAPI:
         stream.router,
         meta.router,
         demo.router,
+        auth.router,
     ):
         app.include_router(router, prefix="/api/v1")
 

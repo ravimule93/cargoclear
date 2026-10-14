@@ -59,6 +59,16 @@ async function handleProxy(
 
     const headers = new Headers(request.headers);
     headers.delete("host");
+
+    // Read active auth session from cookie if Authorization header is not explicitly present.
+    // Firebase Hosting CDN rewrites forward ONLY the '__session' cookie, so we check both.
+    const sessionToken =
+      request.cookies.get("__session")?.value ||
+      request.cookies.get("cargoclear_session_token")?.value;
+    if (sessionToken && !headers.has("authorization")) {
+      headers.set("authorization", `Bearer ${sessionToken}`);
+    }
+
     const hasBody = request.method !== "GET" && request.method !== "HEAD";
     const response = await fetch(targetUrl.toString(), {
       method: request.method,
@@ -68,9 +78,18 @@ async function handleProxy(
       duplex: hasBody ? "half" : undefined,
     });
 
+
+    const isSse = response.headers.get("content-type")?.includes("text/event-stream");
+    const responseHeaders = new Headers(response.headers);
+    if (isSse) {
+      responseHeaders.set("Cache-Control", "no-cache, no-transform");
+      responseHeaders.set("Connection", "keep-alive");
+      responseHeaders.set("X-Accel-Buffering", "no");
+    }
+
     return new NextResponse(response.body, {
       status: response.status,
-      headers: response.headers,
+      headers: responseHeaders,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to reach backend service";

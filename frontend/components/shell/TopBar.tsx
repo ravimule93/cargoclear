@@ -1,15 +1,17 @@
 "use client";
 
 import { ChangeEvent, useRef } from "react";
-import { Bundle, Status } from "@/lib/types";
+import { Bundle, Status, UserIdentity } from "@/lib/types";
 import type { StreamConnection } from "@/lib/hooks/useBundleStream";
 import { StatusPill } from "../assess/StatusPill";
 import { ModeBadge } from "./ModeBadge";
+import { UserMenu } from "./UserMenu";
 
 interface TopBarProps {
   bundle: Bundle;
   /** null = not assessed yet */
   status: Status | null;
+  user?: UserIdentity | null;
   isRunning?: boolean;
   isUploading?: boolean;
   uploadProgress?: { current: number; total: number; filename?: string } | null;
@@ -20,11 +22,14 @@ interface TopBarProps {
   actionError?: string | null;
   onRun?: () => void;
   onFilesSelected?: (files: File[]) => void;
+  onLogin?: (email: string) => void;
+  onLogout?: () => void;
 }
 
 export function TopBar({
   bundle,
   status,
+  user,
   isRunning = false,
   isUploading = false,
   uploadProgress = null,
@@ -32,7 +37,10 @@ export function TopBar({
   connection = "open",
   onRun,
   onFilesSelected,
+  onLogin,
+  onLogout,
 }: TopBarProps) {
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -132,7 +140,9 @@ export function TopBar({
           )}
           <span>{runMode === "analyze" ? "Run analysis" : "Reassess"}</span>
         </button>
+        <UserMenu user={user} onLogin={onLogin} onLogout={onLogout} />
       </div>
     </header>
   );
 }
+

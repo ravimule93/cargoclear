@@ -45,9 +45,24 @@ class ValidationError(CargoClearError):
     http_status = 422
 
 
+class AuthenticationError(CargoClearError):
+    """Missing, expired, or invalid authentication credentials."""
+
+    code = "UNAUTHORIZED"
+    http_status = 401
+
+
+class ForbiddenError(CargoClearError):
+    """The authenticated user lacks permission for this action or tenant resource."""
+
+    code = "FORBIDDEN"
+    http_status = 403
+
+
 class ConflictError(CargoClearError):
     code = "CONFLICT"
     http_status = 409
+
 
 
 class PayloadTooLargeError(CargoClearError):
