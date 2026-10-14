@@ -7,9 +7,9 @@ and Gen AI implementation 40 %, Problem Alignment and Impact 25 %, Innovation an
 ```
 SUBMISSION RED-TEAM — CargoClear-JAPAC — no deadline set
 Inventory gaps: 5 | Live-walk defects: 10 found, 10 fixed, 1 design choice kept | Claim-audit verdict: FIX-THEN-SHIP (docs/CLAIMS.md)
-Pitch-defense open: a model comparison ("why Gemini"), prompt injection, anything that needs the live stack
+Pitch-defense open: a model comparison ("why Gemini"), a stronger guard-aware injection attack (one was tried and got through on gemini-2.5-flash: C-56), anything that needs the live stack
 Judge score estimate: see section 5 (an estimate by the author of this audit, not a prediction)
-Highest-severity risk: nothing has run on Google Cloud since Phases 1 to 3, and the UI is not deployed
+Highest-severity risk: the hosted end-to-end runs have not been done and the UI is not deployed (Gemini reading the synthetic fixtures is measured live since 2026-10-14: C-09, C-57)
 Verdict: FIX-LIST-THEN-SUBMIT
 ```
 
@@ -70,7 +70,7 @@ and each defect below was reproduced before it was fixed and re-verified after.
 | 10 | On a finished Case D bundle the viewer showed the first document in the rail (the invoice) while the finding is about the certificate. | medium (a judge sees the wrong page first) | **Fixed**: with nothing chosen, the viewer opens the document the first material finding cites last (the engines cite the declared value first, then the value that contradicts it). |
 | 11 | Raw check ids (`M-001`), rule-set names and audit event types are visible. | low | **Kept, by design**: the specialist user cites them, and they are what the audit trail records. Not a defect; "confirm intent" if a reviewer disagrees. |
 
-Not walked, because it needs the live stack: Gemini reading a real PDF, the box accuracy of the model, latency, the UI behind the proxy
+Not walked, because it needs the hosted stack (Gemini reading the synthetic fixtures has been run since: C-09): Gemini reading a real scan, latency end to end, the UI behind the proxy
 with an ID token, KMS signing, Cloud Tasks. Each is a STUBBED row in the register.
 
 Permission holes: there is no authentication, so there are no roles to leak between. Anyone with the UI address can create bundles; anyone
@@ -87,9 +87,10 @@ hash-chained trail or a reproducible "0.35 % is at or above 0.30 %". (Grounding 
 table in BigQuery: that is the retrieval, and its result is a candidate the rules compare, not a verdict.)
 
 **Why Gemini, and what breaks on a cheaper model?**
-**Work item.** Gemini is the Google Cloud model and `GEMINI_LIVE_MODEL` is a setting, not code. No other model was benchmarked, so "what breaks
-on a cheaper one" has no measured answer. The extraction schema is large (about 45 % larger since Phase 1); whether the chosen model
-accepts it is the first thing the live runbook checks.
+**Work item.** Gemini is the Google Cloud model and `GEMINI_LIVE_MODEL` is a setting, not code. Two models were run on the synthetic
+fixtures (gemini-2.5-flash, which is being retired, and gemini-3.5-flash, which needs `GEMINI_THINKING_BUDGET=-1`; C-09, C-57), and no
+cheaper or smaller model was, so "what breaks on a cheaper one" has no measured answer. One thing did break on both: the original nested
+extraction schema was refused ("too many states"), and the answer was reshaped into lists of entries (C-57).
 
 **What is your weakest number?**
 There are no unsourced numbers left in the README, Product.md or the UI, and a test fails if one returns. The weakest *result* is that no
@@ -119,9 +120,21 @@ They are labelled `demo-curated` and partly placeholders in the UI, the API and 
 assessment stores a fingerprint of the tables. A reviewer verifies them (`backend/app/reference/README.md`); the product never promotes them on its own.
 
 **What if a document contains instructions for the model?**
-**Work item.** The model's output is schema-constrained and no verdict comes from it, so an injected instruction can at worst change a
-value that was read, and that is exposed by the evidence box and the corrections. The extraction prompt has no explicit guard and no
-adversarial document has been run (C-53). Cheap to test with the smoke tool once the live stack exists.
+It can change what the model reads, and the verdict then follows the reading, so we tested it (`docs/INJECTION_TEST.md`, exploratory,
+live, synthetic documents, the shipped schema, eleven cells on the certificate, the invoice and the bill of lading). With only the
+original one-sentence guard, gemini-2.5-flash read the injected value instead of the printed one, at reported confidence 1.00, in 41 of
+132 runs (the same total twice), mostly on the certificate's table cells; gemini-3.5-flash did not once. Most of those readings would
+have been caught loudly by the engines (a limit breach, a contradicting document), but two kinds are not: a cell printed once and
+checked against nothing (the specification) changes silently, and so does the freight, which moves the indicative duty estimate with
+no check moving. Text hidden in the PDF never reaches the model: pages are rendered to images first. The prompt now carries a stronger
+guard (C-55); with it the printed value was read in every run on both models against attacks written without knowing it (C-56). We
+also wrote five attacks after reading the guard, and one of them got through: a forged second cell next to the printed one, with text in
+the guard's own voice saying that cell wins. The guard let it change the reading in 4 of 165 runs on gemini-2.5-flash (the bill of
+lading's freight, silently, and its gross weight) and 0 of 165 on gemini-3.5-flash; the one-sentence prompt, 17 of 165 on
+gemini-2.5-flash. So it is not "immune": one bundle, one attempt per attacker, three near-duplicate runs per document. Say what was
+tested, never "injection-proof". **Work items:** flag two different readings of one certificate cell (today the engines keep the first and
+say nothing); a consistent injection across two documents; the packing list and other document types (C-53 is DELETED; its old text
+said there was no guard and that confidence routing would expose an injected value, and neither held).
 
 **Who can see my documents?**
 In this MVP anyone who has a bundle's address: there is no authentication (C-52). The demo uses synthetic documents only.
@@ -161,6 +174,11 @@ the live A/B decides (C-37).
 3. **Missing deliverables** (owner: user): slide deck, cover image, written description, an architecture diagram; confirm which the submission card requires.
 4. **Run the Firestore emulator tests** (`backend/tests/emulator/`, never run) and Cloud Build once more (C-50).
 5. **Review the rule tables** (`backend/app/reference/`), so the rates and limits can stop being labelled placeholders.
-6. Open design questions: authentication (C-52); an adversarial-document test (C-53); a model comparison ("why Gemini").
+6. Open design questions: authentication (C-52); the injection test with a consistent change across two documents and on the
+   packing list and other document types (C-56, `docs/INJECTION_TEST.md`); a comparison with a smaller model ("why Gemini").
+7. **Flag a conflicting second reading of one certificate cell** (not built). The guard-aware injection test showed that when the page
+   holds two values for one heat and parameter the model returns both and the engines keep the first and say nothing, so whether a
+   forged cell counts depends on the order the model happened to list the rows (`docs/INJECTION_TEST.md`, C-56). A finding for two
+   different values of one heat and parameter on one certificate would turn that silence into a loud case for a person.
 7. Housekeeping the audit noticed: three dead files from Phase 0 (`backend/app/repo/bigquery.py`, `backend/app/domain/events.py`,
    `frontend/lib/sse.ts`) still await deletion by the owner.

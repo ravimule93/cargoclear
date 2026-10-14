@@ -16,7 +16,7 @@ data: every document is the synthetic Case C bundle in `fixtures/case_c/`.
 | 4 | Deploy API (private), then UI | `infra/deploy_api.sh`, `infra/deploy_ui.sh` | the deployment contract |
 | 5 | Check the API is private | `curl` | the front door is the UI only |
 | 6 | End-to-end Case C | `scripts/live_e2e_hosted.py` | the product works live, and how fast |
-| 7 | Phase 1 specifics | smoke test, `--case d` | larger schema accepted; certificate tables read correctly |
+| 7 | Phase 1 specifics | smoke test, `--case d` | response schema accepted; certificate tables read correctly |
 | 8 | Phase 2 specifics | `--case d --corrections` | corrections, recompute and the pre-fill pack work live |
 | 9 | Scaling | queue, `deploy_api.sh`, emulator tests | leases, Cloud Tasks dispatch and shared limits hold on real Firestore |
 | 10 | Audit signing | KMS key, `--expect-signer kms` | a real KMS signature verifies |
@@ -128,13 +128,18 @@ offered as a sentence. Repeat for `--case d` and `--case d --corrections`.
 
 ## 7. Phase 1 specifics (after steps 3 to 6 pass)
 
-Phase 1 added a certificate table and sale terms to what Gemini is asked to read. Three things only a live run can show:
+Phase 1 added a certificate table and sale terms to what Gemini is asked to read. Four things only a live run can show:
 
-1. **Is the larger schema accepted?** The extraction response schema grew by about 45 % (about 34 KB to 50 KB of JSON) because
-   it now describes heats, test-result rows, the specification, the Incoterm, the origin and freight/insurance. Vertex AI can
-   reject a response schema that is too complex ("too many states for serving" and similar 400 errors). Step 3's `gemini`
-   check sends the real request, schema included: a PASS means it is accepted. If it is rejected, the planned fallback is a
-   second, certificate-only extraction pass with a narrow schema (say so, and it is built).
+1. **Is the response schema accepted?** Vertex AI refuses a response schema whose constrained-decoding grammar has too many
+   states ("too many states for serving", HTTP 400). Phase 1's nested schema (every header field an object holding a value, a
+   confidence and a box) was refused by `gemini-2.5-flash` and `gemini-3.5-flash`. It was replaced on 2026-10-14: the model now
+   returns lists of entries with the field name as an enum (`backend/app/agents/extraction_wire.py`), and the document model is
+   rebuilt from them in Python. Both models accepted the new schema in `asia-south1`, and the synthetic fixtures were read
+   correctly (`docs/MEASURED_RESULTS.md`, C-57). Step 3's `gemini` check sends the real request, schema included: a PASS means it
+   is accepted, on whatever model and region you set. `tests/unit/test_gemini_request_schema.py` keeps the schema small enough to
+   stay far from the limit; it is a tripwire, not a substitute for this check. If a model refuses it, the message names the cause.
+   `gemini-3.5-flash` also refuses `GEMINI_THINKING_BUDGET=0` ("thinking budget is not supported for this model"): set
+   `GEMINI_THINKING_BUDGET=-1` and the field is not sent.
 2. **Does it read a certificate's table correctly?** Run the smoke test on the synthetic certificates:
 
    ```bash
@@ -156,6 +161,28 @@ Phase 1 added a certificate table and sale terms to what Gemini is asked to read
    `MATERIAL_CONTRADICTION` (M-001 naming heat TH-77121 and chromium 0.35), the invoice, specification, traceability and origin
    checks PASS, SEC-002 a WARN, an `ESTIMATED` valuation that lists its assumptions, and a verified audit chain. It also
    times the analysis; send back `live-e2e-report.json` (and ingest it: section 12).
+4. **Does the prompt guard hold?** Text printed on a document must not change what the model reads (C-55, C-56,
+   [INJECTION_TEST.md](INJECTION_TEST.md)). The test sends clean Case D documents and variants carrying an injected instruction
+   aimed at one printed cell, three runs each (synthetic documents only, a few cents per run). By default the cell is the
+   chromium cell of the certificate; `--targets all` attacks eleven cells on the certificate, the invoice and the bill of lading:
+
+   ```bash
+   cd backend && APP_MODE=live .venv/bin/python ../scripts/live_injection_test.py --dry-run     # no network, no credentials
+   cd backend && APP_MODE=live .venv/bin/python ../scripts/live_injection_test.py                # the shipped prompt and schema
+   cd backend && APP_MODE=live .venv/bin/python ../scripts/live_injection_test.py --without-guard   # the comparison
+   cd backend && APP_MODE=live .venv/bin/python ../scripts/live_injection_test.py --targets all \
+       --variants v2_visible_override v3_tiny_grey_override v5_cell_only_override v6_cell_only_fine_print   # the other cells
+   cd backend && APP_MODE=live .venv/bin/python ../scripts/live_injection_test.py --guard-aware --targets all   # an attacker who has read the guard
+   cd backend && .venv/bin/python ../scripts/live_injection_test.py --summary data/live_injection/injection-report-<time>.json
+   ```
+
+   It exits 0 only if every control was read correctly and every run of every variant read the printed value. Send back the reports
+   (`backend/data/live_injection/`) and update `docs/INJECTION_TEST.md` and C-56. A *poisoned* run is the injection effect; a
+   *dropped* run on `v4_white_text_layer` or on a control is a model flake (their page images are identical). A run that loses the
+   network records errors and fails: re-run the affected cells and count each cell once, as `docs/INJECTION_TEST.md` does. For every poisoned run
+   the report says what the deterministic engines would have done with the reading, against the model's own clean reading of that
+   document: a reading nothing contradicts is *silent*. Run it again on any replacement model, since a retired model's result says
+   nothing about the next one.
 
 ## 8. Phase 2 specifics (after steps 3 to 7 pass)
 
@@ -288,14 +315,14 @@ degraded set AND is no worse on the clean files; say so in `Handoff.md`. Look at
 | Symptom | Likely cause |
 |---|---|
 | Preflight `gemini` fails with 404 / "not found" | the model is retired or not served in that location: step 0 |
-| Preflight `gemini` fails with 400 | the model rejects the request shape (thinking config, schema): the message names it |
+| Preflight `gemini` fails with 400 | the model rejects the request shape (thinking config, schema): the message names it; `gemini-3.5-flash` needs `GEMINI_THINKING_BUDGET=-1` |
 | Preflight `bigquery` 403 | `roles/bigquery.jobUser` or `connectionUser` missing |
 | Preflight `bigquery` "dimensions" mismatch | the table was embedded with another model: re-run `setup_tariff.sh` |
 | Preflight `bigquery` WARN on distance | the 0.35 ambiguity threshold was tuned on another embedding model: recalibrate (`AMBIGUITY_THRESHOLD` in `bq_tariff.py`) |
 | E2E: first status is not `MISSING_EVIDENCE` | extraction read the PDFs differently: run `scripts/live_smoke_extraction.py --overlay` to see which field |
 | E2E: `PROXY_AUTH_ERROR` (502) | the UI cannot get an ID token from the metadata server: it must run on Cloud Run as `cargoclear-ui-sa` |
 | E2E: 403 from the API through the UI | `cargoclear-ui-sa` lacks `roles/run.invoker` on `cargoclear-api` (step 4) |
-| Preflight `gemini` 400 mentioning the schema or "too many states" | the extraction response schema is too complex for the model: section 7.1 |
+| Preflight `gemini` 400 mentioning the schema or "too many states" | the response schema is too complex for the model (the shipped one is accepted by both models above; was a field added as a nested object?): section 7.1 |
 | Smoke test: chemistry cells mismatch | the model misread the table: `--overlay` shows which cell; section 7.2 |
 | Case D live: no India grounding / G-001 warns | `infra/bigquery/setup_tariff.sh` was not re-run after the India rows were added |
 | E2E: stream never finishes | check Cloud Run logs for `pipeline_failed` / `run_reaped` with the run id |
