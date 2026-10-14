@@ -18,7 +18,6 @@ from google.genai import types
 from app.agents import extraction
 from app.agents.extraction import SYSTEM_INSTRUCTION, run_extraction_agent
 from app.core.config import Settings, settings
-from app.domain.schemas import ExtractedDocument
 from app.gateway.errors import ExtractionError
 from app.repo import firestore
 from tests.unit.extraction_fakes import (
@@ -34,7 +33,7 @@ from tests.unit.extraction_fakes import (
     texts_of,
 )
 
-INSTRUCTION = "Extract all trade data into the requested JSON schema."
+INSTRUCTION = extraction.EXTRACT_INSTRUCTION  # the wording itself is pinned in test_extraction_prompt.py
 
 
 def _sanitise_extraction(raw: dict[str, Any], page_count: int | None):
@@ -157,7 +156,7 @@ async def test_the_request_carries_the_documented_config(install, monkeypatch) -
     config = call["config"]
     assert call["model"] == settings.gemini_live_model
     assert config.response_mime_type == "application/json"
-    assert config.response_schema is ExtractedDocument
+    assert config.response_schema is extraction.wire.Answer
     assert config.system_instruction == SYSTEM_INSTRUCTION
     assert config.temperature == 0.0
     assert config.max_output_tokens == 4096

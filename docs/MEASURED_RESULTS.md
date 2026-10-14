@@ -112,7 +112,75 @@ Statuses reached by the recompute_after_undo (all runs): MATERIAL_CONTRADICTION 
 
 ## Extraction by the real model (`live_smoke_extraction.py`)
 
-None recorded.
+### smoke-8docs-x1-replacement-model (20261014T115212-extraction-smoke-8docs-x1-replacement-model.json)
+
+* Model gemini-3.5-flash in asia-south1; pages as png; page mode **bw**, deskew **off**; recorded 2026-10-14T11:52:12.682482+00:00
+* 1 extraction(s) per document; corpus: the synthetic rendered fixtures (text PDFs, not scans)
+* Operator note: gemini-3.5-flash with GEMINI_THINKING_BUDGET=-1 (field not sent); one run per document; synthetic rendered documents, not scans
+
+| Document | runs | gating expectations met | runs with a failure | extraction time (median / max) | prompt / output tokens (median) | box overlap (mean IoU) | identical across runs |
+|---|---|---|---|---|---|---|---|
+| bill_of_lading.pdf | 1 | 2 of 2 | 0 | 8.88 s / 8.88 s | 4122 / 645 | 0.259 | - |
+| commercial_invoice.pdf | 1 | 7 of 7 | 0 | 10.88 s / 10.88 s | 4122 / 1490 | 0.197 | - |
+| mtc_pipe_test_cert.pdf | 1 | 38 of 38 | 0 | 22.58 s / 22.58 s | 4122 / 4092 | 0.225 | - |
+| packing_list.pdf | 1 | 10 of 10 | 0 | 9.85 s / 9.85 s | 4122 / 1219 | 0.199 | - |
+| case_d_bill_of_lading.pdf | 1 | 2 of 2 | 0 | 7.84 s / 7.84 s | 4122 / 810 | 0.261 | - |
+| case_d_commercial_invoice.pdf | 1 | 7 of 7 | 0 | 11.17 s / 11.17 s | 4122 / 1580 | 0.21 | - |
+| case_d_mtc_test_cert.pdf | 1 | 38 of 38 | 0 | 20.98 s / 20.98 s | 4122 / 3778 | 0.225 | - |
+| case_d_packing_list.pdf | 1 | 10 of 10 | 0 | 9.93 s / 9.93 s | 4122 / 1216 | 0.203 | - |
+
+**May be quoted as:** on the synthetic rendered fixtures, model gemini-3.5-flash met 114 of 114 gating expectations (1 run(s) per document, page mode bw, deskew off). This is not accuracy on real scanned documents.
+
+### smoke-8docs-x1-replacement-model-default-config (20261014T115012-extraction-smoke-8docs-x1-replacement-model-default-config.json)
+
+* Model gemini-3.5-flash in asia-south1; pages as png; page mode **bw**, deskew **off**; recorded 2026-10-14T11:50:12.222367+00:00
+* 1 extraction(s) per document; corpus: the synthetic rendered fixtures (text PDFs, not scans)
+* Operator note: gemini-3.5-flash with the default GEMINI_THINKING_BUDGET=0: every request refused (HTTP 400, thinking budget not supported for this model); a negative result, not a schema problem
+
+| Document | runs | gating expectations met | runs with a failure | extraction time (median / max) | prompt / output tokens (median) | box overlap (mean IoU) | identical across runs |
+|---|---|---|---|---|---|---|---|
+| bill_of_lading.pdf | 1 | 0 of 0 | 0 (+1 errors) | - | - | - | - |
+| commercial_invoice.pdf | 1 | 0 of 0 | 0 (+1 errors) | - | - | - | - |
+| mtc_pipe_test_cert.pdf | 1 | 0 of 0 | 0 (+1 errors) | - | - | - | - |
+| packing_list.pdf | 1 | 0 of 0 | 0 (+1 errors) | - | - | - | - |
+| case_d_bill_of_lading.pdf | 1 | 0 of 0 | 0 (+1 errors) | - | - | - | - |
+| case_d_commercial_invoice.pdf | 1 | 0 of 0 | 0 (+1 errors) | - | - | - | - |
+| case_d_mtc_test_cert.pdf | 1 | 0 of 0 | 0 (+1 errors) | - | - | - | - |
+| case_d_packing_list.pdf | 1 | 0 of 0 | 0 (+1 errors) | - | - | - | - |
+
+**May be quoted as:** on the synthetic rendered fixtures, model gemini-3.5-flash met 0 of 0 gating expectations (1 run(s) per document, page mode bw, deskew off); 8 of 8 extraction runs ended in an error and count as meeting none of theirs. This is not accuracy on real scanned documents.
+
+### smoke-8docs-x3-full-schema (20261014T113751-extraction-smoke-8docs-x3-full-schema.json)
+
+* Model gemini-2.5-flash in asia-south1; pages as png; page mode **bw**, deskew **off**; recorded 2026-10-14T11:37:51.254362+00:00
+* 3 extraction(s) per document; corpus: the synthetic rendered fixtures (text PDFs, not scans)
+* Operator note: synthetic rendered documents, not scans; the new cell-list response schema; 4 of 24 runs ended in a network error (ConnectError, ReadError), not a schema rejection; the two affected documents were re-run (next entry)
+
+| Document | runs | gating expectations met | runs with a failure | extraction time (median / max) | prompt / output tokens (median) | box overlap (mean IoU) | identical across runs |
+|---|---|---|---|---|---|---|---|
+| bill_of_lading.pdf | 3 | 2 of 6 | 0 (+2 errors) | 32.49 s / 32.49 s | 5407 / 509 | 0.269 | 5 of 5 fields |
+| commercial_invoice.pdf | 3 | 7 of 21 | 0 (+2 errors) | 53.01 s / 53.01 s | 5407 / 1172 | 0.25 | 11 of 11 fields |
+| mtc_pipe_test_cert.pdf | 3 | 114 of 114 | 0 | 12.51 s / 14.65 s | 5407 / 3039 | 0.283 | 41 of 41 fields |
+| packing_list.pdf | 3 | 30 of 30 | 0 | 6.67 s / 6.88 s | 5407 / 1286 | 0.311 | 13 of 13 fields |
+| case_d_bill_of_lading.pdf | 3 | 6 of 6 | 0 | 4.19 s / 4.54 s | 5407 / 641 | 0.273 | 5 of 5 fields |
+| case_d_commercial_invoice.pdf | 3 | 21 of 21 | 0 | 6.79 s / 8.24 s | 5407 / 1237 | 0.268 | 11 of 11 fields |
+| case_d_mtc_test_cert.pdf | 3 | 114 of 114 | 0 | 13.34 s / 15.47 s | 5407 / 3004 | 0.26 | 41 of 41 fields |
+| case_d_packing_list.pdf | 3 | 30 of 30 | 0 | 6.48 s / 13.26 s | 5407 / 954 | 0.256 | 13 of 13 fields |
+
+**May be quoted as:** on the synthetic rendered fixtures, model gemini-2.5-flash met 324 of 342 gating expectations (3 run(s) per document, page mode bw, deskew off); 4 of 24 extraction runs ended in an error and count as meeting none of theirs. This is not accuracy on real scanned documents.
+
+### smoke-rerun-bl-ci-full-schema (20261014T114917-extraction-smoke-rerun-bl-ci-full-schema.json)
+
+* Model gemini-2.5-flash in asia-south1; pages as png; page mode **bw**, deskew **off**; recorded 2026-10-14T11:49:17.603477+00:00
+* 3 extraction(s) per document; corpus: the synthetic rendered fixtures (text PDFs, not scans)
+* Operator note: re-run of bill_of_lading and commercial_invoice after the network errors of the previous entry; synthetic rendered documents, not scans
+
+| Document | runs | gating expectations met | runs with a failure | extraction time (median / max) | prompt / output tokens (median) | box overlap (mean IoU) | identical across runs |
+|---|---|---|---|---|---|---|---|
+| bill_of_lading.pdf | 3 | 6 of 6 | 0 | 3.90 s / 12.75 s | 5407 / 509 | 0.269 | 5 of 5 fields |
+| commercial_invoice.pdf | 3 | 21 of 21 | 0 | 7.25 s / 7.80 s | 5407 / 1172 | 0.25 | 11 of 11 fields |
+
+**May be quoted as:** on the synthetic rendered fixtures, model gemini-2.5-flash met 27 of 27 gating expectations (3 run(s) per document, page mode bw, deskew off). This is not accuracy on real scanned documents.
 
 ## Not yet measured
 
@@ -121,7 +189,6 @@ Each line is a claim the project cannot make today.
 * Case C end to end on a live stack (at least 5 runs): latency of the analysis and the reassessment, and that every run reaches the expected statuses
 * Case D end to end on a live stack (at least 5 runs)
 * Case D with a correction, a recompute and the pre-fill download on a live stack (at least 5 runs): the recompute time
-* Extraction accuracy of the real model on the fixtures (`live_smoke_extraction.py`)
 * The grayscale against 1-bit A/B on the real model (decides `PAGE_IMAGE_MODE`)
 * The deskew A/B on the real model, on the degraded scans (decides `PREPROCESS_DESKEW`)
 * Behaviour with more than one instance (`RUN_DISPATCH=cloudtasks`): no measurement format exists for it yet; it is verified by the runbook, not measured
