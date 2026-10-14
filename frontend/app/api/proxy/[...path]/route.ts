@@ -79,9 +79,17 @@ async function handleProxy(
     });
 
 
+    const isSse = response.headers.get("content-type")?.includes("text/event-stream");
+    const responseHeaders = new Headers(response.headers);
+    if (isSse) {
+      responseHeaders.set("Cache-Control", "no-cache, no-transform");
+      responseHeaders.set("Connection", "keep-alive");
+      responseHeaders.set("X-Accel-Buffering", "no");
+    }
+
     return new NextResponse(response.body, {
       status: response.status,
-      headers: response.headers,
+      headers: responseHeaders,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to reach backend service";
