@@ -41,5 +41,11 @@ export async function GET(request: NextRequest) {
     sameSite: "lax",
   });
 
+  response.cookies.set("cargoclear_google_id_token", "", {
+    path: "/",
+    maxAge: 0,
+    sameSite: "lax",
+  });
+
   return response;
 }
