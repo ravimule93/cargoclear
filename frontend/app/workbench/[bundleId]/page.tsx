@@ -12,9 +12,6 @@ import { DeltaDrawer } from "@/components/delta/DeltaDrawer";
 import { useMeta } from "@/lib/hooks/useMeta";
 import { useWorkbench } from "@/lib/hooks/useWorkbench";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
 interface WorkbenchPageProps {
   params: Promise<{ bundleId: string }>;
 }
