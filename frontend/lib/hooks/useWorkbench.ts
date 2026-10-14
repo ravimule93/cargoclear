@@ -212,7 +212,7 @@ export function useWorkbench(bundleId: string): Workbench {
       try {
         const b = await api.getBundle(bundleId);
         if (cancelled) return;
-        if (b.current_iteration > 0 && b.status !== "RUNNING" && b.status !== "PENDING") {
+        if (b.current_iteration > 0 && b.status) {
           setBundle(b);
           const [ass, iters] = await Promise.all([
             api.getAssessment(bundleId).catch(() => null),
