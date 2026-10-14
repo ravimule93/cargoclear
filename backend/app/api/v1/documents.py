@@ -3,7 +3,7 @@
 import asyncio
 import weakref
 
-from fastapi import APIRouter, File, Path, UploadFile
+from fastapi import APIRouter, File, Path, Query, UploadFile
 from fastapi.responses import Response
 
 from app.core.config import settings
@@ -130,6 +130,42 @@ async def get_document_file(
         media_type="application/pdf",
         headers=download_headers(doc_meta.get("filename") or "document.pdf"),
     )
+
+
+@router.get(
+    "/bundles/{bundle_id}/documents/{document_id}/pages/{page}",
+    summary="The page image the model was shown (after orientation, deskew and the image mode)",
+    response_class=Response,
+)
+async def get_processed_page(
+    bundle_id: str = Path(..., description="Target bundle ID"),
+    document_id: str = Path(..., description="Document ID"),
+    page: int = Path(..., ge=1, le=10_000, description="1-indexed source page"),
+    iteration: int | None = Query(default=None, ge=1, description="Assessment number; the latest when omitted"),
+) -> Response:
+    """The persisted PNG of one page exactly as the extraction of that assessment saw it: the answer to "what did it see?".
+    A recompute shows the model nothing of its own, so it serves the pages of the assessment it copied. 404 when the document is
+    not in the bundle or the page was not persisted (PERSIST_PROCESSED_PAGES off, or a document read as a raw PDF)."""
+    doc_meta = await firestore.get_bundle_document(bundle_id, document_id)
+    if doc_meta is None:
+        raise NotFoundError(
+            f"Document '{document_id}' not found in bundle '{bundle_id}'.",
+            detail={"bundle_id": bundle_id, "document_id": document_id},
+        )
+    if iteration is None:
+        latest = await firestore.latest_iteration(bundle_id)
+        iteration = int(latest["iteration"]) if latest else None
+    pages_iteration: int | None = None  # None: pages kept before they were kept per assessment (one set per document)
+    if iteration is not None:
+        record = await firestore.get_extraction_record(bundle_id, iteration)
+        if record is None:
+            raise NotFoundError(
+                f"Assessment {iteration} of bundle '{bundle_id}' has no stored extraction.",
+                detail={"bundle_id": bundle_id, "iteration": iteration},
+            )
+        pages_iteration = record.get("pages_iteration")
+    image = await storage.download_processed_page(bundle_id, document_id, page, pages_iteration)
+    return Response(content=image, media_type="image/png", headers={"Cache-Control": "private, max-age=3600"})
 
 
 @router.get(

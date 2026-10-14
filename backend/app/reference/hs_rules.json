@@ -1,0 +1,39 @@
+{
+  "rule_set": "demo-curated",
+  "regulation_ref": "HS Chapter 72 Note 1 (definitions of non-alloy, stainless and other alloy steel) and the HS 6-digit subheading structure of heading 7304, as encoded for this prototype; not an official source",
+  "verification": {"status": "unverified", "reviewer": null, "date": null},
+  "note_1f_alloy_thresholds_pct": {
+    "Al": 0.30, "B": 0.0008, "Cr": 0.30, "Co": 0.30, "Cu": 0.40, "Pb": 0.40, "Mn": 1.65, "Mo": 0.08,
+    "Ni": 0.30, "Nb": 0.06, "Si": 0.60, "Ti": 0.05, "W": 0.30, "V": 0.10, "Zr": 0.05
+  },
+  "stainless": {"cr_min_pct": 10.5, "c_max_pct": 1.2},
+  "alloy_class_by_prefix": [
+    {"prefix": "7206", "class": "non_alloy"}, {"prefix": "7207", "class": "non_alloy"}, {"prefix": "7208", "class": "non_alloy"},
+    {"prefix": "7209", "class": "non_alloy"}, {"prefix": "7210", "class": "non_alloy"}, {"prefix": "7211", "class": "non_alloy"},
+    {"prefix": "7212", "class": "non_alloy"}, {"prefix": "7213", "class": "non_alloy"}, {"prefix": "7214", "class": "non_alloy"},
+    {"prefix": "7215", "class": "non_alloy"}, {"prefix": "7216", "class": "non_alloy"}, {"prefix": "7217", "class": "non_alloy"},
+    {"prefix": "7218", "class": "stainless"}, {"prefix": "7219", "class": "stainless"}, {"prefix": "7220", "class": "stainless"},
+    {"prefix": "7221", "class": "stainless"}, {"prefix": "7222", "class": "stainless"}, {"prefix": "7223", "class": "stainless"},
+    {"prefix": "7224", "class": "alloy"}, {"prefix": "7225", "class": "alloy"}, {"prefix": "7226", "class": "alloy"},
+    {"prefix": "7227", "class": "alloy"}, {"prefix": "7228", "class": "alloy"}, {"prefix": "7229", "class": "alloy"},
+    {"prefix": "730411", "class": "stainless"},
+    {"prefix": "730419", "class": "any"},
+    {"prefix": "730422", "class": "stainless"},
+    {"prefix": "730423", "class": "any"},
+    {"prefix": "730424", "class": "stainless"},
+    {"prefix": "730429", "class": "any"},
+    {"prefix": "730431", "class": "non_alloy"},
+    {"prefix": "730439", "class": "non_alloy"},
+    {"prefix": "730441", "class": "stainless"},
+    {"prefix": "730449", "class": "stainless"},
+    {"prefix": "730451", "class": "alloy"},
+    {"prefix": "730459", "class": "alloy"},
+    {"prefix": "730490", "class": "any"}
+  ],
+  "alloy_twin_subheading": {
+    "730431": {"alloy": "730451", "stainless": "730441"},
+    "730439": {"alloy": "730459", "stainless": "730449"},
+    "730451": {"non_alloy": "730431", "stainless": "730441"},
+    "730459": {"non_alloy": "730439", "stainless": "730449"}
+  }
+}

@@ -28,9 +28,10 @@ export function ModeBadge() {
   return (
     <div
       className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium border ${
+        // theme tokens, not fixed palette colors: they carry the contrast ratios for light and dark mode
         isLive
-          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-          : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+          ? "bg-[var(--cc-ok-bg)] text-[var(--cc-ok)] border-[var(--cc-ok-bd)]"
+          : "bg-[var(--cc-warn-bg)] text-[var(--cc-warn)] border-[var(--cc-warn-bd)]"
       }`}
       title={
         isLive

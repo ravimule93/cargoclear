@@ -16,12 +16,20 @@ google-cloud-storage>=3,<4
 google-cloud-firestore>=2.20,<3
 google-cloud-bigquery>=3.30,<4
 google-genai>=2.9,<3
+# Run dispatch (RUN_DISPATCH=cloudtasks, services/run_queue.py) and audit signing (services/signing.py)
+google-cloud-tasks>=2.19,<3
+google-cloud-kms>=3.5,<4
+cryptography>=44,<51
 
 # PDF processing (pdf2image stays exactly pinned)
 pdf2image==1.17.0
 opencv-python-headless>=4.10,<5
 numpy>=2.2,<3
 Pillow>=11.1,<13
+
+# PDF generation: the declaration pre-fill summary (services/prefill_pdf.py) and the sample-PDF generator. KEEP EXACT: the
+# drift-guard test tests/unit/test_case_c_pdfs.py compares generated PDFs byte-for-byte with fixtures/*/*.pdf.
+reportlab==5.0.1
 
 # Utilities
 python-multipart>=0.0.20,<1

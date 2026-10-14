@@ -398,10 +398,10 @@ async def test_the_heartbeat_is_stopped_before_the_terminal_state_is_written(mon
         order.append("touch")
         return await real_touch(*a, **k)
 
-    async def state(bundle_id, run_id, state, progress, only_if_state=None):
+    async def state(bundle_id, run_id, state, progress, only_if_state=None, fence=None):
         order.append(f"state:{state}")
         await asyncio.sleep(0.15)  # long enough for several heartbeats if one were still running
-        return await real_state(bundle_id, run_id, state=state, progress=progress, only_if_state=only_if_state)
+        return await real_state(bundle_id, run_id, state=state, progress=progress, only_if_state=only_if_state, fence=fence)
 
     monkeypatch.setattr(firestore, "touch_run", touch)
     monkeypatch.setattr(firestore, "set_run_state", state)

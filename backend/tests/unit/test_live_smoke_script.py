@@ -650,3 +650,101 @@ def test_weight_kg_reads_units_the_way_the_engine_does() -> None:
 
 def test_the_documented_weight_tolerance() -> None:
     assert script.WEIGHT_TOLERANCE == 0.005
+
+
+# ---------------------------------------------------------------------------
+# Phase 1: the certificate's table (heats, chemistry, strengths) and the terms of sale gate the exit code
+# ---------------------------------------------------------------------------
+
+
+def mtc_expectations():
+    expected = extraction._generate_fixture_for_file("model-id", "mtc_pipe_test_cert.pdf")
+    return expected, script.build_expectations(expected)
+
+
+def check_mtc(mutate):
+    expected, expectations = mtc_expectations()
+    actual = expected.model_copy(deep=True)
+    mutate(actual)
+    return script.check_document(expectations, actual)
+
+
+def test_the_certificate_table_becomes_expectations_keyed_by_heat_and_parameter() -> None:
+    expected, expectations = mtc_expectations()
+    by_name = {e.name: e for e in expectations}
+
+    assert by_name["specification"].gating and by_name["heat_numbers[0]"].kind == "heat"
+    assert len([e for e in expectations if e.kind == "lab"]) == len(expected.test_results) == 30
+    assert "test_results[H-24-0882.Cr]" in by_name and by_name["test_results[H-24-0882.Cr]"].gating
+
+
+def test_a_flawless_reading_of_the_certificate_passes_every_gate() -> None:
+    report = check_mtc(lambda doc: None)
+
+    assert report["failed"] == [] and all(r["status"] == "OK" for r in report["rows"])
+
+
+def test_a_wrong_chemistry_value_fails_that_cell_and_names_it() -> None:
+    def misread(doc):
+        row = next(r for r in doc.test_results if r.heat_number == "H-24-0882" and r.parameter == "Cr")
+        row.value = "0.35"                      # the page says 0.09
+
+    report = check_mtc(misread)
+
+    assert report["failed"] == ["test_results[H-24-0882.Cr]"]
+    failing = next(r for r in report["rows"] if r["status"] != "OK")
+    assert failing["expected"] == "0.09 %" and failing["note"] == "read 0.35 %"
+
+
+def test_the_table_may_come_back_in_another_order() -> None:
+    report = check_mtc(lambda doc: doc.test_results.reverse())
+
+    assert report["failed"] == []
+
+
+def test_a_heading_spelt_out_or_a_number_in_another_unit_is_the_same_value() -> None:
+    def respell(doc):
+        for row in doc.test_results:
+            if row.parameter == "Mn":
+                row.parameter = "Manganese"
+            if row.parameter == "YS" and row.heat_number == "H-24-0881":
+                row.value, row.unit = "44.96", "ksi"        # 310 MPa
+
+    assert check_mtc(respell)["failed"] == []
+
+
+def test_a_missing_row_a_missing_heat_and_a_misread_standard_each_fail() -> None:
+    def damage(doc):
+        doc.test_results = [r for r in doc.test_results if not (r.heat_number == "H-24-0881" and r.parameter == "S")]
+        doc.heat_numbers = doc.heat_numbers[:1]
+        doc.specification.value = "API 5L PSL1 GR.B"
+
+    failed = check_mtc(damage)["failed"]
+
+    assert set(failed) == {"test_results[H-24-0881.S]", "heat_numbers[1]", "specification"}
+
+
+def test_an_upper_bound_is_not_the_same_as_an_exact_value() -> None:
+    def bound(doc):
+        next(r for r in doc.test_results if r.heat_number == "H-24-0881" and r.parameter == "P").value = "<0.015"
+
+    assert check_mtc(bound)["failed"] == ["test_results[H-24-0881.P]"]
+
+
+def test_the_origin_is_compared_by_country_not_by_spelling() -> None:
+    expected = extraction._generate_fixture_for_file("model-id", "commercial_invoice.pdf")
+    expectations = script.build_expectations(expected)
+    actual = expected.model_copy(deep=True)
+    actual.country_of_origin.value = "REPUBLIC OF INDIA"
+    assert script.check_document(expectations, actual)["failed"] == []
+
+    actual.country_of_origin.value = "CHINA"
+    assert script.check_document(expectations, actual)["failed"] == ["country_of_origin"]
+
+
+def test_boxes_of_table_cells_count_in_the_box_statistics() -> None:
+    expected = extraction._generate_fixture_for_file("model-id", "mtc_pipe_test_cert.pdf")
+
+    stats = script.bbox_stats(expected)
+
+    assert stats["with_bbox"] >= 30 and stats["bbox_pct"] == 100.0 and not stats["scale_suspect"]

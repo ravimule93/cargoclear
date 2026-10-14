@@ -48,7 +48,7 @@ function isIterationPayload(value: unknown): value is AssessmentIteration {
 }
 
 /**
- * Subscribes to GET {NEXT_PUBLIC_API_BASE}/api/v1/bundles/{id}/stream.
+ * Subscribes to the same-origin /api/proxy/bundles/{id}/stream (the Next.js server proxies it to the API).
  *
  * The backend sends NAMED SSE events, so the event name decides how a payload is read:
  *   `status`    -> run progress (payload carries kind:"status")

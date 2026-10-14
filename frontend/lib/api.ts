@@ -3,6 +3,10 @@ import {
   DocumentRecord,
   AssessmentIteration,
   AuditResponse,
+  AuditSignature,
+  CorrectionRecord,
+  CorrectionRequest,
+  CorrectionsResponse,
   ErrorEnvelope,
   Meta,
   RunResponse,
@@ -13,6 +17,7 @@ import {
   SignInRequest,
   UserAuditResponse,
 } from "./types";
+import type { ExtractedDoc } from "./corrections";
 
 /** Browser calls go through the Next route handler, which forwards to the FastAPI backend. */
 const PROXY_PREFIX = "/api/proxy";
@@ -100,6 +105,40 @@ export const api = {
     });
   },
 
+  /** Re-run the checks on the stored extraction with the agent's corrections applied (no document is read, no model is called). */
+  async recompute(bundleId: string): Promise<RunResponse> {
+    return request<RunResponse>(`/bundles/${bundleId}/recompute`, { method: "POST" });
+  },
+
+  async getCorrections(bundleId: string): Promise<CorrectionsResponse> {
+    return request<CorrectionsResponse>(`/bundles/${bundleId}/corrections`);
+  },
+
+  async createCorrection(bundleId: string, body: CorrectionRequest): Promise<CorrectionRecord> {
+    return request<CorrectionRecord>(`/bundles/${bundleId}/corrections`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  },
+
+  async revertCorrection(bundleId: string, correctionId: string, reason?: string): Promise<CorrectionRecord> {
+    return request<CorrectionRecord>(
+      `/bundles/${encodeURIComponent(bundleId)}/corrections/${encodeURIComponent(correctionId)}/revert`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason ?? null }),
+      }
+    );
+  },
+
+  /** The extraction of an iteration as its checks saw it (corrected fields carry `corrected` and `original_value`). */
+  async getExtractions(bundleId: string, iteration?: number): Promise<ExtractedDoc[]> {
+    const query = iteration ? `?iteration=${iteration}` : "";
+    return request<ExtractedDoc[]>(`/bundles/${bundleId}/extractions${query}`);
+  },
+
   async getAssessment(bundleId: string): Promise<AssessmentIteration> {
     return request<AssessmentIteration>(`/bundles/${bundleId}/assessment`);
   },
@@ -112,8 +151,20 @@ export const api = {
     return request<AuditResponse>(`/bundles/${bundleId}/audit`);
   },
 
+  /** Sign the current head of the audit chain now (the run could not, or events came after it). */
+  async signAuditHead(bundleId: string): Promise<AuditSignature> {
+    return request<AuditSignature>(`/bundles/${bundleId}/audit/sign`, { method: "POST" });
+  },
+
   async createCaseCDemo(): Promise<Bundle> {
     return request<Bundle>("/demo/case-c", {
+      method: "POST",
+    });
+  },
+
+  /** Demo mode only: Case D, an India import whose certificate contradicts the declared HS code (all four documents). */
+  async createCaseDDemo(): Promise<Bundle> {
+    return request<Bundle>("/demo/case-d", {
       method: "POST",
     });
   },
@@ -126,6 +177,19 @@ export const api = {
     }
     const blob = await response.blob();
     return new File([blob], SAMPLE_MTC_FILENAME, { type: "application/pdf" });
+  },
+
+  /**
+   * Where the declaration pre-fill pack of a bundle can be downloaded (JSON, or the printable PDF summary). A plain URL,
+   * not a fetch: the browser downloads it through the same proxy as every other call.
+   */
+  prefillUrl(bundleId: string, format: "json" | "pdf", iteration?: number): string {
+    const base = `${PROXY_PREFIX}/bundles/${encodeURIComponent(bundleId)}/prefill`;
+    const query = new URLSearchParams();
+    if (iteration) query.set("iteration", String(iteration));
+    if (format === "json") query.set("download", "true");
+    const qs = query.toString();
+    return `${base}${format === "pdf" ? ".pdf" : ""}${qs ? `?${qs}` : ""}`;
   },
 
   async getMeta(): Promise<Meta> {

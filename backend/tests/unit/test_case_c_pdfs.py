@@ -93,3 +93,58 @@ def test_non_weight_values_print_without_a_unit(generator: ModuleType) -> None:
     content = generator.render_pdf("commercial_invoice.pdf")
     for text in (b"(700.0)", b"(84000.0)", b"(120 LENGTHS)", b"(USD)", b"(73041900)"):
         assert text in content, f"{text!r} should print exactly as before"
+
+
+# ---------------------------------------------------------------------------
+# Case D (India import): same generator, its own committed set
+# ---------------------------------------------------------------------------
+
+CASE_D_DIR = REPO_ROOT / "fixtures" / "case_d"
+CASE_D_FILENAMES = [
+    "case_d_commercial_invoice.pdf",
+    "case_d_bill_of_lading.pdf",
+    "case_d_packing_list.pdf",
+    "case_d_mtc_test_cert.pdf",
+]
+
+
+def test_generates_the_four_case_d_pdfs_deterministically(generator: ModuleType, tmp_path: Path) -> None:
+    first = generator.generate(tmp_path / "a", "case_d")
+    generator.generate(tmp_path / "b", "case_d")
+    assert sorted(p.name for p in first) == sorted(CASE_D_FILENAMES)
+    for name in CASE_D_FILENAMES:
+        assert (tmp_path / "a" / name).read_bytes() == (tmp_path / "b" / name).read_bytes()
+    assert len({sha256(tmp_path / "a" / name) for name in CASE_D_FILENAMES}) == len(CASE_D_FILENAMES)
+
+
+def test_committed_case_d_pdfs_match_generator(generator: ModuleType, tmp_path: Path) -> None:
+    generator.generate(tmp_path, "case_d")
+    for name in CASE_D_FILENAMES:
+        committed = CASE_D_DIR / name
+        assert committed.is_file(), f"{committed} missing; run scripts/generate_case_c_pdfs.py"
+        assert committed.read_bytes() == (tmp_path / name).read_bytes(), f"{name} is stale; re-run scripts/generate_case_c_pdfs.py"
+
+
+def test_the_packaged_copies_equal_the_repository_fixtures() -> None:
+    """backend/app/fixtures is what the container image carries; fixtures/ is what the generator writes."""
+    packaged = REPO_ROOT / "backend" / "app" / "fixtures"
+    for case, names in (("case_c", FILENAMES), ("case_d", CASE_D_FILENAMES)):
+        for name in names:
+            assert (packaged / case / name).read_bytes() == (REPO_ROOT / "fixtures" / case / name).read_bytes(), (
+                f"{case}/{name}: copy backend/app/fixtures/{case}/ from fixtures/{case}/"
+            )
+
+
+def test_the_certificate_prints_its_heats_and_chemistry(generator: ModuleType) -> None:
+    case_c = generator.render_pdf("mtc_pipe_test_cert.pdf")
+    for expected in (b"API 5L PSL2 GR.B", b"(H-24-0881)", b"(H-24-0882)", b"(0.18)", b"(0.95)", b"(310)"):
+        assert expected in case_c, expected
+    case_d = generator.render_pdf("case_d_mtc_test_cert.pdf")
+    for expected in (b"ASTM A106 GR B", b"(TH-77121)", b"(0.35)"):
+        assert expected in case_d, expected
+
+
+def test_the_case_d_invoice_prints_its_terms_of_sale(generator: ModuleType) -> None:
+    content = generator.render_pdf("case_d_commercial_invoice.pdf")
+    for expected in (b"(FOB TIANJIN)", b"(CHINA)", b"(2460.0)", b"(PER MT)", b"(61500.0)", b"(73043100)"):
+        assert expected in content, expected

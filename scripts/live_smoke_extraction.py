@@ -16,9 +16,14 @@ Credentials: any ONE of GOOGLE_APPLICATION_CREDENTIALS (service-account key file
 unless APP_MODE=live and credentials are present. It never prints credential content.
 
 Options:
-  --docs PDF [PDF ...]   PDFs to send (default: every PDF in fixtures/case_c). Only files inside fixtures/case_c
-                         have expectations; any other file is extracted and reported but cannot pass or fail.
+  --docs PDF [PDF ...]   PDFs to send (default: every PDF in fixtures/case_c). Only files inside fixtures/case_c or
+                         fixtures/case_d have expectations; any other file is extracted and reported but cannot pass or fail.
   --runs N               repeat N times and report field-level agreement across runs (default 1)
+  --page-mode bw|gray    the A/B of the model's INPUT: 1-bit (the original) against 8-bit grayscale. Run both on the same files
+                         (the degraded ones from scripts/make_degraded_scans.py are the interesting set) and compare the two
+                         reports with scripts/compare_smoke_reports.py.
+  --deskew               straighten skewed pages first (PREPROCESS_DESKEW); compare with and without
+  --as-fixtures          grade degraded copies by FILE NAME against the fixtures (their printed values are the same)
   --overlay              save each page with the extracted (red) and expected (green) boxes drawn on it, to
                          <out>/overlays/<doc>.page<N>.png (needs PNG pages, i.e. poppler installed)
   --dry-run              build the exact request and print it; ZERO network calls, credentials are not read
@@ -44,6 +49,8 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BACKEND_DIR = REPO_ROOT / "backend"
 CASE_C_DIR = REPO_ROOT / "fixtures" / "case_c"
+CASE_D_DIR = REPO_ROOT / "fixtures" / "case_d"
+FIXTURE_DIRS = (CASE_C_DIR, CASE_D_DIR)
 DEFAULT_OUT_DIR = BACKEND_DIR / "data" / "live_smoke"
 
 if str(BACKEND_DIR) not in sys.path:
@@ -52,8 +59,10 @@ if str(BACKEND_DIR) not in sys.path:
 from app.agents import extraction  # noqa: E402
 from app.core import mode  # noqa: E402
 from app.core.config import settings  # noqa: E402
+from app.domain.countries import country_code  # noqa: E402
 from app.domain.hs import hs_match_level  # noqa: E402
-from app.domain.schemas import BBox, ExtractedDocument, FieldRef, LineItem  # noqa: E402
+from app.domain.measures import canonical_parameter, normalize_heat, parse_measure, to_mpa  # noqa: E402
+from app.domain.schemas import BBox, ExtractedDocument, FieldRef, LabResult, LineItem  # noqa: E402
 from app.domain.units import parse_number, to_kg, trailing_unit  # noqa: E402
 from app.gateway.errors import CargoClearError  # noqa: E402
 from app.services import calculation, preprocess  # noqa: E402
@@ -71,6 +80,10 @@ HEADER_FIELDS = (
     ("total_net_weight_kg", "weight", True),
     ("total_gross_weight_kg", "weight", True),
     ("tare_weight_kg", "weight", True),
+    # material evidence and terms of sale: the certificate's standard, the origin (it decides anti-dumping), the Incoterm
+    ("specification", "text", True),
+    ("country_of_origin", "country", True),
+    ("incoterm", "text", False),
 )
 LINE_FIELDS = (
     ("hs_code_declared", "hs", True),
@@ -87,7 +100,7 @@ LINE_FIELDS = (
 @dataclass
 class Expectation:
     name: str                    # "doc_type", "consignee", "line_items[0].hs_code_declared", ...
-    kind: str                    # doc_type | text | entity | hs | weight
+    kind: str                    # doc_type | text | entity | hs | weight | heat | country | lab
     gating: bool
     expected: Any                # a FieldRef, or the doc_type string
     path: tuple[str | int, ...]  # where to find it in an ExtractedDocument
@@ -99,6 +112,13 @@ def build_expectations(expected: ExtractedDocument) -> list[Expectation]:
         ref = getattr(expected, name, None)
         if isinstance(ref, FieldRef) and ref.value is not None:
             out.append(Expectation(name, kind, gating, ref, (name,)))
+    for index, ref in enumerate(expected.heat_numbers):
+        if ref.value is not None:
+            out.append(Expectation(f"heat_numbers[{index}]", "heat", True, ref, ("heat_numbers", ("heat", normalize_heat(ref.value)))))
+    for row in expected.test_results:
+        # matched by (heat, parameter), not by position: the model may list the rows in another order
+        key = ("lab", normalize_heat(row.heat_number), canonical_parameter(row.parameter))
+        out.append(Expectation(f"test_results[{row.heat_number}.{row.parameter}]", "lab", True, row, ("test_results", key)))
     for index, item in enumerate(expected.line_items):
         for name, kind, gating in LINE_FIELDS:
             ref = getattr(item, name, None)
@@ -111,7 +131,13 @@ def locate(doc: ExtractedDocument, path: tuple[str | int, ...]) -> Any:
     """The value at ``path`` in an extracted document, or None if it is not there."""
     node: Any = doc
     for step in path:
-        if isinstance(step, int):
+        if isinstance(step, tuple):  # ("heat", normalized) or ("lab", normalized heat, canonical parameter): find a list entry by key
+            rows = node if isinstance(node, list) else []
+            if step[0] == "heat":
+                node = next((r for r in rows if normalize_heat(r.value) == step[1]), None)
+            else:
+                node = next((r for r in rows if normalize_heat(r.heat_number) == step[1] and canonical_parameter(r.parameter) == step[2]), None)
+        elif isinstance(step, int):
             node = node[step] if isinstance(node, list) and step < len(node) else None
         else:
             node = getattr(node, step, None)
@@ -127,6 +153,7 @@ def show(ref: Any) -> str:
         return ref
     unit = getattr(ref, "unit", None)
     return "-" if ref.value is None else f"{ref.value} {unit}".strip() if unit else str(ref.value)
+
 
 
 def weight_kg(ref: FieldRef) -> tuple[float | None, str]:
@@ -159,10 +186,43 @@ def compare(expectation: Expectation, actual: Any) -> tuple[str, str]:
         if want is None or got is None:
             return "MISMATCH", note
         return ("OK", note) if abs(got - want) <= WEIGHT_TOLERANCE * abs(want) else ("MISMATCH", note or f"{got:g} kg")
+    if expectation.kind == "heat":
+        return ("OK", "") if normalize_heat(actual.value) == normalize_heat(expected.value) else ("MISMATCH", "")
+    if expectation.kind == "country":
+        want, got = country_code(expected.value), country_code(actual.value)
+        return ("OK", "") if want is not None and want == got else ("MISMATCH", "")
+    if expectation.kind == "lab":
+        return _compare_lab(expected, actual)
     if expectation.kind == "entity":
         same = calculation.normalize_entity_name(str(actual.value)) == calculation.normalize_entity_name(str(expected.value))
         return ("OK", "") if same else ("MISMATCH", "")
     return ("OK", "") if _squash(actual.value) == _squash(expected.value) else ("MISMATCH", "")
+
+
+def _lab_value(row: LabResult) -> tuple[float | None, str, str]:
+    """(number, bound, problem) of a certificate value: chemistry in weight %, strengths in MPa."""
+    if canonical_parameter(row.parameter) in ("YS", "UTS"):
+        parsed = parse_number(row.value)
+        if parsed is None:
+            return None, "exact", f"unreadable {row.value!r}"
+        measure = to_mpa(parsed.value, row.unit)
+    else:
+        measure = parse_measure(row.value, row.unit)
+    return measure.value, measure.bound, measure.error or ""
+
+
+def _compare_lab(expected: LabResult, actual: LabResult) -> tuple[str, str]:
+    """A certificate value matches when it reads the same number (after unit conversion) with the same bound."""
+    want, want_bound, _ = _lab_value(expected)
+    got, got_bound, problem = _lab_value(actual)
+    if got is None or want is None:
+        return "MISMATCH", problem or "unreadable"
+    # chemistry is printed and compared as-is (exact); a strength may come back in another unit, so it matches within the
+    # rounding of that conversion (0.1 %)
+    tolerance = 1e-3 * abs(want) if canonical_parameter(expected.parameter) in ("YS", "UTS") else 1e-9 * max(1.0, abs(want))
+    if want_bound != got_bound or abs(got - want) > tolerance:
+        return "MISMATCH", f"read {actual.value} {actual.unit or ''}".strip()
+    return "OK", ""
 
 
 def iou(a: BBox, b: BBox) -> float:
@@ -178,6 +238,7 @@ def iou(a: BBox, b: BBox) -> float:
 
 def all_refs(doc: ExtractedDocument) -> list[FieldRef]:
     refs: list[FieldRef] = [getattr(doc, n) for n in ExtractedDocument.model_fields if isinstance(getattr(doc, n), FieldRef)]
+    refs += list(doc.heat_numbers) + list(doc.test_results)
     for item in doc.line_items:
         refs += [getattr(item, n) for n in LineItem.model_fields if isinstance(getattr(item, n), FieldRef)]
     return refs
@@ -254,12 +315,17 @@ class SmokeDoc:
         return self.path.name
 
 
-def load_documents(paths: list[Path]) -> list[SmokeDoc]:
+def load_documents(paths: list[Path], *, as_fixtures: bool = False) -> list[SmokeDoc]:
+    """The documents to send. A file has expectations when it sits in fixtures/case_c or fixtures/case_d, or (``as_fixtures``,
+    for degraded copies of them made by scripts/make_degraded_scans.py) when its NAME is a fixture's: the values printed on a
+    degraded scan are the same, only its quality is worse."""
     docs = []
     for path in paths:
         document_id = f"smoke-{path.stem}"
-        in_case_c = path.resolve().parent == CASE_C_DIR.resolve()
-        expected = extraction._generate_fixture_for_file(document_id, path.name) if in_case_c else None
+        known = path.resolve().parent in {d.resolve() for d in FIXTURE_DIRS} or (
+            as_fixtures and any((d / path.name).is_file() for d in FIXTURE_DIRS)
+        )
+        expected = extraction._generate_fixture_for_file(document_id, path.name) if known else None
         docs.append(SmokeDoc(path=path, document_id=document_id, raw=path.read_bytes(), expected=expected))
     return docs
 
@@ -293,6 +359,8 @@ def environment(page_source: str | None) -> dict[str, Any]:
         "timeout_seconds": settings.gemini_timeout_seconds,
         "max_attempts": settings.gemini_max_attempts,
         "thinking_budget": settings.gemini_thinking_budget,
+        "page_image_mode": settings.page_image_mode,
+        "preprocess_deskew": settings.preprocess_deskew,
         "max_output_tokens": settings.gemini_max_output_tokens,
     }
 
@@ -462,7 +530,7 @@ def _public(run: dict[str, Any]) -> dict[str, Any]:
 
 
 async def run_smoke(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
-    docs = load_documents(args.docs)
+    docs = load_documents(args.docs, as_fixtures=args.as_fixtures)
     out_dir = Path(args.out)
     report: dict[str, Any] = {"generated_at": datetime.now(timezone.utc).isoformat(), "runs": args.runs, "documents": []}
     failures: list[str] = []
@@ -610,6 +678,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--docs", nargs="+", type=Path, default=sorted(CASE_C_DIR.glob("*.pdf")),
                         help="PDFs to send (default: every PDF in fixtures/case_c)")
     parser.add_argument("--runs", type=int, default=1, help="repeat N times and report agreement across runs (default 1)")
+    parser.add_argument("--page-mode", choices=["bw", "gray"], default=None,
+                        help="what the model is shown: bw (1-bit, the default input) or gray (8-bit grayscale): the A/B (PAGE_IMAGE_MODE)")
+    parser.add_argument("--deskew", action="store_true", help="straighten skewed pages before extraction (PREPROCESS_DESKEW)")
+    parser.add_argument("--as-fixtures", action="store_true",
+                        help="grade files by NAME against the fixtures (degraded copies from scripts/make_degraded_scans.py)")
     parser.add_argument("--overlay", action="store_true", help="save pages with the extracted/expected boxes drawn on them")
     parser.add_argument("--dry-run", action="store_true", help="print the exact request; make no network call")
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT_DIR, help="output directory (default backend/data/live_smoke)")
@@ -624,6 +697,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    if args.page_mode:
+        settings.page_image_mode = args.page_mode
+    if args.deskew:
+        settings.preprocess_deskew = True
     reason = refusal_reason()
     if reason is not None:
         print(f"REFUSING TO RUN: {reason}", file=sys.stderr)

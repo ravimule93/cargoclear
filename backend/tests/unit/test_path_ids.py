@@ -35,9 +35,18 @@ ROUTES = [
     ("GET", "/api/v1/bundles/{b}/iterations"),
     ("POST", "/api/v1/bundles/{b}/analyze"),
     ("POST", "/api/v1/bundles/{b}/reassess"),
+    ("POST", "/api/v1/bundles/{b}/recompute"),
+    ("GET", "/api/v1/bundles/{b}/corrections"),
+    ("GET", "/api/v1/bundles/{b}/prefill"),
+    ("GET", "/api/v1/bundles/{b}/prefill.pdf"),
+    ("POST", "/api/v1/bundles/{b}/corrections"),
+    ("POST", "/api/v1/bundles/{b}/corrections/cor-1/revert"),
     ("GET", "/api/v1/bundles/{b}/documents/doc-0123456789abcdef/file"),
     ("GET", "/api/v1/bundles/{b}/documents/doc-0123456789abcdef/transform-metadata"),
 ]
+
+
+JSON_BODY = b'{"document_id": "doc-0123456789abcdef", "path": "consignee", "value": "ACME"}'
 
 
 def decoded(raw: str) -> str:
@@ -63,7 +72,9 @@ async def test_a_hostile_bundle_id_is_the_same_404_on_every_route(name, method_p
     method, template = method_path
     hostile = decoded(HOSTILE[name])
 
-    result = await asgi_call(method, template.replace("{b}", hostile))
+    # a POST carries a valid JSON body, so that a route that takes one is judged by its id, not by a missing body
+    send = {"body": JSON_BODY, "headers": {"content-type": "application/json"}} if method == "POST" else {}
+    result = await asgi_call(method, template.replace("{b}", hostile), **send)
 
     assert result.status == 404, (result.status, result.body[:200])
     body = result.json()
@@ -73,7 +84,7 @@ async def test_a_hostile_bundle_id_is_the_same_404_on_every_route(name, method_p
     assert len(result.body) < 1000, "the id is not echoed back at full length"
 
     if not template.endswith("/iterations"):  # (an unknown bundle's /iterations has always been 200 [])
-        reference = await asgi_call(method, template.replace("{b}", "bnd-0123456789ab"))
+        reference = await asgi_call(method, template.replace("{b}", "bnd-0123456789ab"), **send)
         assert reference.status == 404 and reference.json()["code"] == "NOT_FOUND"
         assert set(reference.json()) == set(body)
 
@@ -140,3 +151,13 @@ async def test_a_valid_but_unknown_id_keeps_its_exact_message() -> None:
 
     assert result.json()["message"] == "Bundle 'bnd-nope' not found."
     assert result.json()["detail"] == {"bundle_id": "bnd-nope"}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("hostile", ["..", "cor-", "cor-x", "cor-12345678901", "COR-1", "1", "a" * 3000, "cor-1;drop", "cor-1/../x"])
+async def test_a_correction_id_that_is_not_one_is_a_bounded_404(hostile) -> None:
+    async with api_client() as client:
+        bundle_id = await create_bundle_with_documents(client, {"a.pdf": b"%PDF-1.4 a"})
+    result = await asgi_call("POST", f"/api/v1/bundles/{bundle_id}/corrections/{hostile.replace('/', '%2F')}/revert")
+    assert result.status == 404 and result.json()["code"] == "NOT_FOUND"
+    assert len(result.body) < 1000

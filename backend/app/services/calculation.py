@@ -24,6 +24,10 @@ HS rules (H-002, H-003): declared codes (line items and header) are compared as 
                  does). A certificate may state a proper SUBSET of those codes (it covers some lines): that agrees;
                  a code the reference lacks is MATERIAL. A certificate that states no HS code is not checked.
 
+Invoice arithmetic (services/invoice_checks.py), the certificate's chemistry against the declaration
+(services/metallurgy.py) and origin / anti-dumping / circumvention (services/trade_remedies.py) are separate modules
+called from ``run``; the indicative duty estimate (services/valuation.py) is computed there too and does not affect status.
+
 Entity rules (v4.0 §3.2 & hardening update):
   consignee, consignor, vessel_or_flight must be consistent across documents (E-consignee / E-consignor /
   E-vessel: MATERIAL on disagreement, PASS with evidence when two or more documents agree).
@@ -50,6 +54,8 @@ from app.domain.hs import (
 )
 from app.domain.schemas import CheckResult, ExtractedDocument, FieldRef
 from app.domain.units import parse_number, to_kg, trailing_unit
+from app.reference.loader import fingerprint
+from app.services import invoice_checks, metallurgy, trade_remedies, valuation
 
 # ---------------------------------------------------------------------------
 # Constants (from v4.0 §3.1)
@@ -90,6 +96,12 @@ def _build_field_evidence(doc: ExtractedDocument, field_name: str) -> dict[str, 
     else:
         entry["page"] = 1
         entry["bbox"] = None
+    printed = getattr(field_ref, "value", None)
+    if printed is not None and str(printed).strip() != "":
+        entry["raw_value"] = printed if not isinstance(printed, float) else (int(printed) if printed.is_integer() else printed)
+    unit = getattr(field_ref, "unit", None)
+    if unit is not None and str(unit).strip() != "":
+        entry["unit"] = str(unit).strip()
     return entry
 
 
@@ -662,6 +674,8 @@ async def run(ctx: dict) -> dict:
     Reads:  ctx["extracted"]  (list[ExtractedDocument])
     Writes: ctx["checks"]     (list[dict] — serialised CheckResults)
             ctx["math_status"] (str — one of the 4 status strings)
+            ctx["valuation"]  (dict — ValuationEstimate; informational)
+            ctx["reference_data"] (dict — fingerprint of the curated tables used)
     """
     docs: list[ExtractedDocument] = ctx.get("extracted", [])
     results: list[CheckResult] = []
@@ -716,6 +730,17 @@ async def run(ctx: dict) -> dict:
     # Entity alignment across all documents
     results.extend(check_entity_alignment(docs))
 
+    # Invoice arithmetic (I-001..I-003), the certificate against the declaration (M-001..M-004), origin and trade
+    # remedies (E-origin, SEC-001, SEC-002). Each rests on its own module; the curated tables they use are named on
+    # the checks (rule_set / regulation_ref) and fingerprinted below.
+    destination = str(ctx.get("destination_country", "SG"))
+    results.extend(invoice_checks.run(docs))
+    results.extend(metallurgy.run(docs))
+    results.extend(trade_remedies.run(docs, destination))
+
     ctx["checks"] = [r.model_dump() for r in results]
     ctx["math_status"] = _roll_up(results)
+    # The indicative duty estimate is NOT a check: it never changes the status (see services/valuation.py).
+    ctx["valuation"] = valuation.estimate(docs, destination).model_dump(mode="json")
+    ctx["reference_data"] = fingerprint()
     return ctx

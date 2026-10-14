@@ -7,6 +7,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Shared rate-limit counters (RATE_LIMIT_BACKEND=firestore): server-side only
+    match /ratelimits/{counterId} {
+      allow read, write: if false;
+    }
+
     // TradeBundle collections
     match /bundles/{bundleId} {
       allow read, write: if true; // Internal service account / Cloud Run invocation
@@ -33,6 +38,11 @@ service cloud.firestore {
       // Execution run states
       match /runs/{runId} {
         allow read, write: if true;
+      }
+
+      // Run leases (who may run an assessment): only the server's own libraries write them; they bypass these rules
+      match /control/{controlId} {
+        allow read, write: if false;
       }
     }
   }

@@ -129,6 +129,10 @@ def _build_event(
     }
 
 
+class ChainMoved(Exception):
+    """An append that required a given head found a different one: somebody appended between the caller's read and its write."""
+
+
 async def _read_tail(client: Any, bundle_id: str) -> tuple[str, int]:
     """(prev_hash, next seq) from the newest stored event; ("GENESIS", 1) for an empty chain."""
     try:
@@ -145,18 +149,23 @@ async def _read_tail(client: Any, bundle_id: str) -> tuple[str, int]:
 
 
 async def _append_firestore(
-    client: Any, bundle_id: str, iteration: int, event_type: str, actor: str, payload: dict[str, Any]
+    client: Any, bundle_id: str, iteration: int, event_type: str, actor: str, payload: dict[str, Any], after_seq: int | None = None
 ) -> dict[str, Any]:
-    """Create the event at ``{seq:010d}``; if another writer took that number, re-read the tail and retry."""
+    """Create the event at ``{seq:010d}``; if another writer took that number, re-read the tail and retry (unless the caller
+    required a particular head: then a moved chain is ``ChainMoved``, for the caller to re-read and decide again)."""
     col = client.collection("bundles").document(bundle_id).collection("audit")
     event_data: dict[str, Any] = {}
     for attempt in range(1, _MAX_APPEND_ATTEMPTS + 1):
         prev_hash, seq = await _read_tail(client, bundle_id)
+        if after_seq is not None and seq - 1 != after_seq:
+            raise ChainMoved()
         event_data = _build_event(bundle_id, iteration, event_type, actor, payload, prev_hash, seq)
         try:
             await col.document(f"{seq:010d}").create(event_data)
         except AlreadyExists:
             logger.warning("audit_append_conflict", bundle_id=bundle_id, seq=seq, attempt=attempt)
+            if after_seq is not None:
+                raise ChainMoved() from None  # somebody took the number this caller's decision was based on
             continue
         except Exception as exc:
             if settings.app_mode == "live":
@@ -180,12 +189,17 @@ async def record(ctx: dict[str, Any]) -> dict[str, Any]:
 
     Serialized per bundle in this process with an asyncio.Lock; across processes the Firestore ``create`` at a
     deterministic document id makes a lost race an error that is retried, not a silent overwrite.
+
+    ``ctx["after_seq"]`` (optional) makes the append conditional: it is written only if the newest event of the chain is that
+    one, else ``ChainMoved``. A writer whose event depends on what it read from the chain (a correction records the value it
+    replaces) uses it, so that a concurrent append cannot leave it with a stale decision.
     """
     bundle_id: str = ctx["bundle_id"]
     iteration: int = ctx.get("iteration", 0)
     event_type: str = ctx.get("audit_event_type", "SYSTEM_EVENT")
     payload: dict[str, Any] = ctx.get("audit_payload", {})
     actor: str = ctx.get("actor", "system")
+    after_seq: int | None = ctx.get("after_seq")
 
     if bundle_id not in _BUNDLE_LOCKS:
         _BUNDLE_LOCKS[bundle_id] = asyncio.Lock()
@@ -194,10 +208,12 @@ async def record(ctx: dict[str, Any]) -> dict[str, Any]:
         client = _get_firestore_client()
 
         if client is not None:
-            event_data = await _append_firestore(client, bundle_id, iteration, event_type, actor, payload)
+            event_data = await _append_firestore(client, bundle_id, iteration, event_type, actor, payload, after_seq)
         else:
             events = _IN_MEMORY_AUDIT.get(bundle_id, [])
             prev_hash, seq = (events[-1]["hash"], events[-1]["seq"] + 1) if events else ("GENESIS", 1)
+            if after_seq is not None and seq - 1 != after_seq:
+                raise ChainMoved()
             event_data = _build_event(bundle_id, iteration, event_type, actor, payload, prev_hash, seq)
             _IN_MEMORY_AUDIT.setdefault(bundle_id, []).append(event_data)
             logger.info("audit_event_persisted_in_memory", bundle_id=bundle_id, seq=seq, hash=event_data["hash"][:12])

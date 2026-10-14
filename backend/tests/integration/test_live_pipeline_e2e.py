@@ -100,7 +100,9 @@ async def test_case_c_through_the_live_pipeline(monkeypatch, offline_live) -> No
     assert first["status"] == "MISSING_EVIDENCE" and first["iteration"] == 1
     assert second["status"] == "COMPLIANT_FOR_SUBMISSION" and second["iteration"] == 2
     assert second["confidence"]["action"] == "AUTO_ACCEPT"
-    assert {c["check_id"] for c in first["checks"]} == {"W-001", "W-002", "H-002", "E-consignee", "E-consignor", "G-001"}
+    assert {c["check_id"] for c in first["checks"]} == {
+        "W-001", "W-002", "H-002", "E-consignee", "E-consignor", "E-origin", "I-001", "I-002", "I-003", "G-001",
+    }
     assert shape(first) == shape(demo["first"]) and shape(second) == shape(demo["second"]), "live == demo, check by check"
     assert live["audit"]["verified"] is True
     assert [e["event_type"] for e in live["audit"]["events"]] == [e["event_type"] for e in demo["audit"]["events"]]

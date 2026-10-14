@@ -1,0 +1,9 @@
+{
+  "rule_set": "demo-curated",
+  "regulation_ref": "Statutory default freight and insurance used when the documents do not state them, as encoded for this prototype (Customs Valuation (Determination of Value of Imported Goods) Rules, 2007, rule 10, for India: to be confirmed by the reviewer); not an official source",
+  "verification": {"status": "unverified", "reviewer": null, "date": null},
+  "destinations": {
+    "IN": {"freight_pct_of_fob": 20.0, "insurance_pct_of_fob": 1.125},
+    "SG": {"freight_pct_of_fob": null, "insurance_pct_of_fob": null}
+  }
+}

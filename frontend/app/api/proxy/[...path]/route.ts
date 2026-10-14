@@ -1,64 +1,73 @@
 /**
- * Server-side API Proxy Route Handler.
+ * Server-side API Proxy Route Handler (the BFF).
  *
- * Environment variables:
- * - API_BASE: The internal URL for the FastAPI backend (default: http://localhost:8080).
- *   Used only by this server-side proxy route. Browser API and SSE traffic
- *   always stays same-origin via /api/proxy.
+ * The browser talks to /api/proxy/... only; this handler forwards to the API at the runtime-only API_BASE and streams
+ * the answer back (SSE included). Everything that decides HOW it forwards lives in lib/server/proxy.ts:
+ *
+ * - only GET and POST exist (the API has no other method), and only a fixed list of request headers is forwarded:
+ *   cookies, a browser-supplied Authorization and any X-CargoClear-* header never reach the API;
+ * - the path must stay below /api/v1 (no `..`, no encoded slash);
+ * - with API_AUTH_MODE=google-id-token the API is a private Cloud Run service and every call carries an ID token of
+ *   this service's identity;
+ * - the end user's IP goes to the API in X-CargoClear-Client-IP (set from what Cloud Run observed, never from the
+ *   browser), so the API's rate limits are per user and not one bucket for everybody behind this proxy;
+ * - a browser that goes away aborts the upstream request (an SSE stream no longer lingers); ordinary calls have a
+ *   deadline just under Cloud Run's request timeout;
+ * - the proxy's own errors are fixed texts: no host names or exception messages reach the browser.
+ *
+ * Environment: see lib/server/proxy.ts. API_BASE is read per request ("force-dynamic") so that Cloud Run's runtime
+ * environment, not the image-build environment, supplies it.
  */
 import { NextRequest, NextResponse } from "next/server";
+import {
+  UpstreamAuthError,
+  authMode,
+  backendBase,
+  buildTargetUrl,
+  clientIpFrom,
+  downstreamResponseHeaders,
+  idTokens,
+  isStreamPath,
+  proxyError,
+  requestIdFor,
+  trustedProxyHops,
+  upstreamRequestHeaders,
+} from "@/lib/server/proxy";
 
-// Evaluate configuration at request time so Cloud Run's runtime environment,
-// rather than Next's image-build environment, supplies the backend URL.
 export const dynamic = "force-dynamic";
 
-function backendBase(): string {
-  return process.env.API_BASE || "http://localhost:8080";
+/** Below Cloud Run's 300 s request timeout, so the browser gets a clean 504 instead of a dropped connection. */
+const REQUEST_DEADLINE_MS = 280_000;
+
+type RouteContext = { params: Promise<{ path: string[] }> };
+
+export async function GET(request: NextRequest, context: RouteContext) {
+  return handleProxy(request, await context.params);
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
-  return handleProxy(request, await params);
+export async function POST(request: NextRequest, context: RouteContext) {
+  return handleProxy(request, await context.params);
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
-  return handleProxy(request, await params);
-}
+async function handleProxy(request: NextRequest, params: { path: string[] }) {
+  const requestId = requestIdFor(request.headers);
+  const base = backendBase();
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
-  return handleProxy(request, await params);
-}
-
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ path: string[] }> }
-) {
-  return handleProxy(request, await params);
-}
-
-async function handleProxy(
-  request: NextRequest,
-  params: { path: string[] }
-) {
-  try {
-    const path = params.path.join("/");
-    const targetUrl = new URL(`/api/v1/${path}`, backendBase());
-
-    // Forward query params
-    request.nextUrl.searchParams.forEach((val, key) => {
-      targetUrl.searchParams.set(key, val);
+  const target = buildTargetUrl(base, params.path ?? [], request.nextUrl.search);
+  if (target === null) {
+    return NextResponse.json(proxyError("NOT_FOUND", "Resource not found.", requestId), {
+      status: 404,
+      headers: { "x-request-id": requestId },
     });
+  }
 
-    const headers = new Headers(request.headers);
-    headers.delete("host");
+  try {
+    const idToken = authMode() === "google-id-token" ? await idTokens.get(new URL(base).origin) : null;
+    const headers = upstreamRequestHeaders(request.headers, {
+      idToken,
+      clientIp: clientIpFrom(request.headers, trustedProxyHops()),
+      requestId,
+    });
 
     // Read active auth session from cookie if Authorization header is not explicitly present.
     // Firebase Hosting CDN rewrites forward ONLY the '__session' cookie, so we check both.
@@ -70,17 +79,21 @@ async function handleProxy(
     }
 
     const hasBody = request.method !== "GET" && request.method !== "HEAD";
-    const response = await fetch(targetUrl.toString(), {
+    const signals: AbortSignal[] = [request.signal];
+    if (!isStreamPath(params.path)) signals.push(AbortSignal.timeout(REQUEST_DEADLINE_MS));
+
+    const response = await fetch(target, {
       method: request.method,
       headers,
       body: hasBody ? request.body : undefined,
+      signal: AbortSignal.any(signals),
       // @ts-expect-error duplex is required for streaming request body in Node fetch
       duplex: hasBody ? "half" : undefined,
     });
 
 
     const isSse = response.headers.get("content-type")?.includes("text/event-stream");
-    const responseHeaders = new Headers(response.headers);
+    const responseHeaders = downstreamResponseHeaders(response.headers);
     if (isSse) {
       responseHeaders.set("Cache-Control", "no-cache, no-transform");
       responseHeaders.set("Connection", "keep-alive");
@@ -92,14 +105,28 @@ async function handleProxy(
       headers: responseHeaders,
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Failed to reach backend service";
-    return NextResponse.json(
-      {
-        code: "PROXY_ERROR",
-        message,
-        detail: null,
-      },
-      { status: 502 }
-    );
+    if (request.signal.aborted) {
+      // the browser went away (closed a tab, left an SSE stream): normal, not an error, and nobody reads this answer
+      return new NextResponse(null, { status: 499 });
+    }
+    // the details go to the server log only
+    console.error("api proxy failed", { requestId, error: err instanceof Error ? `${err.name}: ${err.message}` : err });
+
+    if (err instanceof UpstreamAuthError) {
+      return NextResponse.json(
+        proxyError("PROXY_AUTH_ERROR", "The API could not be reached (service authentication failed).", requestId),
+        { status: 502, headers: { "x-request-id": requestId } }
+      );
+    }
+    if (err instanceof Error && err.name === "TimeoutError") {
+      return NextResponse.json(proxyError("PROXY_TIMEOUT", "The API did not answer in time.", requestId), {
+        status: 504,
+        headers: { "x-request-id": requestId },
+      });
+    }
+    return NextResponse.json(proxyError("PROXY_ERROR", "The API could not be reached.", requestId), {
+      status: 502,
+      headers: { "x-request-id": requestId },
+    });
   }
 }

@@ -36,6 +36,9 @@ MAX_LOW_CONFIDENCE_FIELDS: int = 10
 
 _DOC_FIELDS = frozenset(ExtractedDocument.model_fields)
 _LINE_FIELDS = frozenset(LineItem.model_fields)
+# lists of field references on the document itself (a certificate's table cells and heat numbers): evidence points at one
+# with {"field": <list name>, "row": <index>}
+_ROW_LISTS = ("heat_numbers", "test_results")
 
 
 @dataclass
@@ -44,9 +47,10 @@ class _Scoped:
 
     document_id: str
     name: str
-    line_item: int | None
+    line_item: int | None      # the line, or, with ``collection``, the row of that list
     confidence: float
     used_by: set[str] = field(default_factory=set)
+    collection: str | None = None   # "test_results" / "heat_numbers" for a row of such a list; None otherwise
 
     @property
     def sort_key(self) -> tuple[float, int, str, int, str]:
@@ -54,43 +58,56 @@ class _Scoped:
 
     @property
     def label(self) -> str:
-        where = self.name if self.line_item is None else f"line_items[{self.line_item}].{self.name}"
+        if self.collection is not None:
+            where = f"{self.collection}[{self.line_item}]"
+        else:
+            where = self.name if self.line_item is None else f"line_items[{self.line_item}].{self.name}"
         return f"{self.document_id}.{where}"
 
 
-def _iter_fields(doc: ExtractedDocument) -> Iterator[tuple[str, int | None, FieldRef]]:
-    """Every FieldRef on a document: header fields (line item None) and the fields of each line item."""
+def _iter_fields(doc: ExtractedDocument) -> Iterator[tuple[str, int | None, FieldRef, str | None]]:
+    """Every FieldRef on a document as (name, index, ref, collection): header fields (index None), the rows of a
+    certificate's lists (collection = the list), and the fields of each line item (collection None)."""
     for name in _DOC_FIELDS:
         value = getattr(doc, name, None)
         if isinstance(value, FieldRef):
-            yield name, None, value
+            yield name, None, value, None
+    for collection in _ROW_LISTS:
+        for index, ref in enumerate(getattr(doc, collection, None) or []):
+            if isinstance(ref, FieldRef):
+                yield collection, index, ref, collection
     for index, item in enumerate(doc.line_items):
         for name in _LINE_FIELDS:
             value = getattr(item, name, None)
             if isinstance(value, FieldRef):
-                yield name, index, value
+                yield name, index, value, None
 
 
-def _resolve(doc: ExtractedDocument, name: Any, line_item: Any) -> list[tuple[int | None, FieldRef]]:
-    """The FieldRef(s) an evidence entry points at; empty when it cannot be resolved.
+def _resolve(doc: ExtractedDocument, name: Any, line_item: Any, row: Any = None) -> list[tuple[int | None, FieldRef, str | None]]:
+    """The FieldRef(s) an evidence entry points at as (index, ref, collection); empty when it cannot be resolved.
 
-    With ``line_item`` the field of that line; without it a header field, or (for a line-item field such as
-    hs_code_declared) the field of every line of the document.
+    With ``row`` and a list name ("test_results", "heat_numbers") the one row. With ``line_item`` the field of that line;
+    without it a header field, or (for a line-item field such as hs_code_declared) the field of every line of the document.
     """
     if not isinstance(name, str):
         return []
+    if name in _ROW_LISTS:
+        rows = getattr(doc, name, None) or []
+        if isinstance(row, bool) or not isinstance(row, int) or not 0 <= row < len(rows):
+            return []
+        return [(row, rows[row], name)] if isinstance(rows[row], FieldRef) else []
     if line_item is not None:
         if isinstance(line_item, bool) or not isinstance(line_item, int) or not 0 <= line_item < len(doc.line_items):
             return []
         value = getattr(doc.line_items[line_item], name, None) if name in _LINE_FIELDS else None
-        return [(line_item, value)] if isinstance(value, FieldRef) else []
+        return [(line_item, value, None)] if isinstance(value, FieldRef) else []
 
     header = getattr(doc, name, None) if name in _DOC_FIELDS else None
     if isinstance(header, FieldRef):
-        return [(None, header)]
+        return [(None, header, None)]
     if name in _LINE_FIELDS:
         return [
-            (index, value)
+            (index, value, None)
             for index, item in enumerate(doc.line_items)
             if isinstance(value := getattr(item, name, None), FieldRef)
         ]
@@ -109,12 +126,12 @@ def _cited_fields(docs: list[ExtractedDocument], checks: list[dict[str, Any]]) -
             doc = by_id.get(entry.get("doc"))
             if doc is None:
                 continue
-            for index, ref in _resolve(doc, entry.get("field"), entry.get("line_item")):
+            for index, ref, collection in _resolve(doc, entry.get("field"), entry.get("line_item"), entry.get("row")):
                 if ref.value is None:
                     continue
                 key = (doc.document_id, entry["field"], index)
                 scoped = cited.setdefault(
-                    key, _Scoped(doc.document_id, entry["field"], index, round(float(ref.confidence), 4))
+                    key, _Scoped(doc.document_id, entry["field"], index, round(float(ref.confidence), 4), collection=collection)
                 )
                 if check_id:
                     scoped.used_by.add(str(check_id))
@@ -174,9 +191,9 @@ async def route(ctx: dict[str, Any]) -> dict[str, Any]:
     math_passed = ctx.get("math_status", "COMPLIANT_FOR_SUBMISSION") == "COMPLIANT_FOR_SUBMISSION"
 
     populated = [
-        _Scoped(doc.document_id, name, index, round(float(ref.confidence), 4))
+        _Scoped(doc.document_id, name, index, round(float(ref.confidence), 4), collection=collection)
         for doc in extracted_docs
-        for name, index, ref in _iter_fields(doc)
+        for name, index, ref, collection in _iter_fields(doc)
         if ref.value is not None
     ]
     cited = _cited_fields(extracted_docs, ctx.get("checks", []))
@@ -192,7 +209,7 @@ async def route(ctx: dict[str, Any]) -> dict[str, Any]:
     for scoped in low_fields[:MAX_LOW_CONFIDENCE_FIELDS]:
         entry: dict[str, Any] = {"document_id": scoped.document_id, "field": scoped.name}
         if scoped.line_item is not None:
-            entry["line_item"] = scoped.line_item
+            entry["row" if scoped.collection else "line_item"] = scoped.line_item
         entry.update(confidence=scoped.confidence, used_by=sorted(scoped.used_by))
         low.append((scoped.sort_key, entry))
     for doc in extracted_docs:

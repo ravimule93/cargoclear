@@ -2,5 +2,27 @@ service_account: ${RUNTIME_SERVICE_ACCOUNT}  # supplied by bootstrap/deployment 
 roles:
   - roles/aiplatform.user       # Vertex AI multimodal extraction + ADK
   - roles/storage.objectAdmin   # GCS raw PDF and transform storage
-  - roles/bigquery.dataViewer   # BigQuery AHTN master tariff lookup
+  - roles/bigquery.dataViewer   # BigQuery AHTN master tariff lookup (read the table and the embedding model)
+  - roles/bigquery.jobUser      # start the VECTOR_SEARCH query job (dataViewer alone cannot run queries)
   - roles/datastore.user        # Firestore bundle, run, iteration and audit persistence
+
+# The UI service runs as its own identity. It has NO project-level role; its only permission is on the API service:
+ui_service_account: ${UI_SERVICE_ACCOUNT}  # supplied by bootstrap/deployment configuration
+ui_roles: []
+ui_resource_bindings:
+  - resource: cloud-run-service/cargoclear-api   # a PRIVATE service (deploy_api.sh: --no-allow-unauthenticated)
+    role: roles/run.invoker                       # granted by deploy_ui.sh, so the UI's proxy can call the API
+
+# Scaling beyond one instance (RUN_DISPATCH=cloudtasks): created by infra/tasks/setup_queue.sh and deploy_api.sh.
+runtime_resource_bindings:
+  - resource: cloud-tasks-queue/cargoclear-runs
+    role: roles/cloudtasks.enqueuer             # the API enqueues a task per run, on this queue only
+  - resource: service-account/cargoclear-tasks-sa
+    role: roles/iam.serviceAccountUser          # to attach the tasks identity's OIDC token to a task
+  - resource: kms-key/cargoclear/audit-head
+    role: roles/cloudkms.signerVerifier         # sign the audit chain head and read the public key: this one key only
+tasks_service_account: ${TASKS_SERVICE_ACCOUNT}
+tasks_roles: []                                 # no project role
+tasks_resource_bindings:
+  - resource: cloud-run-service/cargoclear-api
+    role: roles/run.invoker                     # so Cloud Tasks can call the worker endpoint; that endpoint accepts ONLY this identity

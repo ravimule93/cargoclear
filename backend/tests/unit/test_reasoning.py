@@ -249,3 +249,64 @@ async def test_first_iteration_is_an_initial_baseline() -> None:
 
     assert delta["kind"] == "INITIAL"
     assert "3 trade documents" in delta["narrative"]
+
+
+# --- plain words: no machine addresses, enum names or doubled full stops in the narrative a person reads -----------------
+
+
+def _applied(path: str, document_id: str = "d4", **over: Any) -> dict[str, Any]:
+    return {"correction_id": "cor-9", "status": "applied", "document_id": document_id, "path": path,
+            "original_value": "0.35", "original_unit": "%", "value": "0.28", "unit": "%", "reason": "certificate prints 0.28", **over}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("path", "words"),
+    [
+        ("test_results[20]", "certificate cell 21 of case_d_mtc_test_cert.pdf"),
+        ("heat_numbers[0]", "heat number 1 of case_d_mtc_test_cert.pdf"),
+        ("line_items[2].hs_code_declared", "line 3 · Hs code declared of case_d_mtc_test_cert.pdf"),
+        ("total_gross_weight_kg", "total gross weight of case_d_mtc_test_cert.pdf"),
+    ],
+)
+async def test_a_correction_is_narrated_with_a_label_and_a_file_name_not_a_machine_address(path: str, words: str) -> None:
+    ctx = _ctx(prev_missing=[], curr_missing=[], documents=[*BASE_DOCS, _doc("d4", "case_d_mtc_test_cert.pdf", "MILL_TEST_CERTIFICATE")],
+               extracted=[*BASE_EXTRACTED, _extracted("d4", "MILL_TEST_CERTIFICATE")], final_status="MISSING_EVIDENCE")
+    ctx["corrections"] = [_applied(path)]
+
+    narrative = (await reasoning.build(ctx))["reasoning_delta"]["narrative"]
+
+    assert f"Correction by the authorised agent to {words} (certificate prints 0.28): 0.35 % became 0.28 %." in narrative
+    assert "doc-" not in narrative and "test_results[" not in narrative and "d4" not in narrative
+
+
+@pytest.mark.asyncio
+async def test_an_undone_correction_is_narrated_the_same_way() -> None:
+    ctx = _ctx(prev_missing=[], curr_missing=[], documents=[*BASE_DOCS, _doc("d4", "case_d_mtc_test_cert.pdf", "MILL_TEST_CERTIFICATE")],
+               extracted=[*BASE_EXTRACTED, _extracted("d4", "MILL_TEST_CERTIFICATE")], final_status="MISSING_EVIDENCE")
+    ctx["previous_iteration"]["corrections"] = [_applied("test_results[20]")]
+    ctx["corrections"] = []
+
+    narrative = (await reasoning.build(ctx))["reasoning_delta"]["narrative"]
+
+    assert "A correction to certificate cell 21 of case_d_mtc_test_cert.pdf was undone: the value is back to 0.35 %." in narrative
+
+
+@pytest.mark.asyncio
+async def test_a_correction_to_an_unknown_document_still_reads_naturally() -> None:
+    ctx = _ctx(prev_missing=[], curr_missing=[], documents=BASE_DOCS, extracted=BASE_EXTRACTED, final_status="MISSING_EVIDENCE")
+    ctx["corrections"] = [_applied("test_results[0]", document_id="gone")]
+
+    assert "to certificate cell 1 (certificate prints 0.28)" in (await reasoning.build(ctx))["reasoning_delta"]["narrative"]
+
+
+def test_the_narrative_shows_statuses_as_words_and_does_not_double_a_full_stop() -> None:
+    narrative = reasoning._narrate([
+        {"field": "status", "from": "MATERIAL_CONTRADICTION", "to": "SPECIALIST_REVIEW_REQUIRED", "because": "1 correction(s) changed the inputs"},
+        {"field": "M-001", "from": "MATERIAL", "to": "PASS", "because": "Certified chemistry reads as non-alloy. Elements not reported: Zr."},
+    ])
+
+    assert "Compliance status updated from Material Contradiction to Specialist Review Required (1 correction(s) changed the inputs)." in narrative
+    assert "Check M-001 changed from MATERIAL to PASS: Certified chemistry reads as non-alloy. Elements not reported: Zr." in narrative
+    assert ".." not in narrative
+    assert reasoning._plain("not_a_status") == "not_a_status" and reasoning._plain("PASS") == "PASS" and reasoning._plain("Mixed Case") == "Mixed Case"

@@ -1,3 +1,4 @@
+import { attributeLabel, plainValue } from "@/lib/delta-labels";
 import { ReasoningDelta as ReasoningDeltaType, type ReasoningDeltaChange } from "@/lib/types";
 
 interface ReasoningDeltaProps {
@@ -43,9 +44,11 @@ export function ReasoningDelta({ delta }: ReasoningDeltaProps) {
               {delta.changes.map((change: ReasoningDeltaChange, idx: number) => (
 
                 <tr key={idx} className="border-b border-[var(--cc-border)] hover:bg-[var(--cc-surface-2)]">
-                  <td className="py-1.5 px-2 font-mono text-[var(--cc-text)]">{change.field || ""}</td>
-                  <td className="py-1.5 px-2 text-[var(--cc-err)] font-semibold">{String(change.from ?? "")}</td>
-                  <td className="py-1.5 px-2 text-[var(--cc-ok)] font-semibold">{String(change.to ?? "")}</td>
+                  <td className="py-1.5 px-2 text-[var(--cc-text)]" title={change.field || undefined}>
+                    {attributeLabel(change.field || "")}
+                  </td>
+                  <td className="py-1.5 px-2 text-[var(--cc-err)] font-semibold">{plainValue(change.from)}</td>
+                  <td className="py-1.5 px-2 text-[var(--cc-ok)] font-semibold">{plainValue(change.to)}</td>
                   <td className="py-1.5 px-2 text-[var(--cc-text-muted)]">{String(change.because ?? "")}</td>
                 </tr>
               ))}

@@ -47,7 +47,9 @@ def test_every_weight_is_a_quantity_ref_in_kgs(filename: str) -> None:
         assert ref.unit == "KGS", f"{filename}:{path} unit={ref.unit!r}"
 
 
-NUMERIC_NAMES = {"invoice_value", "package_count", "unit_price", "total_value"}
+NUMERIC_NAMES = {
+    "invoice_value", "package_count", "unit_price", "total_value", "freight_amount", "insurance_amount",
+}
 
 
 @pytest.mark.parametrize("filename", HERO_FILES)
@@ -61,7 +63,7 @@ def test_non_weight_fields_are_text_refs_or_numeric_field_refs_never_quantity_re
 
 @pytest.mark.parametrize("filename", HERO_FILES)
 def test_nothing_but_the_units_changed(filename: str) -> None:
-    """Same doc_type and, for every field, the same value, confidence and bbox as before the unit layer."""
+    """Same doc_type and, for every field the snapshot records, the same value, confidence and bbox as before the unit layer."""
     doc = _generate_fixture_for_file("doc-x", filename)
     expected = SNAPSHOT[filename]
     assert doc.doc_type == expected["doc_type"]
@@ -74,7 +76,10 @@ def test_nothing_but_the_units_changed(filename: str) -> None:
         ]
         for path, ref in fields_of(doc).items()
     }
-    assert actual == expected["fields"]
+    # fields added after the snapshot (terms of sale, origin, specification, ...) are allowed; every field it
+    # records must be exactly as it was
+    unchanged = {path: actual.get(path) for path in expected["fields"]}
+    assert unchanged == expected["fields"]
 
 
 def test_the_packing_list_declares_net_tare_and_gross_so_w002_applies() -> None:
