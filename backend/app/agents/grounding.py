@@ -42,12 +42,15 @@ Core trade document completeness: COMMERCIAL_INVOICE, BILL_OF_LADING and PACKING
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import Any
 
 import structlog
 
 from app.agents.tools.bq_tariff import AMBIGUITY_THRESHOLD, lookup_tariff_with_source
+from app.core.concurrency import bounded, gather_in_order
+from app.core.config import settings
 from app.domain.hs import (
     CERTIFICATE_DOC_TYPES,
     HS_FULL_DIGITS,
@@ -141,10 +144,38 @@ def _text(ref: FieldRef | None) -> str:
     return hs_text(ref.value).strip() if ref is not None and ref.value is not None else ""
 
 
+Lookups = dict[str, tuple[list[dict[str, Any]], str]]
+"""description -> (tariff candidates, where they came from), filled by :func:`_lookup_all` before any line is judged."""
+
+
+async def _lookup_all(descriptions: list[str], destination: str) -> Lookups:
+    """Look every DISTINCT description up once, concurrently, off the event loop.
+
+    A lookup is a blocking BigQuery job (or the offline seed), so each runs in a worker thread: the heartbeat, the SSE
+    streams and every other request keep being served while the stage waits. At most TARIFF_LOOKUP_CONCURRENCY run at
+    once. ``lookup_tariff_with_source`` is resolved at call time (tests replace it). A failure cancels the others and
+    is raised as itself.
+    """
+    unique = list(dict.fromkeys(descriptions))
+    semaphore = asyncio.Semaphore(max(1, settings.tariff_lookup_concurrency))
+
+    def lookup_of(description: str):
+        async def work() -> tuple[list[dict[str, Any]], str]:
+            hits, source = await asyncio.to_thread(
+                lookup_tariff_with_source, description, destination_country=destination
+            )
+            return hits, source
+
+        return bounded(semaphore, work)
+
+    results = await gather_in_order([lookup_of(description) for description in unique])
+    return dict(zip(unique, results, strict=True))
+
+
 def _ground_line(
     doc: ExtractedDocument,
     index: int,
-    destination: str,
+    lookups: Lookups,
     lookup_sources: set[str],
 ) -> _Line | None:
     item = doc.line_items[index]
@@ -155,7 +186,8 @@ def _ground_line(
 
     hits: list[dict[str, Any]] = []
     if description:
-        hits, source = lookup_tariff_with_source(description, destination_country=destination)
+        found, source = lookups[description]
+        hits = [dict(candidate) for candidate in found]  # each line gets its own copies of the shared answer
         lookup_sources.add(source)
 
     top_hit = hits[0] if hits else None
@@ -310,60 +342,67 @@ async def run_grounding_agent(ctx: dict[str, Any]) -> dict[str, Any]:
                 "rule_set": RULE_SET_DEMO,
             })
 
-    for doc in extracted:
-        if doc.doc_type in NON_COMMODITY_DOC_TYPES:
+    targets = [
+        (doc, index)
+        for doc in extracted
+        if doc.doc_type not in NON_COMMODITY_DOC_TYPES
+        for index in range(len(doc.line_items))
+    ]
+    # Step 1 (I/O): one lookup per distinct description, concurrently. Step 2 (pure): judge the lines in input order.
+    descriptions = [text for doc, index in targets if (text := _text(doc.line_items[index].description))]
+    lookups = await _lookup_all(descriptions, destination)
+
+    for doc, index in targets:
+        line = _ground_line(doc, index, lookups, lookup_sources)
+        if line is None:
             continue
-        for index in range(len(doc.line_items)):
-            line = _ground_line(doc, index, destination, lookup_sources)
-            if line is None:
-                continue
-            lines.append(line)
+        lines.append(line)
 
-            governing = line.governing
-            required_docs: list[str] = []
-            rule_set = (governing.get("rule_set") or RULE_SET_DEMO) if governing else None
-            regulation_ref = (governing.get("regulation_ref") or REGULATION_REF_DEMO) if governing else None
+        governing = line.governing
+        required_docs: list[str] = []
+        rule_set = (governing.get("rule_set") or RULE_SET_DEMO) if governing else None
+        regulation_ref = (governing.get("regulation_ref") or REGULATION_REF_DEMO) if governing else None
 
-            # Required documents come only from the GOVERNING row, only for an exact 8-digit match, and never
-            # when the description contradicts the declared code.
-            if governing is not None and line.derives_requirements:
-                required_docs = list(governing.get("required_documents", []))
-                for required in required_docs:
-                    required_doc_types.add(required)
-                    item_id = f"ME-{required}"
-                    if required in present_doc_types or any(m["id"] == item_id for m in missing_items):
-                        continue
-                    label = required.replace("_", " ").title()
-                    missing_items.append({
-                        "id": item_id,
-                        "document_label": label,
-                        "hs_code": str(governing["hs_code"]),
-                        "reason": (
-                            f"Required by the {rule_set} rule set for HS {governing['hs_code']} "
-                            f"({str(governing['description'])[:_DESCRIPTION_CHARS]}); no {label} is in the bundle."
-                        ),
-                        "regulation_ref": regulation_ref,
-                        "rule_set": rule_set,
-                    })
+        # Required documents come only from the GOVERNING row, only for an exact 8-digit match, and never
+        # when the description contradicts the declared code.
+        if governing is not None and line.derives_requirements:
+            required_docs = list(governing.get("required_documents", []))
+            for required in required_docs:
+                required_doc_types.add(required)
+                item_id = f"ME-{required}"
+                if required in present_doc_types or any(m["id"] == item_id for m in missing_items):
+                    continue
+                label = required.replace("_", " ").title()
+                missing_items.append({
+                    "id": item_id,
+                    "document_label": label,
+                    "hs_code": str(governing["hs_code"]),
+                    "reason": (
+                        f"Required by the {rule_set} rule set for HS {governing['hs_code']} "
+                        f"({str(governing['description'])[:_DESCRIPTION_CHARS]}); no {label} is in the bundle."
+                    ),
+                    "regulation_ref": regulation_ref,
+                    "rule_set": rule_set,
+                })
 
-            judged = line.closest
-            findings.append(
-                GroundingFinding(
-                    document_id=doc.document_id,
-                    declared_hs=line.declared or None,
-                    top_candidate_hs=str(judged["hs_code"]) if judged else None,
-                    top_candidate_description=str(judged["description"]) if judged else None,
-                    distance=_distance(judged) if judged else (1.0 if line.looked_up else None),
-                    ambiguous=line.ambiguous,
-                    hs_mismatch=line.hs_mismatch,
-                    required_documents=required_docs,
-                    hs_match_level=line.level,
-                    governing_hs=str(governing["hs_code"]) if governing else None,
-                    rule_set=rule_set,
-                    regulation_ref=regulation_ref,
-                    better_match_hs=str(line.better_match["hs_code"]) if line.better_match else None,
-                )
+        judged = line.closest
+        findings.append(
+            GroundingFinding(
+                document_id=doc.document_id,
+                declared_hs=line.declared or None,
+                top_candidate_hs=str(judged["hs_code"]) if judged else None,
+                top_candidate_description=str(judged["description"]) if judged else None,
+                distance=_distance(judged) if judged else (1.0 if line.looked_up else None),
+                ambiguous=line.ambiguous,
+                hs_mismatch=line.hs_mismatch,
+                required_documents=required_docs,
+                hs_match_level=line.level,
+                governing_hs=str(governing["hs_code"]) if governing else None,
+                rule_set=rule_set,
+                regulation_ref=regulation_ref,
+                better_match_hs=str(line.better_match["hs_code"]) if line.better_match else None,
             )
+        )
 
     ctx["grounding"] = [f.model_dump() for f in findings]
     ctx["required_documents"] = sorted(required_doc_types)

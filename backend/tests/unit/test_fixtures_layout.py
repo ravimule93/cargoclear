@@ -14,12 +14,19 @@ import pytest
 from app.agents.extraction import _generate_fixture_for_file
 from app.domain.schemas import BBox, ExtractedDocument, FieldRef
 
-HERO_FILENAMES = [
+CASE_C_FILENAMES = [
     "commercial_invoice.pdf",
     "bill_of_lading.pdf",
     "packing_list.pdf",
     "mtc_pipe_test_cert.pdf",
 ]
+CASE_D_FILENAMES = [
+    "case_d_commercial_invoice.pdf",
+    "case_d_bill_of_lading.pdf",
+    "case_d_packing_list.pdf",
+    "case_d_mtc_test_cert.pdf",
+]
+HERO_FILENAMES = CASE_C_FILENAMES + CASE_D_FILENAMES
 
 
 def collect_boxes(doc: ExtractedDocument) -> list[tuple[str, BBox]]:
@@ -29,6 +36,12 @@ def collect_boxes(doc: ExtractedDocument) -> list[tuple[str, BBox]]:
         value = getattr(doc, name)
         if isinstance(value, FieldRef) and value.bbox is not None:
             boxes.append((name, value.bbox))
+    for idx, heat in enumerate(doc.heat_numbers):
+        if heat.bbox is not None:
+            boxes.append((f"heat_numbers[{idx}]", heat.bbox))
+    for idx, result in enumerate(doc.test_results):
+        if result.bbox is not None:
+            boxes.append((f"test_results[{idx}]({result.heat_number}.{result.parameter})", result.bbox))
     for idx, item in enumerate(doc.line_items):
         for name in type(item).model_fields:
             value = getattr(item, name)

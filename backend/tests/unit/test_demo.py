@@ -168,3 +168,67 @@ async def test_the_mtc_download_has_the_safe_download_headers() -> None:
     assert resp.headers["content-disposition"] == "inline; filename=\"mtc_pipe_test_cert.pdf\"; filename*=UTF-8''mtc_pipe_test_cert.pdf"
     assert resp.headers["cache-control"] == "private, max-age=3600"
     assert resp.headers["x-content-type-options"] == "nosniff"
+
+
+# ---------------------------------------------------------------------------
+# Case D: the India import (POST /demo/case-d)
+# ---------------------------------------------------------------------------
+
+CASE_D_DIR = CASE_C_DIR.parent / "case_d"
+CASE_D_FILENAMES = {
+    "case_d_commercial_invoice.pdf", "case_d_bill_of_lading.pdf", "case_d_packing_list.pdf", "case_d_mtc_test_cert.pdf",
+}
+
+
+@pytest.mark.asyncio
+async def test_case_d_creates_an_india_bundle_with_all_four_distinct_documents() -> None:
+    async with _client() as client:
+        resp = await client.post("/api/v1/demo/case-d")
+
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["reference"] == "CASE-D-7304-IN-DEMO" and body["destination_country"] == "IN"
+        assert body["current_iteration"] == 0
+        assert {d["filename"] for d in body["documents"]} == CASE_D_FILENAMES
+        assert len({d["document_id"] for d in body["documents"]}) == 4
+        file_resp = await client.get(f"/api/v1/bundles/{body['id']}/documents/{body['documents'][0]['document_id']}/file")
+        assert file_resp.status_code == 200 and file_resp.content.startswith(b"%PDF")
+
+
+@pytest.mark.asyncio
+async def test_case_d_records_one_upload_event_per_document() -> None:
+    async with _client() as client:
+        bundle_id = (await client.post("/api/v1/demo/case-d")).json()["id"]
+        events = (await client.get(f"/api/v1/bundles/{bundle_id}/audit")).json()
+
+    assert [e["event_type"] for e in events["events"]] == ["BUNDLE_CREATED"] + ["DOCUMENT_UPLOADED"] * 4
+    assert events["verified"] is True
+
+
+@pytest.mark.asyncio
+async def test_case_d_is_demo_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "app_mode", "live")
+
+    async with _client() as client:
+        resp = await client.post("/api/v1/demo/case-d")
+
+    assert resp.status_code == 404 and resp.json()["code"] == "NOT_FOUND"
+
+
+@pytest.mark.asyncio
+async def test_a_missing_case_d_fixture_names_its_own_override_variable(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("CASE_D_FIXTURE_DIR", str(tmp_path))  # an empty directory
+
+    async with _client() as client:
+        resp = await client.post("/api/v1/demo/case-d")
+
+    assert resp.status_code == 500 and "not installed" in resp.json()["message"]
+    assert demo._fixture_dir("case_d") == tmp_path and demo._fixture_dir("case_c") != tmp_path
+
+
+def test_the_case_d_directory_sits_next_to_case_c(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("CASE_D_FIXTURE_DIR", raising=False)
+
+    assert demo._fixture_dir("case_d") == CASE_D_DIR
+    for name in CASE_D_FILENAMES:
+        assert (demo._PACKAGED_FIXTURE_DIR.parent / "case_d" / name).read_bytes() == (CASE_D_DIR / name).read_bytes()

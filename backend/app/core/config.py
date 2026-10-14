@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     bq_dataset: str = Field(default="ahtn", alias="BQ_DATASET")
     bq_table_tariff: str = Field(default="master_tariff", alias="BQ_TABLE_TARIFF")
     bq_model_embedding: str = Field(default="embedding_model", alias="BQ_MODEL_EMBEDDING")
+    # One tariff lookup is a BigQuery job (embed the description, then VECTOR_SEARCH) that runs in a worker thread:
+    # the wait for it is bounded, and at most TARIFF_LOOKUP_CONCURRENCY run at once for one bundle.
+    bq_query_timeout_seconds: float = Field(default=30, gt=0, alias="BQ_QUERY_TIMEOUT_SECONDS")
+    tariff_lookup_concurrency: int = Field(default=4, ge=1, alias="TARIFF_LOOKUP_CONCURRENCY")
 
     # Gemini models
     gemini_live_model: str = Field(default="gemini-2.5-flash", alias="GEMINI_LIVE_MODEL")
@@ -54,11 +58,28 @@ class Settings(BaseSettings):
     gemini_max_request_mb: float = Field(default=18, gt=0, alias="GEMINI_MAX_REQUEST_MB")
     gemini_max_pages: int = Field(default=30, ge=1, alias="GEMINI_MAX_PAGES")
 
-    # Run lifecycle (services/orchestrator.py): the API runs as ONE instance; a run proves it is alive by touching
-    # its run record every RUN_HEARTBEAT_SECONDS, and a RUNNING record untouched for RUN_STALE_AFTER_SECONDS is dead.
+    # Run lifecycle (services/orchestrator.py): a run proves it is alive by touching its run record and extending its lease
+    # every RUN_HEARTBEAT_SECONDS, and a run whose lease (or RUNNING record) has been untouched for RUN_STALE_AFTER_SECONDS is dead.
     run_heartbeat_seconds: float = Field(default=10, gt=0, alias="RUN_HEARTBEAT_SECONDS")
     run_stale_after_seconds: float = Field(default=90, gt=0, alias="RUN_STALE_AFTER_SECONDS")
     run_timeout_seconds: float = Field(default=1200, gt=0, alias="RUN_TIMEOUT_SECONDS")
+    # Who may run an assessment is a LEASE per bundle (repo/leases.py), so several API instances can share the work.
+    # A run that is queued but not picked up by a worker within RUN_QUEUE_WAIT_SECONDS is given up (reaped as interrupted).
+    run_queue_wait_seconds: float = Field(default=900, gt=0, alias="RUN_QUEUE_WAIT_SECONDS")
+    # How a run reaches a worker. "local": this process runs it as a background task right after the 202 (demo, tests, a
+    # single always-on instance). "cloudtasks": the API enqueues a Cloud Task and a worker request executes it, so scale-in
+    # cannot kill a run and any instance can take it (services/run_queue.py; docs/GCP_VERIFICATION.md section 9).
+    run_dispatch: Literal["local", "cloudtasks"] = Field(default="local", alias="RUN_DISPATCH")
+    tasks_queue: str = Field(default="cargoclear-runs", alias="TASKS_QUEUE")
+    tasks_location: str | None = Field(default=None, alias="TASKS_LOCATION")  # default: REGION
+    # The identity Cloud Tasks signs its OIDC token as: it needs roles/run.invoker on this service, and it is the ONLY
+    # caller the internal worker endpoint accepts (INTERNAL_CALLER_EMAIL, default the same).
+    tasks_service_account: str | None = Field(default=None, alias="TASKS_SERVICE_ACCOUNT")
+    internal_caller_email: str | None = Field(default=None, alias="INTERNAL_CALLER_EMAIL")
+    # Public (run.app) URL of THIS service: the task's target and the audience of its OIDC token
+    api_url: str | None = Field(default=None, alias="API_URL")
+    # How long Cloud Tasks waits for one worker request: must exceed RUN_TIMEOUT_SECONDS (Cloud Tasks allows up to 1800)
+    tasks_dispatch_deadline_seconds: float = Field(default=1500, gt=0, le=1800, alias="TASKS_DISPATCH_DEADLINE_SECONDS")
 
     # SSE stream (api/v1/stream.py): poll fast while a run is active, slowly otherwise
     stream_poll_active_seconds: float = Field(default=1.0, gt=0, alias="STREAM_POLL_ACTIVE_SECONDS")
@@ -69,14 +90,23 @@ class Settings(BaseSettings):
     max_json_body_kb: float = Field(default=256, gt=0, alias="MAX_JSON_BODY_KB")
     max_documents_per_bundle: int = Field(default=20, ge=1, alias="MAX_DOCUMENTS_PER_BUNDLE")
     max_reference_chars: int = Field(default=200, ge=1, alias="MAX_REFERENCE_CHARS")
+    # Corrections by the authorised agent (audit entries) one bundle may hold; a bound on the audit chain, not a workflow limit
+    max_corrections_per_bundle: int = Field(default=500, ge=1, alias="MAX_CORRECTIONS_PER_BUNDLE")
 
-    # Abuse and cost control. ONE API instance, so these are in-process; 0 switches a limit off.
+    # Abuse and cost control; 0 switches a limit off. The per-minute limits are counted in this process ("memory": demo and one
+    # instance) or in Firestore ("firestore": shared by every instance). MAX_CONCURRENT_RUNS caps the runs of THIS process; with
+    # RUN_DISPATCH=cloudtasks the cap for the whole service is the queue's max-concurrent-dispatches (infra/tasks/setup_queue.sh).
     rate_limit_writes_per_minute: int = Field(default=60, ge=0, alias="RATE_LIMIT_WRITES_PER_MINUTE")
     rate_limit_runs_per_minute: int = Field(default=10, ge=0, alias="RATE_LIMIT_RUNS_PER_MINUTE")
+    rate_limit_backend: Literal["memory", "firestore"] = Field(default="memory", alias="RATE_LIMIT_BACKEND")
     max_concurrent_runs: int = Field(default=4, ge=0, alias="MAX_CONCURRENT_RUNS")
     # Key the rate limits by the first valid IP of X-Forwarded-For instead of the socket peer. Only turn this on behind
     # a proxy that overwrites the header: the first entry is whatever the client sent.
     trust_forwarded_for: bool = Field(default=False, alias="TRUST_FORWARDED_FOR")
+    # Name of a request header that carries the END USER's IP, set by a trusted caller (the UI's server-side proxy
+    # when the API is private and only that proxy can reach it). Only set it when nobody else can send requests:
+    # the header is taken as written. Unset = the socket peer (or X-Forwarded-For, see above).
+    client_ip_header: str | None = Field(default=None, alias="CLIENT_IP_HEADER")
 
     # /docs, /redoc and /openapi.json. None = on in demo mode, off in live mode.
     enable_api_docs: bool | None = Field(default=None, alias="ENABLE_API_DOCS")
@@ -84,6 +114,23 @@ class Settings(BaseSettings):
     # How the stage loop is driven (services/engines.py): the plain loop, or the optional google-adk Workflow.
     # Anything else is a startup error. "adk" needs the separate ADK lock (requirements-adk.txt).
     pipeline_engine: Literal["native", "adk"] = Field(default="native", alias="PIPELINE_ENGINE")
+
+    # Preprocessing (services/preprocess.py). PAGE_IMAGE_MODE is what the model is shown: "bw" (1-bit, the original input) or
+    # "gray" (8-bit grayscale); the A/B between them is scripts/live_smoke_extraction.py --page-mode. PREPROCESS_DESKEW straightens
+    # a skewed scan (a measured skew between the min and max below) and records the reversible transform, so evidence boxes still
+    # land on the original page; off by default until the A/B has shown it helps on the real model. PERSIST_PROCESSED_PAGES keeps
+    # the page images the model was shown (GET /documents/{id}/pages/{n}): "what did it see" is answerable afterwards.
+    page_image_mode: Literal["bw", "gray"] = Field(default="bw", alias="PAGE_IMAGE_MODE")
+    preprocess_deskew: bool = Field(default=False, alias="PREPROCESS_DESKEW")
+    deskew_min_degrees: float = Field(default=0.3, ge=0, alias="DESKEW_MIN_DEGREES")
+    deskew_max_degrees: float = Field(default=10.0, gt=0, le=45, alias="DESKEW_MAX_DEGREES")
+    persist_processed_pages: bool = Field(default=True, alias="PERSIST_PROCESSED_PAGES")
+
+    # Audit signing (services/signing.py): after each completed assessment the head of the audit chain is signed with this Cloud
+    # KMS asymmetric key VERSION (an EC_SIGN_P256_SHA256 key; the full resource name .../cryptoKeyVersions/N). Unset: demo mode
+    # signs with a throwaway local key (labelled as such), live mode does not sign and says so.
+    signing_key_version: str | None = Field(default=None, alias="SIGNING_KEY_VERSION")
+    audit_signing: bool = Field(default=True, alias="AUDIT_SIGNING")  # false switches signing off altogether
 
     # CORS
     allowed_origins: str = Field(

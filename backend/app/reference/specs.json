@@ -1,0 +1,153 @@
+{
+  "rule_set": "demo-curated",
+  "regulation_ref": "Chemical and mechanical limits of the named product standards as encoded for this prototype (heat analysis, seamless pipe); the standards are paywalled and the values are a reviewer's checklist, not an official source",
+  "verification": {
+    "status": "unverified",
+    "reviewer": null,
+    "date": null
+  },
+  "specs": [
+    {
+      "id": "API5L-PSL2-B",
+      "title": "API 5L PSL2 Grade B (seamless)",
+      "match_all": [
+        "API\\s*5\\s*L",
+        "PSL\\s*2",
+        "\\b(GR\\.?|GRADE)\\s*B\\b"
+      ],
+      "element_max_pct": {
+        "C": 0.24,
+        "Si": 0.4,
+        "Mn": 1.2,
+        "P": 0.025,
+        "S": 0.015
+      },
+      "element_min_pct": {},
+      "ce_iiw_max": 0.43,
+      "pcm_max": 0.25,
+      "pcm_applies_when_c_at_most": 0.12,
+      "mechanical": {
+        "YS": {
+          "min": 245,
+          "max": 450,
+          "unit": "MPa"
+        },
+        "UTS": {
+          "min": 415,
+          "max": 760,
+          "unit": "MPa"
+        }
+      },
+      "assumes": [
+        "the carbon-equivalent limit is the one for wall thickness up to 25.0 mm (thickness is not extracted)"
+      ]
+    },
+    {
+      "id": "API5L-PSL1-B",
+      "title": "API 5L PSL1 Grade B (seamless)",
+      "match_all": [
+        "API\\s*5\\s*L",
+        "PSL\\s*1",
+        "\\b(GR\\.?|GRADE)\\s*B\\b"
+      ],
+      "element_max_pct": {
+        "C": 0.28,
+        "Mn": 1.2,
+        "P": 0.03,
+        "S": 0.03
+      },
+      "element_min_pct": {},
+      "ce_iiw_max": null,
+      "pcm_max": null,
+      "pcm_applies_when_c_at_most": null,
+      "mechanical": {
+        "YS": {
+          "min": 241,
+          "max": null,
+          "unit": "MPa"
+        },
+        "UTS": {
+          "min": 414,
+          "max": null,
+          "unit": "MPa"
+        }
+      },
+      "assumes": []
+    },
+    {
+      "id": "ASTM-A106-B",
+      "title": "ASTM A106 Grade B (seamless carbon steel pipe for high-temperature service)",
+      "match_all": [
+        "A\\s*106",
+        "\\b(GR\\.?|GRADE)?\\s*B\\b"
+      ],
+      "element_max_pct": {
+        "C": 0.3,
+        "P": 0.035,
+        "S": 0.035,
+        "Cr": 0.4,
+        "Cu": 0.4,
+        "Mo": 0.15,
+        "Ni": 0.4,
+        "V": 0.08,
+        "Mn": 1.06
+      },
+      "element_min_pct": {
+        "Mn": 0.29,
+        "Si": 0.1
+      },
+      "ce_iiw_max": null,
+      "pcm_max": null,
+      "pcm_applies_when_c_at_most": null,
+      "mechanical": {
+        "YS": {
+          "min": 240,
+          "max": null,
+          "unit": "MPa"
+        },
+        "UTS": {
+          "min": 415,
+          "max": null,
+          "unit": "MPa"
+        }
+      },
+      "assumes": []
+    },
+    {
+      "id": "ASTM-A53-B",
+      "title": "ASTM A53 Grade B (seamless)",
+      "match_all": [
+        "A\\s*53",
+        "\\b(GR\\.?|GRADE)?\\s*B\\b"
+      ],
+      "element_max_pct": {
+        "C": 0.3,
+        "Mn": 1.2,
+        "P": 0.05,
+        "S": 0.045,
+        "Cr": 0.4,
+        "Cu": 0.4,
+        "Mo": 0.15,
+        "Ni": 0.4,
+        "V": 0.08
+      },
+      "element_min_pct": {},
+      "ce_iiw_max": null,
+      "pcm_max": null,
+      "pcm_applies_when_c_at_most": null,
+      "mechanical": {
+        "YS": {
+          "min": 240,
+          "max": null,
+          "unit": "MPa"
+        },
+        "UTS": {
+          "min": 415,
+          "max": null,
+          "unit": "MPa"
+        }
+      },
+      "assumes": []
+    }
+  ]
+}

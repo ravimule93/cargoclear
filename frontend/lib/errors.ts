@@ -24,10 +24,13 @@ export function isNotFound(err: unknown): boolean {
   return isErrorEnvelope(err) && err.code === "NOT_FOUND";
 }
 
-/** User-facing text for run-control (analyze / reassess) failures. */
+/** User-facing text for run-control (analyze / reassess / recompute) failures. */
 export function runErrorMessage(err: unknown): string {
   const envelope = toErrorEnvelope(err);
-  if (envelope.code === "CONFLICT") return "An analysis is already running for this bundle.";
+  if (envelope.code === "CONFLICT") {
+    // a 409 is also how a recompute says "nothing to reuse" / "documents changed": show that, not "already running"
+    return /already in progress/i.test(envelope.message) ? "An analysis is already running for this bundle." : envelope.message;
+  }
   if (envelope.code === "VALIDATION_ERROR") return "Upload at least one document before analyzing.";
   return envelope.message;
 }

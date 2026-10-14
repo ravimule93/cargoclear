@@ -22,8 +22,6 @@ export interface BundleStream {
   error: string | null;
 }
 
-/** Delay before re-opening a stream the browser gave up on (readyState CLOSED). */
-const REOPEN_DELAY_MS = 3000;
 
 function parseJson(raw: unknown): unknown {
   if (typeof raw !== "string") return null;
@@ -48,7 +46,7 @@ function isIterationPayload(value: unknown): value is AssessmentIteration {
 }
 
 /**
- * Subscribes to GET {NEXT_PUBLIC_API_BASE}/api/v1/bundles/{id}/stream.
+ * Subscribes to the same-origin /api/proxy/bundles/{id}/stream (the Next.js server proxies it to the API).
  *
  * The backend sends NAMED SSE events, so the event name decides how a payload is read:
  *   `status`    -> run progress (payload carries kind:"status")
@@ -76,6 +74,7 @@ export function useBundleStream(bundleId: string | null): BundleStream {
     let disposed = false;
     let source: EventSource | null = null;
     let reopenTimer: ReturnType<typeof setTimeout> | undefined;
+    let retryAttempt = 0;
 
     const connect = () => {
       if (disposed) return;
@@ -85,6 +84,7 @@ export function useBundleStream(bundleId: string | null): BundleStream {
       es.addEventListener("open", () => {
         if (disposed) return;
         setConnection("open");
+        retryAttempt = 0;
       });
 
       es.addEventListener("status", (event) => {
@@ -120,9 +120,11 @@ export function useBundleStream(bundleId: string | null): BundleStream {
         }
         setConnection("reconnecting");
         if (es.readyState === EventSource.CLOSED) {
-          // The browser will not retry a closed stream by itself; do it ourselves.
+          // The browser will not retry a closed stream by itself; retry with exponential backoff.
           es.close();
-          reopenTimer = setTimeout(connect, REOPEN_DELAY_MS);
+          const delay = Math.min(30000, 3000 * Math.pow(1.5, retryAttempt));
+          retryAttempt++;
+          reopenTimer = setTimeout(connect, delay);
         }
       });
     };

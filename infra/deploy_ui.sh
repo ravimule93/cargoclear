@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
 # =============================================================================
 # CargoClear UI Deployment Script (Cloud Run)
+#
+# The UI is the only public service. Its server-side proxy (frontend/app/api/proxy)
+# calls the PRIVATE API with a Google ID token of the identity this service runs as,
+# so that identity (UI_SERVICE_ACCOUNT) is granted roles/run.invoker on the API here.
+# It holds no other role: it cannot touch Firestore, Storage, BigQuery or Vertex AI.
+#
+# The deployer needs iam.serviceAccounts.actAs on UI_SERVICE_ACCOUNT and
+# run.services.setIamPolicy on cargoclear-api.
 # =============================================================================
 
 set -euo pipefail
 
 PROJECT_ID="${PROJECT_ID:?PROJECT_ID must identify the target GCP project}"
 REGION="${REGION:-asia-south1}"
+UI_SERVICE_ACCOUNT="${UI_SERVICE_ACCOUNT:?UI_SERVICE_ACCOUNT must be the dedicated Cloud Run identity of the UI (it needs roles/run.invoker on the API, nothing else)}"
 
 echo "Deploying cargoclear-ui to Google Cloud Run in ${REGION} (project: ${PROJECT_ID})..."
 
@@ -18,6 +27,14 @@ if [[ -z "${API_URL}" ]]; then
   exit 1
 fi
 
+# The API is private: only this identity may invoke it. Idempotent.
+gcloud run services add-iam-policy-binding cargoclear-api \
+  --region "${REGION}" \
+  --project "${PROJECT_ID}" \
+  --member "serviceAccount:${UI_SERVICE_ACCOUNT}" \
+  --role "roles/run.invoker" \
+  --quiet
+
 gcloud run deploy cargoclear-ui \
   --source ./frontend \
   --project "${PROJECT_ID}" \
@@ -25,8 +42,12 @@ gcloud run deploy cargoclear-ui \
   --port 8080 \
   --timeout 300 \
   --concurrency 80 \
+  --service-account "${UI_SERVICE_ACCOUNT}" \
   --allow-unauthenticated \
   --quiet \
-  --set-env-vars API_BASE="${API_URL}"
+  --set-env-vars \
+API_BASE="${API_URL}",\
+API_AUTH_MODE="google-id-token",\
+TRUSTED_PROXY_HOPS="1"
 
 echo "cargoclear-ui deployment completed successfully."

@@ -138,7 +138,7 @@ function SignInContent() {
             CargoClear Commercial Identity
           </h1>
           <p className="text-xs text-[var(--cc-text-muted)]">
-            Secure Single Sign-On, User Registration & Audit Ledger for Customs Clearance
+            Secure Single Sign-On & User Registration for Customs Clearance
           </p>
         </header>
 
@@ -465,7 +465,7 @@ function SignInContent() {
                 {signUpLoading ? (
                   <>
                     <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    <span>Creating account & recording audit...</span>
+                    <span>Creating account...</span>
                   </>
                 ) : (
                   <span>Create Account & Register</span>
@@ -474,17 +474,6 @@ function SignInContent() {
             </form>
           </div>
         )}
-
-        {/* Security & Audit Assurance */}
-        <div className="rounded-lg bg-[var(--cc-surface-2)] p-2.5 border border-[var(--cc-border)] text-[10px] text-[var(--cc-text-muted)] flex items-start gap-2">
-          <span className="text-sm">🛡️</span>
-          <div>
-            <span className="font-semibold text-[var(--cc-text)]">Tamper-Evident Audit Tracking</span>
-            <p className="mt-0.5">
-              All registrations and sign-in activities are recorded to the Firestore immutable audit ledger with timestamps and cryptographic identity tracking.
-            </p>
-          </div>
-        </div>
 
         <div className="text-center pt-2">
           <Link

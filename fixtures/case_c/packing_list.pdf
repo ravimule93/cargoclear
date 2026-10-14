@@ -43,7 +43,7 @@ endobj
 endobj
 8 0 obj
 <<
-/Length 2857
+/Length 3531
 >>
 stream
 1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
@@ -71,6 +71,15 @@ BT 1 0 0 1 357.1654 389.0693 Tm (Gross Weight \(kg\)) Tj T* ET
 .45 .45 .45 rg
 BT /F1 6 Tf 7.2 TL ET
 BT 1 0 0 1 357.1654 355.3937 Tm (Tare \(kg\)) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 59.52756 187.0157 Tm (Country of Origin) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 59.52756 237.5291 Tm (Heat No.) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 190.4882 237.5291 Tm (Heat No.) Tj T* ET
 .45 .45 .45 rg
 BT /F1 6 Tf 7.2 TL ET
 BT 1 0 0 1 59.52756 296.4614 Tm (Description) Tj T* ET
@@ -121,6 +130,24 @@ n 357.1654 328.337 119.0551 25.25669 re W* n
 0 0 0 rg
 BT /F1 10 Tf 12 TL ET
 BT 1 0 0 1 357.1654 335.914 Tm (280.0 KGS) Tj T* ET
+Q
+q
+n 59.52756 159.9591 178.5827 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 59.52756 167.5361 Tm (INDIA) Tj T* ET
+Q
+q
+n 59.52756 210.4724 107.1496 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 59.52756 218.0494 Tm (H-24-0881) Tj T* ET
+Q
+q
+n 190.4882 210.4724 107.1496 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 190.4882 218.0494 Tm (H-24-0882) Tj T* ET
 Q
 q
 n 59.52756 269.4047 238.1102 25.25669 re W* n
@@ -177,5 +204,5 @@ trailer
 /Size 9
 >>
 startxref
-3935
+4609
 %%EOF

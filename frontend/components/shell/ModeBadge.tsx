@@ -7,9 +7,12 @@ export function ModeBadge() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-[var(--cc-text-muted)] border border-[var(--cc-border)] rounded-full px-2.5 py-0.5">
-        <span className="w-1.5 h-1.5 rounded-full bg-[var(--cc-text-muted)] animate-pulse" />
-        <span className="text-[11px]">Connecting...</span>
+      <div
+        className="flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium border bg-[var(--cc-ok-bg)] text-[var(--cc-ok)] border-[var(--cc-ok-bd)] opacity-85"
+        title="Live GCP Mode: Initializing connection to Vertex AI"
+      >
+        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="text-[11px] font-semibold tracking-wide uppercase">Live GCP</span>
       </div>
     );
   }
@@ -28,9 +31,10 @@ export function ModeBadge() {
   return (
     <div
       className={`flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium border ${
+        // theme tokens, not fixed palette colors: they carry the contrast ratios for light and dark mode
         isLive
-          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-          : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+          ? "bg-[var(--cc-ok-bg)] text-[var(--cc-ok)] border-[var(--cc-ok-bd)]"
+          : "bg-[var(--cc-warn-bg)] text-[var(--cc-warn)] border-[var(--cc-warn-bd)]"
       }`}
       title={
         isLive

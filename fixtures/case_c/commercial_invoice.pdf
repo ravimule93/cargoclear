@@ -43,7 +43,7 @@ endobj
 endobj
 8 0 obj
 <<
-/Length 3737
+/Length 4191
 >>
 stream
 1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
@@ -74,6 +74,12 @@ BT 1 0 0 1 357.1654 549.0283 Tm (Net Weight \(kg\)) Tj T* ET
 .45 .45 .45 rg
 BT /F1 6 Tf 7.2 TL ET
 BT 1 0 0 1 357.1654 515.3528 Tm (Gross Weight \(kg\)) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 59.52756 372.2315 Tm (Incoterm) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 59.52756 330.137 Tm (Country of Origin) Tj T* ET
 .45 .45 .45 rg
 BT /F1 6 Tf 7.2 TL ET
 BT 1 0 0 1 59.52756 464.8394 Tm (Description) Tj T* ET
@@ -139,6 +145,18 @@ n 357.1654 488.2961 119.0551 25.25669 re W* n
 0 0 0 rg
 BT /F1 10 Tf 12 TL ET
 BT 1 0 0 1 357.1654 495.8731 Tm (14280.0 KGS) Tj T* ET
+Q
+q
+n 59.52756 345.1748 178.5827 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 59.52756 352.7518 Tm (CIF SINGAPORE) Tj T* ET
+Q
+q
+n 59.52756 303.0803 178.5827 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 59.52756 310.6573 Tm (INDIA) Tj T* ET
 Q
 q
 n 59.52756 437.7827 238.1102 25.25669 re W* n
@@ -213,5 +231,5 @@ trailer
 /Size 9
 >>
 startxref
-4821
+5275
 %%EOF

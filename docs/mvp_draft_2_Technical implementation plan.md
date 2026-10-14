@@ -2,6 +2,7 @@ CargoClear-JAPAC — Detailed Technical Implementation Plan
 
 Scope: Frontend UI + routing, backend gateway + services, agent design, storage, calculation, audit, and the response path back to the UI.
 Assumption: v4.0 spec is the source of truth. Nothing here contradicts it.
+Status: historical plan. Targets and statements in it (for example "< 45 s") are design intent, not results; what may be claimed, and on what evidence, is docs/CLAIMS.md, and the measured numbers are docs/MEASURED_RESULTS.md.
 
 ---
 

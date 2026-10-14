@@ -26,7 +26,7 @@ function getPublicOrigin(request: NextRequest): string {
     return `${forwardedProto}://${host}`;
   }
 
-  return "https://cargoclear-ui-448522365737.asia-south1.run.app";
+  return "https://cargoclear-app.web.app";
 }
 
 export async function GET(request: NextRequest) {

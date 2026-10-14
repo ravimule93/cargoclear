@@ -38,6 +38,10 @@ def hermetic_test_env(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "app_mode", "demo")
     monkeypatch.setattr(settings, "local_storage_path", str(tmp_path))
     monkeypatch.setattr(settings, "google_application_credentials", None)  # never the developer's .env value
+    # Audit signing appends an event to every bundle's chain: the tests of everything else assert exact event sequences, so
+    # it is off unless a test (tests/unit/test_signing.py) turns it on.
+    monkeypatch.setattr(settings, "audit_signing", False)
+    monkeypatch.setattr(settings, "signing_key_version", None)
     # The pipeline engine comes from the PROCESS environment only (the ADK run sets PIPELINE_ENGINE=adk for the whole suite);
     # a developer's .env must not decide which engine the tests exercise.
     monkeypatch.setattr(settings, "pipeline_engine", os.environ.get("PIPELINE_ENGINE", "native"))
@@ -57,6 +61,17 @@ def hermetic_test_env(tmp_path, monkeypatch):
 
     audit._IN_MEMORY_AUDIT.clear()
     audit._firestore_client = None
+
+    # Reset the run leases (demo-mode store and the cached client)
+    from app.repo import leases
+
+    leases.reset_for_tests()
+    from app.services import orchestrator
+
+    orchestrator._SHUTTING_DOWN = False
+    from app.services import signing
+
+    signing.reset_for_tests()
 
     # Reset Extraction client
     from app.agents import extraction

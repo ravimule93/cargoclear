@@ -1,0 +1,459 @@
+{
+  "declared": {
+    "model": "gemini-2.5-flash",
+    "note": "re-run of bill_of_lading and commercial_invoice after the network errors of the previous entry; synthetic rendered documents, not scans"
+  },
+  "documents": [
+    {
+      "agreement": {
+        "fields": 5,
+        "identical_every_run": 5,
+        "pct": 100.0
+      },
+      "file": "bill_of_lading.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.269,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.267,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.31,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.249,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.249,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 12746,
+            "output_tokens": 509,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.269,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.267,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.31,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.249,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.249,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 3700,
+            "output_tokens": 509,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.269,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.267,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.31,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.249,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.249,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 3896,
+            "output_tokens": 510,
+            "prompt_tokens": 5407
+          }
+        }
+      ]
+    },
+    {
+      "agreement": {
+        "fields": 11,
+        "identical_every_run": 11,
+        "pct": 100.0
+      },
+      "file": "commercial_invoice.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.25,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.0,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.311,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.251,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.07,
+              "kind": "country",
+              "name": "country_of_origin",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.202,
+              "kind": "text",
+              "name": "incoterm",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.344,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.428,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.428,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 7251,
+            "output_tokens": 1172,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.25,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.0,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.311,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.251,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.07,
+              "kind": "country",
+              "name": "country_of_origin",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.202,
+              "kind": "text",
+              "name": "incoterm",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.344,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.428,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.428,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 7797,
+            "output_tokens": 1172,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.25,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.0,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.311,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.251,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.07,
+              "kind": "country",
+              "name": "country_of_origin",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.202,
+              "kind": "text",
+              "name": "incoterm",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.344,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.428,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.428,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 6590,
+            "output_tokens": 1172,
+            "prompt_tokens": 5407
+          }
+        }
+      ]
+    }
+  ],
+  "environment": {
+    "location": "asia-south1",
+    "model": "gemini-2.5-flash",
+    "page_image_mode": "bw",
+    "pages": "png",
+    "preprocess_deskew": false,
+    "sdk_version": "2.29.0",
+    "thinking_budget": 0
+  },
+  "kind": "extraction",
+  "label": "smoke-rerun-bl-ci-full-schema",
+  "recorded_at": "2026-10-14T11:49:17.603477+00:00",
+  "runs_per_document": 3,
+  "schema": "cargoclear.measurement/1",
+  "tool": "scripts/live_smoke_extraction.py"
+}

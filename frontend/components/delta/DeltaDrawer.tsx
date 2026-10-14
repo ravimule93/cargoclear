@@ -47,12 +47,9 @@ export function DeltaDrawer({ bundleId, iterations, auditRefreshKey }: DeltaDraw
 
   return (
     <div className="flex flex-col h-full bg-[var(--cc-surface)]">
-      <div
-        role="tablist"
-        aria-label="Adjudication timeline and delta views"
-        className="flex items-center justify-between border-b border-[var(--cc-border)] px-4 bg-[var(--cc-surface-2)]"
-      >
-        <div className="flex">
+      <div className="flex items-center justify-between border-b border-[var(--cc-border)] px-4 bg-[var(--cc-surface-2)]">
+        {/* The tablist holds ONLY tabs (ARIA: required owned elements); the collapse button is its sibling. */}
+        <div role="tablist" aria-label="Audit timeline and delta views" className="flex">
           {TABS.map((tab, idx) => {
             const isSelected = activeTab === tab.id;
             return (

@@ -47,4 +47,5 @@ async def test_unknown_documents_are_not_flagged_as_duplicates() -> None:
 async def test_a_single_duplicated_type_gets_its_own_id() -> None:
     ctx = {"extracted": [_doc("x", "MILL_TEST_CERTIFICATE"), _doc("y", "MILL_TEST_CERTIFICATE")]}
     ids = [c["check_id"] for c in (await calculation.run(ctx))["checks"]]
-    assert ids == ["D-DUP-MILL_TEST_CERTIFICATE"]
+    assert [i for i in ids if i.startswith("D-DUP")] == ["D-DUP-MILL_TEST_CERTIFICATE"]
+    assert len(ids) == len(set(ids))  # the certificate checks (a blank certificate: M-003, M-004) have their own ids

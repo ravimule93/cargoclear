@@ -1,8 +1,7 @@
 """Domain schemas — the single contract between backend services, agents, and frontend.
 
-These Pydantic models are the source of truth. The frontend lib/types.ts is
-generated from the FastAPI OpenAPI schema (via ``openapi-typescript``), so
-frontend and backend types never drift.
+These Pydantic models are the source of truth. The frontend ``lib/types.ts`` is a HAND-MAINTAINED mirror of them
+(nothing generates it): change a model here and update ``types.ts`` in the same change.
 
 Design rules from v4.0 §2.4:
   - No discriminated unions.
@@ -14,7 +13,7 @@ Design rules from v4.0 §2.4:
 import unicodedata
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, BeforeValidator, Field, field_validator
+from pydantic import BaseModel, BeforeValidator, Field, field_validator, model_validator
 
 from app.core.config import settings
 from app.domain.hs import HsMatchLevel
@@ -31,11 +30,21 @@ class BBox(BaseModel):
     We store as a structured object for clarity and type safety.
     """
 
-    page: int = Field(description="1-indexed page number within the processed document")
+    page: int = Field(default=1, description="1-indexed page number within the processed document")
     ymin: float
     xmin: float
     ymax: float
     xmax: float
+
+    @model_validator(mode="before")
+    @classmethod
+    def _from_list_or_dict(cls, data: Any) -> Any:
+        if isinstance(data, (list, tuple)):
+            if len(data) == 4:
+                return {"page": 1, "ymin": data[0], "xmin": data[1], "ymax": data[2], "xmax": data[3]}
+            if len(data) >= 5:
+                return {"page": int(data[0]), "ymin": data[1], "xmin": data[2], "ymax": data[3], "xmax": data[4]}
+        return data
 
     @field_validator("page")
     @classmethod
@@ -126,6 +135,20 @@ def _as_text_ref(value: Any) -> Any:
 TextField = Annotated[TextRef, BeforeValidator(_as_text_ref)]
 
 
+class LabResult(TextRef):
+    """One measured value printed on a certificate: one heat x one parameter (a chemistry element or a mechanical test).
+
+    A flat row, on purpose: the response schema offered to Gemini has no nested arrays (heats x elements would be one).
+    ``value`` is the number AS PRINTED, as text ("0.18", "<0.005", "350"); ``unit`` is what the certificate prints
+    ("%", "ppm", "MPa", ...) and is never converted at extraction time. ``parameter`` is the column heading as printed
+    ("C", "Mn", "Cr", "YS", "UTS", "EL"); services/metallurgy.py maps it to a known parameter.
+    """
+
+    parameter: str = Field(description="column heading as printed: element symbol (C, Mn, Cr, ...) or YS / UTS / EL")
+    heat_number: str | None = Field(default=None, description="heat / cast / lot id of the row this value is in, as printed")
+    unit: str | None = Field(default=None, description="unit as printed (%, ppm, MPa, J, ...); null if none is printed")
+
+
 # ---------------------------------------------------------------------------
 # Line items (one row of a trade document table)
 # ---------------------------------------------------------------------------
@@ -142,6 +165,9 @@ class LineItem(BaseModel):
     unit_price: FieldRef | None = None
     total_value: FieldRef | None = None
     currency: TextField | None = None
+    unit_price_basis: TextField | None = Field(
+        default=None, description="what the unit price is per, as printed (PER MT, PER LENGTH, /KG, ...); null if none"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -198,6 +224,25 @@ class ExtractedDocument(BaseModel):
     # HS code at header level (some invoices declare it once)
     hs_code_header: TextField | None = None
 
+    # Terms of sale and valuation inputs (primarily Commercial Invoice and Bill of Lading)
+    incoterm: TextField | None = Field(default=None, description="Incoterms code and place as printed, e.g. 'FOB TIANJIN'")
+    country_of_origin: TextField | None = Field(default=None, description="country of origin as printed")
+    freight_amount: FieldRef | None = Field(default=None, description="ocean/air freight amount as printed, if stated")
+    freight_currency: TextField | None = None
+    insurance_amount: FieldRef | None = Field(default=None, description="insurance amount as printed, if stated")
+    insurance_currency: TextField | None = None
+
+    # Material evidence (primarily Mill Test Certificate; heat numbers also on the Packing List)
+    specification: TextField | None = Field(
+        default=None, description="product standard / grade as printed, e.g. 'API 5L PSL2 GR.B', 'ASTM A106 GR B'"
+    )
+    heat_numbers: list[TextField] = Field(
+        default_factory=list, description="every heat / cast / lot number printed on the document, each once"
+    )
+    test_results: list[LabResult] = Field(
+        default_factory=list, description="every chemistry and mechanical value printed: one entry per heat and parameter"
+    )
+
     # Commodity line items
     line_items: list[LineItem] = Field(default_factory=list)
 
@@ -220,6 +265,25 @@ class CheckResult(BaseModel):
         default_factory=list,
         description="Every assumption the result depends on; a check with assumptions is never PASS or MATERIAL",
     )
+    rule_set: str | None = Field(
+        default=None, description="Rule set a check rests on when it uses curated reference data, e.g. 'demo-curated'"
+    )
+    regulation_ref: str | None = Field(
+        default=None, description="Where that reference data comes from, in the words the data states (never 'official' unless it is)"
+    )
+    focus_document: str | None = Field(
+        default=None,
+        description=(
+            "The document a person should look at first for this finding. An engine that knows says it (the alloy check names the "
+            "certificate, not the invoice that carries the HS code); otherwise it is the first document the evidence cites."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _focus_on_the_first_cited_document(self) -> "CheckResult":
+        if self.focus_document is None:
+            self.focus_document = next((e["doc"] for e in self.evidence or [] if isinstance(e, dict) and e.get("doc")), None)
+        return self
 
 
 class GroundingFinding(BaseModel):
@@ -294,6 +358,72 @@ class ConfidenceResult(BaseModel):
     reason: str | None = Field(default=None, description="One sentence naming what determined the tier")
 
 
+class DutyLine(BaseModel):
+    """One line of the indicative duty estimate."""
+
+    name: str = Field(description="BCD, SWS, IGST, ADD, GST, ...")
+    rate_pct: float | None = None
+    base: float | None = Field(default=None, description="amount the rate applies to, in the destination currency")
+    amount: float = Field(description="duty in the destination currency")
+    note: str | None = None
+
+
+class ValuationEstimate(BaseModel):
+    """INDICATIVE assessable value and duty exposure. Decision support for the authorised agent: not a duty
+    determination, not an amount payable. Never changes the assessment status; every guess it made is listed."""
+
+    destination_country: str
+    status: Literal["ESTIMATED", "PARTIAL", "NOT_AVAILABLE"]
+    reason: str | None = Field(default=None, description="why a figure is missing, for PARTIAL / NOT_AVAILABLE")
+    incoterm: str | None = None
+    invoice_currency: str | None = None
+    destination_currency: str | None = None
+    exchange_rate: float | None = None
+    exchange_rate_note: str | None = None
+    transaction_value: float | None = Field(default=None, description="invoice value, in the invoice currency")
+    freight: float | None = Field(default=None, description="added freight, in the invoice currency")
+    insurance: float | None = Field(default=None, description="added insurance, in the invoice currency")
+    assessable_value: float | None = Field(default=None, description="CIF basis, in the destination currency")
+    hs_code: str | None = None
+    duties: list[DutyLine] = Field(default_factory=list)
+    total_duty: float | None = Field(default=None, description="sum of the duty lines, in the destination currency")
+    implied_hs_code: str | None = Field(
+        default=None, description="the subheading the certificate's chemistry points to, when it differs from the declared code"
+    )
+    implied_total_duty: float | None = Field(
+        default=None, description="the same estimate under the implied subheading, for comparison"
+    )
+    assumptions: list[str] = Field(default_factory=list)
+    rule_set: str | None = None
+    regulation_ref: str | None = None
+    disclaimer: str = (
+        "Indicative estimate for the authorised Custom House Agent. Not a customs determination and not an amount "
+        "payable; rates and rules come from the reference data named above."
+    )
+
+
+class AppliedCorrection(BaseModel):
+    """A correction by the authorised agent as one assessment used it (stored on the iteration).
+
+    ``applied`` means the value now stands in the extraction the checks ran on; ``skipped`` means the correction could not
+    be placed (its document or row is no longer there, after a fresh extraction) and was NOT used: ``note`` says why.
+    """
+
+    correction_id: str
+    seq: int
+    document_id: str
+    path: str
+    anchor: str | None = Field(default=None, description="identity of the row for list addresses (see domain/corrections.py)")
+    value: str | None = Field(default=None, description="the value that replaced the extracted one; null = cleared")
+    unit: str | None = None
+    original_value: str | None = Field(default=None, description="what the model read")
+    original_unit: str | None = None
+    reason: str | None = None
+    created_at: str
+    status: Literal["applied", "skipped"]
+    note: str | None = None
+
+
 class AssessmentIteration(BaseModel):
     """Point-in-time, immutable assessment snapshot stored in Firestore."""
 
@@ -311,12 +441,78 @@ class AssessmentIteration(BaseModel):
         description="Where the data came from: 'fixture' if extraction used fixtures or the tariff came "
         "from the local seed, 'live' otherwise; null if unknown (e.g. iterations stored before this field).",
     )
+    valuation: ValuationEstimate | None = Field(
+        default=None, description="Indicative assessable value and duty exposure; null on iterations stored before it existed"
+    )
+    reference_data: dict[str, str] | None = Field(
+        default=None,
+        description="Fingerprint (file -> sha256 prefix) of the curated reference data the checks used, so a verdict can be "
+        "tied to the exact rule tables; null on iterations stored before it existed",
+    )
+    corrections: list[AppliedCorrection] = Field(
+        default_factory=list,
+        description="Every correction by the authorised agent that was in force when this assessment ran, applied or skipped",
+    )
+    run_mode: str | None = Field(
+        default=None,
+        description="How the iteration was produced: 'full', 'reassess' or 'recompute' (extraction reused, corrections applied); "
+        "null on iterations stored before this field existed",
+    )
     created_at: str | None = None
 
 
 # ---------------------------------------------------------------------------
 # API request / response models
 # ---------------------------------------------------------------------------
+
+
+class CorrectionRequest(BaseModel):
+    """One correction: what the document actually states at one address of the extraction."""
+
+    document_id: str = Field(min_length=1, max_length=64)
+    path: str = Field(
+        min_length=1,
+        max_length=64,
+        description="address of the value: a header field ('consignee'), 'line_items[2].hs_code_declared', "
+        "'heat_numbers[0]', 'test_results[7]' or 'doc_type'",
+    )
+    value: str | None = Field(default=None, max_length=500, description="the value the document states (as printed)")
+    unit: str | None = Field(default=None, max_length=24, description="unit as printed, for weights and lab values")
+    clear: bool = Field(default=False, description="true = the document does not state this value (instead of `value`)")
+    reason: str | None = Field(default=None, max_length=500, description="why, in the agent's words (optional, audited)")
+
+
+class RevertCorrectionRequest(BaseModel):
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class CorrectionRecord(BaseModel):
+    """One entry of the correction history, read back from the tamper-evident audit chain."""
+
+    correction_id: str = Field(description="'cor-<audit sequence number>': stable and unique within the bundle")
+    kind: Literal["correction", "confirmation", "revert"]
+    seq: int
+    created_at: str
+    iteration: int = Field(description="the assessment the agent was looking at when they acted")
+    document_id: str
+    path: str
+    anchor: str | None = Field(default=None, description="identity of the row for list addresses, to find it again after re-extraction")
+    value: str | None = None
+    unit: str | None = None
+    original_value: str | None = Field(default=None, description="what the model read")
+    original_unit: str | None = None
+    previous_value: str | None = Field(default=None, description="the value just before this entry (an earlier correction, or the model's)")
+    previous_unit: str | None = None
+    reverts: str | None = Field(default=None, description="for kind 'revert': the correction_id it undoes")
+    reason: str | None = None
+    actor: str = "user"
+
+
+class CorrectionsResponse(BaseModel):
+    corrections: list[CorrectionRecord] = Field(description="every entry, oldest first")
+    effective: list[CorrectionRecord] = Field(description="the overlay in force now: the latest non-reverted entry per address")
+    pending: int = Field(description="changes to the overlay that the latest assessment does not include yet")
+    latest_iteration: int | None = None
 
 
 class CreateBundleRequest(BaseModel):

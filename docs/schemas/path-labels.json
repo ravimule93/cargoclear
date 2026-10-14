@@ -1,0 +1,15 @@
+{
+  "description": "How an address of a correctable value is named for a person. One table, tested twice: by backend/tests/unit/test_corrections_domain.py against domain/corrections.path_label (used by the Reasoning Delta narrative) and by frontend/tests/corrections.unit.spec.ts against lib/corrections.ts pathLabel (used by the Corrections card, the editor and the evidence rows). A new form of address needs a vector here, and both implementations must agree on it.",
+  "vectors": [
+    {"path": "consignee", "label": "Consignee"},
+    {"path": "country_of_origin", "label": "Country of origin"},
+    {"path": "doc_type", "label": "Doc type"},
+    {"path": "total_gross_weight_kg", "label": "Total gross weight"},
+    {"path": "tare_weight_kg", "label": "Tare weight"},
+    {"path": "line_items[0].hs_code_declared", "label": "Line 1 · Hs code declared"},
+    {"path": "line_items[11].net_weight_kg", "label": "Line 12 · Net weight"},
+    {"path": "test_results[0]", "label": "Certificate cell 1"},
+    {"path": "test_results[20]", "label": "Certificate cell 21"},
+    {"path": "heat_numbers[0]", "label": "Heat number 1"}
+  ]
+}

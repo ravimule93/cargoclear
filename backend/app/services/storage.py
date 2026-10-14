@@ -15,12 +15,18 @@ Design rules:
   - Uploading different bytes under the same logical document creates a
     new document_id and a new AuditEvent.
   - Supports local disk cache fallback when in demo mode.
+
+The google-cloud-storage client is BLOCKING. Every GCS call below runs in a worker thread (``asyncio.to_thread``), so a
+slow or large transfer never stalls the event loop that carries the run heartbeat, the SSE streams and every other
+request.
 """
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -34,6 +40,7 @@ from app.gateway.errors import NotFoundError, UpstreamError
 logger = structlog.get_logger(__name__)
 
 _gcs_client = None
+_gcs_client_lock = threading.Lock()  # GCS calls run in worker threads: two of them must not both build the client
 
 
 def _get_local_storage_dir() -> Path:
@@ -56,16 +63,19 @@ def _get_gcs_client():
         logger.info("gcs_local_mode", reason="Running in demo mode without GCP credentials")
         return None
 
-    try:
-        from google.cloud import storage as gcs_lib
+    with _gcs_client_lock:
+        if _gcs_client is not None:
+            return _gcs_client
+        try:
+            from google.cloud import storage as gcs_lib
 
-        _gcs_client = gcs_lib.Client(project=settings.project_id)
-        return _gcs_client
-    except Exception as exc:
-        if settings.app_mode == "live":
-            raise UpstreamError(f"GCS client init failed in live mode: {type(exc).__name__}") from exc
-        logger.warning("gcs_client_init_failed", error=str(exc), fallback="local_disk")
-        return None
+            _gcs_client = gcs_lib.Client(project=settings.project_id)
+            return _gcs_client
+        except Exception as exc:
+            if settings.app_mode == "live":
+                raise UpstreamError(f"GCS client init failed in live mode: {type(exc).__name__}") from exc
+            logger.warning("gcs_client_init_failed", error=str(exc), fallback="local_disk")
+            return None
 
 
 def compute_sha256(data: bytes) -> str:
@@ -108,7 +118,8 @@ async def upload_raw(
     client = _get_gcs_client()
 
     if client is not None:
-        try:
+
+        def put() -> None:
             bucket = client.bucket(settings.raw_bucket)
             blob_path = f"bundles/{bundle_id}/raw/{document_id}/original.pdf"
             blob = bucket.blob(blob_path)
@@ -122,6 +133,9 @@ async def upload_raw(
 
             meta_blob = bucket.blob(f"bundles/{bundle_id}/raw/{document_id}/meta.json")
             meta_blob.upload_from_string(json.dumps(meta), content_type="application/json")
+
+        try:
+            await asyncio.to_thread(put)
             logger.info("gcs_raw_uploaded", gcs_uri=gcs_uri, size_bytes=len(data))
         except Exception as exc:
             logger.error("gcs_upload_failed", error=str(exc))
@@ -142,13 +156,17 @@ async def download_raw(bundle_id: str, document_id: str) -> bytes:
     client = _get_gcs_client()
 
     if client is not None:
-        try:
+
+        def get() -> bytes:
             bucket = client.bucket(settings.raw_bucket)
             blob_path = f"bundles/{bundle_id}/raw/{document_id}/original.pdf"
             blob = bucket.blob(blob_path)
             if not blob.exists():
                 raise NotFoundError(f"Document '{document_id}' not found in storage bucket.")
             return blob.download_as_bytes()
+
+        try:
+            return await asyncio.to_thread(get)
         except NotFoundError:
             raise
         except Exception as exc:
@@ -174,10 +192,14 @@ async def upload_transform_meta(
     client = _get_gcs_client()
 
     if client is not None:
-        try:
+
+        def put() -> None:
             bucket = client.bucket(settings.raw_bucket)
             blob = bucket.blob(path)
             blob.upload_from_string(data_str, content_type="application/json")
+
+        try:
+            await asyncio.to_thread(put)
         except Exception as exc:
             raise UpstreamError(f"Failed to persist transform metadata: {type(exc).__name__}") from exc
     else:
@@ -195,13 +217,17 @@ async def upload_processed_artifacts(
     if not artifacts:
         return
     client = _get_gcs_client()
+
+    def put_all() -> None:
+        bucket = client.bucket(settings.raw_bucket)
+        for artifact in artifacts:
+            artifact_id = artifact["artifact_id"]
+            blob = bucket.blob(f"bundles/{bundle_id}/processed/{document_id}/{artifact_id}.pdf")
+            blob.upload_from_string(artifact["payload"], content_type="application/pdf")
+
     try:
         if client is not None:
-            bucket = client.bucket(settings.raw_bucket)
-            for artifact in artifacts:
-                artifact_id = artifact["artifact_id"]
-                blob = bucket.blob(f"bundles/{bundle_id}/processed/{document_id}/{artifact_id}.pdf")
-                blob.upload_from_string(artifact["payload"], content_type="application/pdf")
+            await asyncio.to_thread(put_all)
         else:
             directory = _get_local_storage_dir() / "bundles" / bundle_id / "processed" / document_id
             directory.mkdir(parents=True, exist_ok=True)
@@ -211,18 +237,88 @@ async def upload_processed_artifacts(
         raise UpstreamError(f"Failed to persist processed artifacts: {type(exc).__name__}") from exc
 
 
+def processed_page_path(bundle_id: str, document_id: str, page: int, iteration: int | None = None) -> str:
+    """Where the page image the model was shown is kept. One folder per assessment that read the documents (``iteration``), so an
+    older assessment's pages are not replaced by a newer run's; no iteration is the layout before that (pages kept per document)."""
+    folder = f"it{iteration:04d}/" if iteration else ""
+    return f"bundles/{bundle_id}/pages/{folder}{document_id}/page-{page:03d}.png"
+
+
+async def upload_processed_pages(
+    bundle_id: str, document_id: str, pages: list[dict[str, Any]], iteration: int | None = None
+) -> dict[int, str]:
+    """Persist the page images the model was shown (PNG pages only: a passthrough PDF has no page images), under the assessment
+    (``iteration``) that showed them to the model.
+
+    Returns {source page number: storage URI}. Private storage: they are served only through the scoped pages endpoint.
+    """
+    images = [page for page in pages if page.get("mime") == "image/png" and page.get("payload")]
+    if not images:
+        return {}
+    client = _get_gcs_client()
+    uris: dict[int, str] = {}
+
+    def put_all() -> None:
+        bucket = client.bucket(settings.raw_bucket)
+        for page in images:
+            blob = bucket.blob(processed_page_path(bundle_id, document_id, int(page["source_page"]), iteration))
+            blob.upload_from_string(page["payload"], content_type="image/png")
+
+    try:
+        if client is not None:
+            await asyncio.to_thread(put_all)
+        else:
+            for page in images:
+                target = _get_local_storage_dir() / processed_page_path(bundle_id, document_id, int(page["source_page"]), iteration)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(page["payload"])
+    except Exception as exc:
+        raise UpstreamError(f"Failed to persist processed pages: {type(exc).__name__}") from exc
+    for page in images:
+        uris[int(page["source_page"])] = f"gs://{settings.raw_bucket}/{processed_page_path(bundle_id, document_id, int(page['source_page']), iteration)}"
+    return uris
+
+
+async def download_processed_page(bundle_id: str, document_id: str, page: int, iteration: int | None = None) -> bytes:
+    """The PNG the model was shown for one page of one document in one assessment; NotFoundError if it was not persisted."""
+    path = processed_page_path(bundle_id, document_id, page, iteration)
+    client = _get_gcs_client()
+    missing = f"Processed page {page} of document '{document_id}' not found."
+
+    def get() -> bytes:
+        blob = client.bucket(settings.raw_bucket).blob(path)
+        if not blob.exists():
+            raise NotFoundError(missing)
+        return blob.download_as_bytes()
+
+    try:
+        if client is not None:
+            return await asyncio.to_thread(get)
+        local_file = _get_local_storage_dir() / path
+        if not local_file.is_file():
+            raise NotFoundError(missing)
+        return local_file.read_bytes()
+    except NotFoundError:
+        raise
+    except Exception as exc:
+        raise UpstreamError(f"Failed to retrieve the processed page: {type(exc).__name__}") from exc
+
+
 async def download_transform_meta(bundle_id: str, document_id: str) -> list[dict[str, Any]]:
     """Read one document's persisted preprocessing transforms from private storage."""
     path = f"bundles/{bundle_id}/processed/{document_id}/transform.json"
     client = _get_gcs_client()
 
+    def get() -> bytes:
+        bucket = client.bucket(settings.raw_bucket)
+        blob = bucket.blob(path)
+        if not blob.exists():
+            raise NotFoundError(f"Transform metadata for document '{document_id}' not found.")
+        return blob.download_as_bytes()
+
     try:
         if client is not None:
-            bucket = client.bucket(settings.raw_bucket)
-            blob = bucket.blob(path)
-            if not blob.exists():
-                raise NotFoundError(f"Transform metadata for document '{document_id}' not found.")
-            raw = blob.download_as_bytes()
+            raw = await asyncio.to_thread(get)
         else:
             local_file = _get_local_storage_dir() / path
             if not local_file.is_file():

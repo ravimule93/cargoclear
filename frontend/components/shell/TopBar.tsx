@@ -64,6 +64,12 @@ export function TopBar({
             {bundle.reference}
           </span>
         )}
+        <span
+          data-testid="bundle-destination"
+          className="text-[11px] bg-[var(--cc-surface-2)] px-1.5 py-0.5 rounded border border-[var(--cc-border)] text-[var(--cc-text-subtle)]"
+        >
+          To {bundle.destination_country}
+        </span>
       </div>
 
       <div className="ml-2">
@@ -130,7 +136,7 @@ export function TopBar({
           disabled={isRunning}
           aria-busy={isRunning}
           onClick={onRun}
-          className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:opacity-90 disabled:opacity-50 transition-all cursor-pointer flex items-center gap-1.5"
+          className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:brightness-90 disabled:opacity-50 transition-all cursor-pointer flex items-center gap-1.5"
         >
           {isRunning && (
             <span
