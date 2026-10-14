@@ -30,11 +30,21 @@ class BBox(BaseModel):
     We store as a structured object for clarity and type safety.
     """
 
-    page: int = Field(description="1-indexed page number within the processed document")
+    page: int = Field(default=1, description="1-indexed page number within the processed document")
     ymin: float
     xmin: float
     ymax: float
     xmax: float
+
+    @model_validator(mode="before")
+    @classmethod
+    def _from_list_or_dict(cls, data: Any) -> Any:
+        if isinstance(data, (list, tuple)):
+            if len(data) == 4:
+                return {"page": 1, "ymin": data[0], "xmin": data[1], "ymax": data[2], "xmax": data[3]}
+            if len(data) >= 5:
+                return {"page": int(data[0]), "ymin": data[1], "xmin": data[2], "ymax": data[3], "xmax": data[4]}
+        return data
 
     @field_validator("page")
     @classmethod

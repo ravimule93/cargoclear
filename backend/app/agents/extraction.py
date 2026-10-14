@@ -245,6 +245,13 @@ def _clamp_in_place(container: dict[str, Any], key: str, warning_path: str, warn
 def _clean_field_ref(node: dict[str, Any], path: str, page_count: int | None, warnings: list[dict[str, str]]) -> None:
     _clamp_in_place(node, "confidence", f"{path}.confidence", warnings)
 
+    raw_bbox = node.get("bbox")
+    if isinstance(raw_bbox, (list, tuple)):
+        if len(raw_bbox) == 4:
+            node["bbox"] = {"page": 1, "ymin": raw_bbox[0], "xmin": raw_bbox[1], "ymax": raw_bbox[2], "xmax": raw_bbox[3]}
+        elif len(raw_bbox) >= 5:
+            node["bbox"] = {"page": int(raw_bbox[0]), "ymin": raw_bbox[1], "xmin": raw_bbox[2], "ymax": raw_bbox[3], "xmax": raw_bbox[4]}
+
     problem = _bbox_problem(node.get("bbox"), page_count)
     if problem is not None:
         node["bbox"] = None
@@ -459,6 +466,39 @@ def _build_parts(types: Any, pages: list[dict[str, Any]]) -> tuple[list[Any], in
     return parts, None if passthrough else total
 
 
+_SIMPLIFIED_SCHEMA: dict[str, Any] | None = None
+
+
+def _get_gemini_schema() -> dict[str, Any]:
+    global _SIMPLIFIED_SCHEMA
+    if _SIMPLIFIED_SCHEMA is not None:
+        return _SIMPLIFIED_SCHEMA
+
+    from google.genai._transformers import t_schema
+
+    def simplify(node: Any) -> Any:
+        if isinstance(node, dict):
+            res = {}
+            for k, v in node.items():
+                if k == "bbox":
+                    res["bbox"] = {
+                        "type": "ARRAY",
+                        "items": {"type": "NUMBER"},
+                        "nullable": True,
+                        "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+                    }
+                else:
+                    res[k] = simplify(v)
+            return res
+        elif isinstance(node, list):
+            return [simplify(v) for v in node]
+        return node
+
+    raw = t_schema(None, ExtractedDocument).to_json_dict()
+    _SIMPLIFIED_SCHEMA = simplify(raw)
+    return _SIMPLIFIED_SCHEMA
+
+
 def _request_config(types: Any) -> Any:
     thinking = (
         types.ThinkingConfig(thinking_budget=settings.gemini_thinking_budget)
@@ -467,7 +507,7 @@ def _request_config(types: Any) -> Any:
     )
     return types.GenerateContentConfig(
         response_mime_type="application/json",
-        response_schema=ExtractedDocument,
+        response_schema=_get_gemini_schema(),
         system_instruction=SYSTEM_INSTRUCTION,
         temperature=0.0,
         max_output_tokens=settings.gemini_max_output_tokens,

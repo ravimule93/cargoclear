@@ -6,47 +6,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -77,47 +42,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -148,47 +78,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -243,47 +138,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -314,47 +174,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -395,47 +220,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -467,47 +257,12 @@
         "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
         "properties": {
           "bbox": {
-            "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-            "nullable": true,
-            "properties": {
-              "page": {
-                "description": "1-indexed page number within the processed document",
-                "title": "Page",
-                "type": "INTEGER"
-              },
-              "xmax": {
-                "title": "Xmax",
-                "type": "NUMBER"
-              },
-              "xmin": {
-                "title": "Xmin",
-                "type": "NUMBER"
-              },
-              "ymax": {
-                "title": "Ymax",
-                "type": "NUMBER"
-              },
-              "ymin": {
-                "title": "Ymin",
-                "type": "NUMBER"
-              }
+            "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+            "items": {
+              "type": "NUMBER"
             },
-            "property_ordering": [
-              "page",
-              "ymin",
-              "xmin",
-              "ymax",
-              "xmax"
-            ],
-            "required": [
-              "page",
-              "ymin",
-              "xmin",
-              "ymax",
-              "xmax"
-            ],
-            "title": "BBox",
-            "type": "OBJECT"
+            "nullable": true,
+            "type": "ARRAY"
           },
           "confidence": {
             "description": "Extraction confidence 0.0\u20131.0",
@@ -541,47 +296,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -612,47 +332,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -683,47 +368,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -764,47 +414,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -835,47 +450,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -906,47 +486,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -991,47 +536,12 @@
             "nullable": true,
             "properties": {
               "bbox": {
-                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-                "nullable": true,
-                "properties": {
-                  "page": {
-                    "description": "1-indexed page number within the processed document",
-                    "title": "Page",
-                    "type": "INTEGER"
-                  },
-                  "xmax": {
-                    "title": "Xmax",
-                    "type": "NUMBER"
-                  },
-                  "xmin": {
-                    "title": "Xmin",
-                    "type": "NUMBER"
-                  },
-                  "ymax": {
-                    "title": "Ymax",
-                    "type": "NUMBER"
-                  },
-                  "ymin": {
-                    "title": "Ymin",
-                    "type": "NUMBER"
-                  }
+                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+                "items": {
+                  "type": "NUMBER"
                 },
-                "property_ordering": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "required": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "title": "BBox",
-                "type": "OBJECT"
+                "nullable": true,
+                "type": "ARRAY"
               },
               "confidence": {
                 "description": "Extraction confidence 0.0\u20131.0",
@@ -1061,47 +571,12 @@
             "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
             "properties": {
               "bbox": {
-                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-                "nullable": true,
-                "properties": {
-                  "page": {
-                    "description": "1-indexed page number within the processed document",
-                    "title": "Page",
-                    "type": "INTEGER"
-                  },
-                  "xmax": {
-                    "title": "Xmax",
-                    "type": "NUMBER"
-                  },
-                  "xmin": {
-                    "title": "Xmin",
-                    "type": "NUMBER"
-                  },
-                  "ymax": {
-                    "title": "Ymax",
-                    "type": "NUMBER"
-                  },
-                  "ymin": {
-                    "title": "Ymin",
-                    "type": "NUMBER"
-                  }
+                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+                "items": {
+                  "type": "NUMBER"
                 },
-                "property_ordering": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "required": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "title": "BBox",
-                "type": "OBJECT"
+                "nullable": true,
+                "type": "ARRAY"
               },
               "confidence": {
                 "description": "Extraction confidence 0.0\u20131.0",
@@ -1131,47 +606,12 @@
             "description": "A FieldRef for a measured quantity (a weight): the number as printed plus the unit as printed.\n\n``value`` stays exactly as printed (\"14,280.50\", 14280.5, ...) and ``unit`` is what the document says\n(\"KGS\", \"MT\", \"LBS\", ...). Nothing is converted at extraction time; the deterministic engine converts\nwith app.domain.units and reports every assumption it had to make.",
             "properties": {
               "bbox": {
-                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-                "nullable": true,
-                "properties": {
-                  "page": {
-                    "description": "1-indexed page number within the processed document",
-                    "title": "Page",
-                    "type": "INTEGER"
-                  },
-                  "xmax": {
-                    "title": "Xmax",
-                    "type": "NUMBER"
-                  },
-                  "xmin": {
-                    "title": "Xmin",
-                    "type": "NUMBER"
-                  },
-                  "ymax": {
-                    "title": "Ymax",
-                    "type": "NUMBER"
-                  },
-                  "ymin": {
-                    "title": "Ymin",
-                    "type": "NUMBER"
-                  }
+                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+                "items": {
+                  "type": "NUMBER"
                 },
-                "property_ordering": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "required": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "title": "BBox",
-                "type": "OBJECT"
+                "nullable": true,
+                "type": "ARRAY"
               },
               "confidence": {
                 "description": "Extraction confidence 0.0\u20131.0",
@@ -1218,47 +658,12 @@
             "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
             "properties": {
               "bbox": {
-                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-                "nullable": true,
-                "properties": {
-                  "page": {
-                    "description": "1-indexed page number within the processed document",
-                    "title": "Page",
-                    "type": "INTEGER"
-                  },
-                  "xmax": {
-                    "title": "Xmax",
-                    "type": "NUMBER"
-                  },
-                  "xmin": {
-                    "title": "Xmin",
-                    "type": "NUMBER"
-                  },
-                  "ymax": {
-                    "title": "Ymax",
-                    "type": "NUMBER"
-                  },
-                  "ymin": {
-                    "title": "Ymin",
-                    "type": "NUMBER"
-                  }
+                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+                "items": {
+                  "type": "NUMBER"
                 },
-                "property_ordering": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "required": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "title": "BBox",
-                "type": "OBJECT"
+                "nullable": true,
+                "type": "ARRAY"
               },
               "confidence": {
                 "description": "Extraction confidence 0.0\u20131.0",
@@ -1288,47 +693,12 @@
             "description": "A FieldRef for a measured quantity (a weight): the number as printed plus the unit as printed.\n\n``value`` stays exactly as printed (\"14,280.50\", 14280.5, ...) and ``unit`` is what the document says\n(\"KGS\", \"MT\", \"LBS\", ...). Nothing is converted at extraction time; the deterministic engine converts\nwith app.domain.units and reports every assumption it had to make.",
             "properties": {
               "bbox": {
-                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-                "nullable": true,
-                "properties": {
-                  "page": {
-                    "description": "1-indexed page number within the processed document",
-                    "title": "Page",
-                    "type": "INTEGER"
-                  },
-                  "xmax": {
-                    "title": "Xmax",
-                    "type": "NUMBER"
-                  },
-                  "xmin": {
-                    "title": "Xmin",
-                    "type": "NUMBER"
-                  },
-                  "ymax": {
-                    "title": "Ymax",
-                    "type": "NUMBER"
-                  },
-                  "ymin": {
-                    "title": "Ymin",
-                    "type": "NUMBER"
-                  }
+                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+                "items": {
+                  "type": "NUMBER"
                 },
-                "property_ordering": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "required": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "title": "BBox",
-                "type": "OBJECT"
+                "nullable": true,
+                "type": "ARRAY"
               },
               "confidence": {
                 "description": "Extraction confidence 0.0\u20131.0",
@@ -1375,47 +745,12 @@
             "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
             "properties": {
               "bbox": {
-                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-                "nullable": true,
-                "properties": {
-                  "page": {
-                    "description": "1-indexed page number within the processed document",
-                    "title": "Page",
-                    "type": "INTEGER"
-                  },
-                  "xmax": {
-                    "title": "Xmax",
-                    "type": "NUMBER"
-                  },
-                  "xmin": {
-                    "title": "Xmin",
-                    "type": "NUMBER"
-                  },
-                  "ymax": {
-                    "title": "Ymax",
-                    "type": "NUMBER"
-                  },
-                  "ymin": {
-                    "title": "Ymin",
-                    "type": "NUMBER"
-                  }
+                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+                "items": {
+                  "type": "NUMBER"
                 },
-                "property_ordering": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "required": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "title": "BBox",
-                "type": "OBJECT"
+                "nullable": true,
+                "type": "ARRAY"
               },
               "confidence": {
                 "description": "Extraction confidence 0.0\u20131.0",
@@ -1446,47 +781,12 @@
             "nullable": true,
             "properties": {
               "bbox": {
-                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-                "nullable": true,
-                "properties": {
-                  "page": {
-                    "description": "1-indexed page number within the processed document",
-                    "title": "Page",
-                    "type": "INTEGER"
-                  },
-                  "xmax": {
-                    "title": "Xmax",
-                    "type": "NUMBER"
-                  },
-                  "xmin": {
-                    "title": "Xmin",
-                    "type": "NUMBER"
-                  },
-                  "ymax": {
-                    "title": "Ymax",
-                    "type": "NUMBER"
-                  },
-                  "ymin": {
-                    "title": "Ymin",
-                    "type": "NUMBER"
-                  }
+                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+                "items": {
+                  "type": "NUMBER"
                 },
-                "property_ordering": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "required": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "title": "BBox",
-                "type": "OBJECT"
+                "nullable": true,
+                "type": "ARRAY"
               },
               "confidence": {
                 "description": "Extraction confidence 0.0\u20131.0",
@@ -1527,47 +827,12 @@
             "nullable": true,
             "properties": {
               "bbox": {
-                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-                "nullable": true,
-                "properties": {
-                  "page": {
-                    "description": "1-indexed page number within the processed document",
-                    "title": "Page",
-                    "type": "INTEGER"
-                  },
-                  "xmax": {
-                    "title": "Xmax",
-                    "type": "NUMBER"
-                  },
-                  "xmin": {
-                    "title": "Xmin",
-                    "type": "NUMBER"
-                  },
-                  "ymax": {
-                    "title": "Ymax",
-                    "type": "NUMBER"
-                  },
-                  "ymin": {
-                    "title": "Ymin",
-                    "type": "NUMBER"
-                  }
+                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+                "items": {
+                  "type": "NUMBER"
                 },
-                "property_ordering": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "required": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "title": "BBox",
-                "type": "OBJECT"
+                "nullable": true,
+                "type": "ARRAY"
               },
               "confidence": {
                 "description": "Extraction confidence 0.0\u20131.0",
@@ -1608,47 +873,12 @@
             "nullable": true,
             "properties": {
               "bbox": {
-                "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-                "nullable": true,
-                "properties": {
-                  "page": {
-                    "description": "1-indexed page number within the processed document",
-                    "title": "Page",
-                    "type": "INTEGER"
-                  },
-                  "xmax": {
-                    "title": "Xmax",
-                    "type": "NUMBER"
-                  },
-                  "xmin": {
-                    "title": "Xmin",
-                    "type": "NUMBER"
-                  },
-                  "ymax": {
-                    "title": "Ymax",
-                    "type": "NUMBER"
-                  },
-                  "ymin": {
-                    "title": "Ymin",
-                    "type": "NUMBER"
-                  }
+                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+                "items": {
+                  "type": "NUMBER"
                 },
-                "property_ordering": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "required": [
-                  "page",
-                  "ymin",
-                  "xmin",
-                  "ymax",
-                  "xmax"
-                ],
-                "title": "BBox",
-                "type": "OBJECT"
+                "nullable": true,
+                "type": "ARRAY"
               },
               "confidence": {
                 "description": "Extraction confidence 0.0\u20131.0",
@@ -1704,47 +934,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -1785,47 +980,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -1856,47 +1016,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -1927,47 +1052,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -1998,47 +1088,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -2069,47 +1124,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -2158,47 +1178,12 @@
         "description": "One measured value printed on a certificate: one heat x one parameter (a chemistry element or a mechanical test).\n\nA flat row, on purpose: the response schema offered to Gemini has no nested arrays (heats x elements would be one).\n``value`` is the number AS PRINTED, as text (\"0.18\", \"<0.005\", \"350\"); ``unit`` is what the certificate prints\n(\"%\", \"ppm\", \"MPa\", ...) and is never converted at extraction time. ``parameter`` is the column heading as printed\n(\"C\", \"Mn\", \"Cr\", \"YS\", \"UTS\", \"EL\"); services/metallurgy.py maps it to a known parameter.",
         "properties": {
           "bbox": {
-            "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-            "nullable": true,
-            "properties": {
-              "page": {
-                "description": "1-indexed page number within the processed document",
-                "title": "Page",
-                "type": "INTEGER"
-              },
-              "xmax": {
-                "title": "Xmax",
-                "type": "NUMBER"
-              },
-              "xmin": {
-                "title": "Xmin",
-                "type": "NUMBER"
-              },
-              "ymax": {
-                "title": "Ymax",
-                "type": "NUMBER"
-              },
-              "ymin": {
-                "title": "Ymin",
-                "type": "NUMBER"
-              }
+            "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+            "items": {
+              "type": "NUMBER"
             },
-            "property_ordering": [
-              "page",
-              "ymin",
-              "xmin",
-              "ymax",
-              "xmax"
-            ],
-            "required": [
-              "page",
-              "ymin",
-              "xmin",
-              "ymax",
-              "xmax"
-            ],
-            "title": "BBox",
-            "type": "OBJECT"
+            "nullable": true,
+            "type": "ARRAY"
           },
           "confidence": {
             "description": "Extraction confidence 0.0\u20131.0",
@@ -2253,47 +1238,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -2341,47 +1291,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
@@ -2429,47 +1344,12 @@
       "nullable": true,
       "properties": {
         "bbox": {
-          "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
-          "nullable": true,
-          "properties": {
-            "page": {
-              "description": "1-indexed page number within the processed document",
-              "title": "Page",
-              "type": "INTEGER"
-            },
-            "xmax": {
-              "title": "Xmax",
-              "type": "NUMBER"
-            },
-            "xmin": {
-              "title": "Xmin",
-              "type": "NUMBER"
-            },
-            "ymax": {
-              "title": "Ymax",
-              "type": "NUMBER"
-            },
-            "ymin": {
-              "title": "Ymin",
-              "type": "NUMBER"
-            }
+          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "items": {
+            "type": "NUMBER"
           },
-          "property_ordering": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "required": [
-            "page",
-            "ymin",
-            "xmin",
-            "ymax",
-            "xmax"
-          ],
-          "title": "BBox",
-          "type": "OBJECT"
+          "nullable": true,
+          "type": "ARRAY"
         },
         "confidence": {
           "description": "Extraction confidence 0.0\u20131.0",
