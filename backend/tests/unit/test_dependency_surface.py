@@ -23,7 +23,6 @@ import pytest
 from google.auth.credentials import AnonymousCredentials
 from httpx import ASGITransport, AsyncClient
 
-from app.domain.schemas import ExtractedDocument
 from tests.helpers import CASE_C_DIR
 
 # ---------------------------------------------------------------------------
@@ -34,15 +33,17 @@ from tests.helpers import CASE_C_DIR
 def test_genai_config_and_part_build_offline() -> None:
     from google.genai import types
 
+    from app.agents.extraction_wire import Answer
+
     config = types.GenerateContentConfig(
         response_mime_type="application/json",
-        response_schema=ExtractedDocument,
+        response_schema=Answer,
         system_instruction="x",
         temperature=0.0,
     )
     assert config.response_mime_type == "application/json"
     assert config.temperature == 0.0
-    assert config.response_schema is ExtractedDocument
+    assert config.response_schema is Answer
 
     part = types.Part.from_bytes(data=b"%PDF", mime_type="application/pdf")
     assert part.inline_data is not None
@@ -101,8 +102,10 @@ def _find_value_schemas(node: Any, found: list[dict[str, Any]]) -> None:
             _find_value_schemas(child, found)
 
 
-def test_extracted_document_converts_to_a_gemini_response_schema_offline() -> None:
-    """The union `FieldRef.value: str | float | int | None` must survive conversion for Gemini.
+def test_the_answer_schema_converts_to_a_gemini_response_schema_offline() -> None:
+    """The schema the model is given (agents/extraction_wire.py) must survive the SDK's conversion: every value a plain nullable
+    STRING (a code such as 73041900 must come back as text, never a number), a place for a printed unit, a box as an array of
+    numbers, a page as an integer. Its size and shape are pinned in test_gemini_request_schema.py.
 
     Uses a private helper (google.genai._transformers.t_schema); if the SDK renames it this test
     skips with a reason rather than breaking the suite.
@@ -110,13 +113,15 @@ def test_extracted_document_converts_to_a_gemini_response_schema_offline() -> No
     from google import genai
     from google.genai import _transformers as transformers
 
+    from app.agents.extraction_wire import HEADER_FIELDS, LINE_FIELDS, Answer
+
     t_schema = getattr(transformers, "t_schema", None)
     if t_schema is None:
         pytest.skip("google.genai._transformers.t_schema no longer exists (private SDK helper was renamed)")
 
     client = genai.Client(api_key="offline")
     try:
-        schema = t_schema(client._api_client, ExtractedDocument)
+        schema = t_schema(client._api_client, Answer)
     except TypeError as exc:  # signature change in a future SDK
         pytest.skip(f"google.genai._transformers.t_schema signature changed: {exc}")
 
@@ -126,46 +131,30 @@ def test_extracted_document_converts_to_a_gemini_response_schema_offline() -> No
 
     values: list[dict[str, Any]] = []
     _find_value_schemas(document, values)
-    assert values, "no FieldRef.value schema found in the converted response schema"
+    assert len(values) == 4, "one value schema per entry shape: header, heat, line, certificate"
     for value in values:
-        assert value.get("nullable") is True  # every value may be null (field not printed)
+        assert value["type"] == "STRING" and value.get("nullable") is True, value  # text as printed; null if not legible
+        assert "any_of" not in value, value
 
     props = document["properties"]
-    line_props = props["line_items"]["items"]["properties"]
-
-    # Text fields (TextRef) convert to a plain nullable STRING: no string/number union. A code such as
-    # 73041900 must come back as text, not as a number.
-    text_fields = [props[n] for n in (
-        "document_number", "consignee", "consignor", "vessel_or_flight", "port_of_loading", "port_of_discharge",
-        "shipment_date", "invoice_currency", "hs_code_header")]
-    text_fields += [line_props[n] for n in ("description", "quantity", "hs_code_declared", "currency")]
-    for field in text_fields:
-        value = field["properties"]["value"]
-        assert value["type"] == "STRING", value
-        assert "any_of" not in value, value
-        assert value.get("nullable") is True
-
-    # Numeric fields (plain FieldRef) and weights (QuantityRef) still allow numbers (and text as printed).
-    numeric_fields = [props[n] for n in ("invoice_value", "package_count", "total_net_weight_kg",
-                                         "total_gross_weight_kg", "tare_weight_kg")]
-    numeric_fields += [line_props[n] for n in ("unit_price", "total_value", "net_weight_kg", "gross_weight_kg")]
-    for field in numeric_fields:
-        value = field["properties"]["value"]
-        assert {option["type"] for option in value["any_of"]} == {"STRING", "NUMBER", "INTEGER"}, value
-
-    # Weights carry the printed unit next to the value (QuantityRef): `unit` must reach the model's schema
-    # on every weight field, header level and line-item level, and it must be a nullable string.
-    for name in ("total_net_weight_kg", "total_gross_weight_kg", "tare_weight_kg"):
-        weight = document["properties"][name]
-        assert "unit" in weight["properties"], f"{name}: unit missing from the converted schema"
-        assert weight["properties"]["unit"]["type"] == "STRING"
-        assert weight["properties"]["unit"].get("nullable") is True
-        assert "value" in weight["properties"]
-    line_item = document["properties"]["line_items"]["items"]["properties"]
-    for name in ("net_weight_kg", "gross_weight_kg"):
-        assert "unit" in line_item[name]["properties"], f"line_items.{name}: unit missing"
-    # non-weight fields stay plain FieldRefs (no unit)
-    assert "unit" not in document["properties"]["consignee"]["properties"]
+    entries = {
+        "fields": props["fields"]["items"]["properties"],
+        "heat_numbers": props["heat_numbers"]["items"]["properties"],
+        "line_cells": props["line_cells"]["items"]["properties"],
+        "test_results": props["test_results"]["items"]["properties"],
+    }
+    for name, entry in entries.items():
+        assert entry["box"]["type"] == "ARRAY" and entry["box"]["items"]["type"] == "NUMBER", name
+        assert entry["page"]["type"] == "INTEGER" and entry["page"].get("nullable") is True, name
+        assert entry["confidence"]["type"] == "NUMBER", name
+    # a weight's printed unit has a place on the entries that can carry one, as a nullable string
+    for name in ("fields", "line_cells", "test_results"):
+        assert entries[name]["unit"]["type"] == "STRING" and entries[name]["unit"].get("nullable") is True, name
+    assert "unit" not in entries["heat_numbers"]
+    # the field names the model may use are exactly the ones the document model has
+    assert entries["fields"]["name"]["enum"] == list(HEADER_FIELDS)
+    assert entries["line_cells"]["name"]["enum"] == list(LINE_FIELDS)
+    assert "document_id" not in props
 
 
 # ---------------------------------------------------------------------------

@@ -1,114 +1,6 @@
 {
-  "description": "Structured extraction output for one trade document.\n\nProduced by the Extraction Agent (Gemini 2.5 Flash) and consumed by\nthe Discrepancy Agent (pure Python math engine) and Grounding Agent.",
+  "description": "What the model is asked to return. Every property is required (a list may be empty), in this order.",
   "properties": {
-    "consignee": {
-      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "nullable": true,
-          "title": "Value",
-          "type": "STRING"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "TextRef",
-      "type": "OBJECT"
-    },
-    "consignor": {
-      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "nullable": true,
-          "title": "Value",
-          "type": "STRING"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "TextRef",
-      "type": "OBJECT"
-    },
-    "country_of_origin": {
-      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "nullable": true,
-          "title": "Value",
-          "type": "STRING"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "TextRef",
-      "type": "OBJECT"
-    },
     "doc_type": {
       "enum": [
         "COMMERCIAL_INVOICE",
@@ -128,150 +20,123 @@
       "title": "Doc Type Confidence",
       "type": "NUMBER"
     },
-    "document_id": {
-      "description": "Matches the EvidenceDocument.document_id in Firestore",
-      "title": "Document Id",
-      "type": "STRING"
-    },
-    "document_number": {
-      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "nullable": true,
-          "title": "Value",
-          "type": "STRING"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "TextRef",
-      "type": "OBJECT"
-    },
-    "freight_amount": {
-      "description": "A single extracted scalar value with its provenance (confidence + bounding box).\n\nUsed for every field that Gemini extracts so we can:\n1. Apply confidence-based routing per field.\n2. Render bounding-box highlights on the correct page.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "any_of": [
-            {
-              "type": "STRING"
-            },
-            {
-              "type": "NUMBER"
-            },
-            {
-              "type": "INTEGER"
-            }
-          ],
-          "nullable": true,
-          "title": "Value"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "FieldRef",
-      "type": "OBJECT"
-    },
-    "freight_currency": {
-      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "nullable": true,
-          "title": "Value",
-          "type": "STRING"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "TextRef",
-      "type": "OBJECT"
-    },
-    "heat_numbers": {
-      "description": "every heat / cast / lot number printed on the document, each once",
+    "fields": {
+      "description": "one entry per header value that is printed on the document",
       "items": {
-        "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
         "properties": {
-          "bbox": {
-            "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "box": {
+            "description": "[ymin, xmin, ymax, xmax] of the printed value, normalised to 0-1000 from the top-left of the page",
             "items": {
               "type": "NUMBER"
             },
             "nullable": true,
+            "title": "Box",
             "type": "ARRAY"
           },
           "confidence": {
-            "description": "Extraction confidence 0.0\u20131.0",
+            "description": "how clearly the value is printed, 0.0 to 1.0",
             "maximum": 1.0,
             "minimum": 0.0,
             "title": "Confidence",
             "type": "NUMBER"
           },
+          "name": {
+            "description": "which header field this value is",
+            "enum": [
+              "document_number",
+              "consignee",
+              "consignor",
+              "vessel_or_flight",
+              "port_of_loading",
+              "port_of_discharge",
+              "shipment_date",
+              "invoice_value",
+              "invoice_currency",
+              "total_net_weight_kg",
+              "total_gross_weight_kg",
+              "tare_weight_kg",
+              "package_count",
+              "hs_code_header",
+              "incoterm",
+              "country_of_origin",
+              "freight_amount",
+              "freight_currency",
+              "insurance_amount",
+              "insurance_currency",
+              "specification"
+            ],
+            "title": "Name",
+            "type": "STRING"
+          },
+          "page": {
+            "description": "1-based page number where the value is printed",
+            "nullable": true,
+            "title": "Page",
+            "type": "INTEGER"
+          },
+          "unit": {
+            "description": "unit exactly as printed (for a weight: KGS, MT, LBS, ...; for a certificate value: %, ppm, MPa, ...); null if none is printed",
+            "nullable": true,
+            "title": "Unit",
+            "type": "STRING"
+          },
           "value": {
+            "description": "the value exactly as printed, as text; null if it is not legible",
+            "nullable": true,
+            "title": "Value",
+            "type": "STRING"
+          }
+        },
+        "property_ordering": [
+          "name",
+          "value",
+          "unit",
+          "confidence",
+          "page",
+          "box"
+        ],
+        "required": [
+          "name",
+          "value",
+          "unit",
+          "confidence",
+          "page",
+          "box"
+        ],
+        "title": "HeaderEntry",
+        "type": "OBJECT"
+      },
+      "title": "Fields",
+      "type": "ARRAY"
+    },
+    "heat_numbers": {
+      "description": "every heat / cast / lot number printed on the document, each once",
+      "items": {
+        "properties": {
+          "box": {
+            "description": "[ymin, xmin, ymax, xmax] of the printed value, normalised to 0-1000 from the top-left of the page",
+            "items": {
+              "type": "NUMBER"
+            },
+            "nullable": true,
+            "title": "Box",
+            "type": "ARRAY"
+          },
+          "confidence": {
+            "description": "how clearly the value is printed, 0.0 to 1.0",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "NUMBER"
+          },
+          "page": {
+            "description": "1-based page number where the value is printed",
+            "nullable": true,
+            "title": "Page",
+            "type": "INTEGER"
+          },
+          "value": {
+            "description": "the heat, cast or lot number exactly as printed",
             "nullable": true,
             "title": "Value",
             "type": "STRING"
@@ -280,913 +145,120 @@
         "property_ordering": [
           "value",
           "confidence",
-          "bbox"
+          "page",
+          "box"
         ],
         "required": [
-          "confidence"
+          "value",
+          "confidence",
+          "page",
+          "box"
         ],
-        "title": "TextRef",
+        "title": "HeatEntry",
         "type": "OBJECT"
       },
       "title": "Heat Numbers",
       "type": "ARRAY"
     },
-    "hs_code_header": {
-      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "nullable": true,
-          "title": "Value",
-          "type": "STRING"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "TextRef",
-      "type": "OBJECT"
-    },
-    "incoterm": {
-      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "nullable": true,
-          "title": "Value",
-          "type": "STRING"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "TextRef",
-      "type": "OBJECT"
-    },
-    "insurance_amount": {
-      "description": "A single extracted scalar value with its provenance (confidence + bounding box).\n\nUsed for every field that Gemini extracts so we can:\n1. Apply confidence-based routing per field.\n2. Render bounding-box highlights on the correct page.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "any_of": [
-            {
-              "type": "STRING"
-            },
-            {
-              "type": "NUMBER"
-            },
-            {
-              "type": "INTEGER"
-            }
-          ],
-          "nullable": true,
-          "title": "Value"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "FieldRef",
-      "type": "OBJECT"
-    },
-    "insurance_currency": {
-      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "nullable": true,
-          "title": "Value",
-          "type": "STRING"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "TextRef",
-      "type": "OBJECT"
-    },
-    "invoice_currency": {
-      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "nullable": true,
-          "title": "Value",
-          "type": "STRING"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "TextRef",
-      "type": "OBJECT"
-    },
-    "invoice_value": {
-      "description": "A single extracted scalar value with its provenance (confidence + bounding box).\n\nUsed for every field that Gemini extracts so we can:\n1. Apply confidence-based routing per field.\n2. Render bounding-box highlights on the correct page.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "any_of": [
-            {
-              "type": "STRING"
-            },
-            {
-              "type": "NUMBER"
-            },
-            {
-              "type": "INTEGER"
-            }
-          ],
-          "nullable": true,
-          "title": "Value"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "FieldRef",
-      "type": "OBJECT"
-    },
-    "line_items": {
+    "line_cells": {
+      "description": "one entry per value of each commodity line item",
       "items": {
-        "description": "A single commodity line from an invoice, packing list, etc.",
         "properties": {
-          "currency": {
-            "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-            "nullable": true,
-            "properties": {
-              "bbox": {
-                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-                "items": {
-                  "type": "NUMBER"
-                },
-                "nullable": true,
-                "type": "ARRAY"
-              },
-              "confidence": {
-                "description": "Extraction confidence 0.0\u20131.0",
-                "maximum": 1.0,
-                "minimum": 0.0,
-                "title": "Confidence",
-                "type": "NUMBER"
-              },
-              "value": {
-                "nullable": true,
-                "title": "Value",
-                "type": "STRING"
-              }
-            },
-            "property_ordering": [
-              "value",
-              "confidence",
-              "bbox"
-            ],
-            "required": [
-              "confidence"
-            ],
-            "title": "TextRef",
-            "type": "OBJECT"
-          },
-          "description": {
-            "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-            "properties": {
-              "bbox": {
-                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-                "items": {
-                  "type": "NUMBER"
-                },
-                "nullable": true,
-                "type": "ARRAY"
-              },
-              "confidence": {
-                "description": "Extraction confidence 0.0\u20131.0",
-                "maximum": 1.0,
-                "minimum": 0.0,
-                "title": "Confidence",
-                "type": "NUMBER"
-              },
-              "value": {
-                "nullable": true,
-                "title": "Value",
-                "type": "STRING"
-              }
-            },
-            "property_ordering": [
-              "value",
-              "confidence",
-              "bbox"
-            ],
-            "required": [
-              "confidence"
-            ],
-            "title": "TextRef",
-            "type": "OBJECT"
-          },
-          "gross_weight_kg": {
-            "description": "A FieldRef for a measured quantity (a weight): the number as printed plus the unit as printed.\n\n``value`` stays exactly as printed (\"14,280.50\", 14280.5, ...) and ``unit`` is what the document says\n(\"KGS\", \"MT\", \"LBS\", ...). Nothing is converted at extraction time; the deterministic engine converts\nwith app.domain.units and reports every assumption it had to make.",
-            "properties": {
-              "bbox": {
-                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-                "items": {
-                  "type": "NUMBER"
-                },
-                "nullable": true,
-                "type": "ARRAY"
-              },
-              "confidence": {
-                "description": "Extraction confidence 0.0\u20131.0",
-                "maximum": 1.0,
-                "minimum": 0.0,
-                "title": "Confidence",
-                "type": "NUMBER"
-              },
-              "unit": {
-                "description": "unit exactly as printed, e.g. KGS, MT, LBS; never converted",
-                "nullable": true,
-                "title": "Unit",
-                "type": "STRING"
-              },
-              "value": {
-                "any_of": [
-                  {
-                    "type": "STRING"
-                  },
-                  {
-                    "type": "NUMBER"
-                  },
-                  {
-                    "type": "INTEGER"
-                  }
-                ],
-                "nullable": true,
-                "title": "Value"
-              }
-            },
-            "property_ordering": [
-              "value",
-              "confidence",
-              "bbox",
-              "unit"
-            ],
-            "required": [
-              "confidence"
-            ],
-            "title": "QuantityRef",
-            "type": "OBJECT"
-          },
-          "hs_code_declared": {
-            "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-            "properties": {
-              "bbox": {
-                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-                "items": {
-                  "type": "NUMBER"
-                },
-                "nullable": true,
-                "type": "ARRAY"
-              },
-              "confidence": {
-                "description": "Extraction confidence 0.0\u20131.0",
-                "maximum": 1.0,
-                "minimum": 0.0,
-                "title": "Confidence",
-                "type": "NUMBER"
-              },
-              "value": {
-                "nullable": true,
-                "title": "Value",
-                "type": "STRING"
-              }
-            },
-            "property_ordering": [
-              "value",
-              "confidence",
-              "bbox"
-            ],
-            "required": [
-              "confidence"
-            ],
-            "title": "TextRef",
-            "type": "OBJECT"
-          },
-          "net_weight_kg": {
-            "description": "A FieldRef for a measured quantity (a weight): the number as printed plus the unit as printed.\n\n``value`` stays exactly as printed (\"14,280.50\", 14280.5, ...) and ``unit`` is what the document says\n(\"KGS\", \"MT\", \"LBS\", ...). Nothing is converted at extraction time; the deterministic engine converts\nwith app.domain.units and reports every assumption it had to make.",
-            "properties": {
-              "bbox": {
-                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-                "items": {
-                  "type": "NUMBER"
-                },
-                "nullable": true,
-                "type": "ARRAY"
-              },
-              "confidence": {
-                "description": "Extraction confidence 0.0\u20131.0",
-                "maximum": 1.0,
-                "minimum": 0.0,
-                "title": "Confidence",
-                "type": "NUMBER"
-              },
-              "unit": {
-                "description": "unit exactly as printed, e.g. KGS, MT, LBS; never converted",
-                "nullable": true,
-                "title": "Unit",
-                "type": "STRING"
-              },
-              "value": {
-                "any_of": [
-                  {
-                    "type": "STRING"
-                  },
-                  {
-                    "type": "NUMBER"
-                  },
-                  {
-                    "type": "INTEGER"
-                  }
-                ],
-                "nullable": true,
-                "title": "Value"
-              }
-            },
-            "property_ordering": [
-              "value",
-              "confidence",
-              "bbox",
-              "unit"
-            ],
-            "required": [
-              "confidence"
-            ],
-            "title": "QuantityRef",
-            "type": "OBJECT"
-          },
-          "quantity": {
-            "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-            "properties": {
-              "bbox": {
-                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-                "items": {
-                  "type": "NUMBER"
-                },
-                "nullable": true,
-                "type": "ARRAY"
-              },
-              "confidence": {
-                "description": "Extraction confidence 0.0\u20131.0",
-                "maximum": 1.0,
-                "minimum": 0.0,
-                "title": "Confidence",
-                "type": "NUMBER"
-              },
-              "value": {
-                "nullable": true,
-                "title": "Value",
-                "type": "STRING"
-              }
-            },
-            "property_ordering": [
-              "value",
-              "confidence",
-              "bbox"
-            ],
-            "required": [
-              "confidence"
-            ],
-            "title": "TextRef",
-            "type": "OBJECT"
-          },
-          "total_value": {
-            "description": "A single extracted scalar value with its provenance (confidence + bounding box).\n\nUsed for every field that Gemini extracts so we can:\n1. Apply confidence-based routing per field.\n2. Render bounding-box highlights on the correct page.",
-            "nullable": true,
-            "properties": {
-              "bbox": {
-                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-                "items": {
-                  "type": "NUMBER"
-                },
-                "nullable": true,
-                "type": "ARRAY"
-              },
-              "confidence": {
-                "description": "Extraction confidence 0.0\u20131.0",
-                "maximum": 1.0,
-                "minimum": 0.0,
-                "title": "Confidence",
-                "type": "NUMBER"
-              },
-              "value": {
-                "any_of": [
-                  {
-                    "type": "STRING"
-                  },
-                  {
-                    "type": "NUMBER"
-                  },
-                  {
-                    "type": "INTEGER"
-                  }
-                ],
-                "nullable": true,
-                "title": "Value"
-              }
-            },
-            "property_ordering": [
-              "value",
-              "confidence",
-              "bbox"
-            ],
-            "required": [
-              "confidence"
-            ],
-            "title": "FieldRef",
-            "type": "OBJECT"
-          },
-          "unit_price": {
-            "description": "A single extracted scalar value with its provenance (confidence + bounding box).\n\nUsed for every field that Gemini extracts so we can:\n1. Apply confidence-based routing per field.\n2. Render bounding-box highlights on the correct page.",
-            "nullable": true,
-            "properties": {
-              "bbox": {
-                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-                "items": {
-                  "type": "NUMBER"
-                },
-                "nullable": true,
-                "type": "ARRAY"
-              },
-              "confidence": {
-                "description": "Extraction confidence 0.0\u20131.0",
-                "maximum": 1.0,
-                "minimum": 0.0,
-                "title": "Confidence",
-                "type": "NUMBER"
-              },
-              "value": {
-                "any_of": [
-                  {
-                    "type": "STRING"
-                  },
-                  {
-                    "type": "NUMBER"
-                  },
-                  {
-                    "type": "INTEGER"
-                  }
-                ],
-                "nullable": true,
-                "title": "Value"
-              }
-            },
-            "property_ordering": [
-              "value",
-              "confidence",
-              "bbox"
-            ],
-            "required": [
-              "confidence"
-            ],
-            "title": "FieldRef",
-            "type": "OBJECT"
-          },
-          "unit_price_basis": {
-            "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-            "nullable": true,
-            "properties": {
-              "bbox": {
-                "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-                "items": {
-                  "type": "NUMBER"
-                },
-                "nullable": true,
-                "type": "ARRAY"
-              },
-              "confidence": {
-                "description": "Extraction confidence 0.0\u20131.0",
-                "maximum": 1.0,
-                "minimum": 0.0,
-                "title": "Confidence",
-                "type": "NUMBER"
-              },
-              "value": {
-                "nullable": true,
-                "title": "Value",
-                "type": "STRING"
-              }
-            },
-            "property_ordering": [
-              "value",
-              "confidence",
-              "bbox"
-            ],
-            "required": [
-              "confidence"
-            ],
-            "title": "TextRef",
-            "type": "OBJECT"
-          }
-        },
-        "property_ordering": [
-          "description",
-          "quantity",
-          "net_weight_kg",
-          "gross_weight_kg",
-          "hs_code_declared",
-          "unit_price",
-          "total_value",
-          "currency",
-          "unit_price_basis"
-        ],
-        "required": [
-          "description",
-          "quantity",
-          "net_weight_kg",
-          "gross_weight_kg",
-          "hs_code_declared"
-        ],
-        "title": "LineItem",
-        "type": "OBJECT"
-      },
-      "title": "Line Items",
-      "type": "ARRAY"
-    },
-    "package_count": {
-      "description": "A single extracted scalar value with its provenance (confidence + bounding box).\n\nUsed for every field that Gemini extracts so we can:\n1. Apply confidence-based routing per field.\n2. Render bounding-box highlights on the correct page.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "any_of": [
-            {
-              "type": "STRING"
-            },
-            {
-              "type": "NUMBER"
-            },
-            {
-              "type": "INTEGER"
-            }
-          ],
-          "nullable": true,
-          "title": "Value"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "FieldRef",
-      "type": "OBJECT"
-    },
-    "port_of_discharge": {
-      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "nullable": true,
-          "title": "Value",
-          "type": "STRING"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "TextRef",
-      "type": "OBJECT"
-    },
-    "port_of_loading": {
-      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "nullable": true,
-          "title": "Value",
-          "type": "STRING"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "TextRef",
-      "type": "OBJECT"
-    },
-    "shipment_date": {
-      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "nullable": true,
-          "title": "Value",
-          "type": "STRING"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "TextRef",
-      "type": "OBJECT"
-    },
-    "specification": {
-      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "nullable": true,
-          "title": "Value",
-          "type": "STRING"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "TextRef",
-      "type": "OBJECT"
-    },
-    "tare_weight_kg": {
-      "description": "A FieldRef for a measured quantity (a weight): the number as printed plus the unit as printed.\n\n``value`` stays exactly as printed (\"14,280.50\", 14280.5, ...) and ``unit`` is what the document says\n(\"KGS\", \"MT\", \"LBS\", ...). Nothing is converted at extraction time; the deterministic engine converts\nwith app.domain.units and reports every assumption it had to make.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "unit": {
-          "description": "unit exactly as printed, e.g. KGS, MT, LBS; never converted",
-          "nullable": true,
-          "title": "Unit",
-          "type": "STRING"
-        },
-        "value": {
-          "any_of": [
-            {
-              "type": "STRING"
-            },
-            {
-              "type": "NUMBER"
-            },
-            {
-              "type": "INTEGER"
-            }
-          ],
-          "nullable": true,
-          "title": "Value"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox",
-        "unit"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "QuantityRef",
-      "type": "OBJECT"
-    },
-    "test_results": {
-      "description": "every chemistry and mechanical value printed: one entry per heat and parameter",
-      "items": {
-        "description": "One measured value printed on a certificate: one heat x one parameter (a chemistry element or a mechanical test).\n\nA flat row, on purpose: the response schema offered to Gemini has no nested arrays (heats x elements would be one).\n``value`` is the number AS PRINTED, as text (\"0.18\", \"<0.005\", \"350\"); ``unit`` is what the certificate prints\n(\"%\", \"ppm\", \"MPa\", ...) and is never converted at extraction time. ``parameter`` is the column heading as printed\n(\"C\", \"Mn\", \"Cr\", \"YS\", \"UTS\", \"EL\"); services/metallurgy.py maps it to a known parameter.",
-        "properties": {
-          "bbox": {
-            "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
+          "box": {
+            "description": "[ymin, xmin, ymax, xmax] of the printed value, normalised to 0-1000 from the top-left of the page",
             "items": {
               "type": "NUMBER"
             },
             "nullable": true,
+            "title": "Box",
             "type": "ARRAY"
           },
           "confidence": {
-            "description": "Extraction confidence 0.0\u20131.0",
+            "description": "how clearly the value is printed, 0.0 to 1.0",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "type": "NUMBER"
+          },
+          "name": {
+            "description": "which column of the line this value is",
+            "enum": [
+              "description",
+              "quantity",
+              "net_weight_kg",
+              "gross_weight_kg",
+              "hs_code_declared",
+              "unit_price",
+              "total_value",
+              "currency",
+              "unit_price_basis"
+            ],
+            "title": "Name",
+            "type": "STRING"
+          },
+          "page": {
+            "description": "1-based page number where the value is printed",
+            "nullable": true,
+            "title": "Page",
+            "type": "INTEGER"
+          },
+          "row": {
+            "description": "the 1-based number of the commodity line in the table; every value of one line has the same row",
+            "title": "Row",
+            "type": "INTEGER"
+          },
+          "unit": {
+            "description": "unit exactly as printed (for a weight: KGS, MT, LBS, ...; for a certificate value: %, ppm, MPa, ...); null if none is printed",
+            "nullable": true,
+            "title": "Unit",
+            "type": "STRING"
+          },
+          "value": {
+            "description": "the value exactly as printed, as text; null if it is not legible",
+            "nullable": true,
+            "title": "Value",
+            "type": "STRING"
+          }
+        },
+        "property_ordering": [
+          "row",
+          "name",
+          "value",
+          "unit",
+          "confidence",
+          "page",
+          "box"
+        ],
+        "required": [
+          "row",
+          "name",
+          "value",
+          "unit",
+          "confidence",
+          "page",
+          "box"
+        ],
+        "title": "LineEntry",
+        "type": "OBJECT"
+      },
+      "title": "Line Cells",
+      "type": "ARRAY"
+    },
+    "test_results": {
+      "description": "every chemistry and mechanical value printed: one entry per heat and parameter",
+      "items": {
+        "properties": {
+          "box": {
+            "description": "[ymin, xmin, ymax, xmax] of the printed value, normalised to 0-1000 from the top-left of the page",
+            "items": {
+              "type": "NUMBER"
+            },
+            "nullable": true,
+            "title": "Box",
+            "type": "ARRAY"
+          },
+          "confidence": {
+            "description": "how clearly the value is printed, 0.0 to 1.0",
             "maximum": 1.0,
             "minimum": 0.0,
             "title": "Confidence",
@@ -1198,218 +270,71 @@
             "title": "Heat Number",
             "type": "STRING"
           },
+          "page": {
+            "description": "1-based page number where the value is printed",
+            "nullable": true,
+            "title": "Page",
+            "type": "INTEGER"
+          },
           "parameter": {
             "description": "column heading as printed: element symbol (C, Mn, Cr, ...) or YS / UTS / EL",
             "title": "Parameter",
             "type": "STRING"
           },
           "unit": {
-            "description": "unit as printed (%, ppm, MPa, J, ...); null if none is printed",
+            "description": "unit exactly as printed (for a weight: KGS, MT, LBS, ...; for a certificate value: %, ppm, MPa, ...); null if none is printed",
             "nullable": true,
             "title": "Unit",
             "type": "STRING"
           },
           "value": {
+            "description": "the value exactly as printed, as text; null if it is not legible",
             "nullable": true,
             "title": "Value",
             "type": "STRING"
           }
         },
         "property_ordering": [
-          "value",
-          "confidence",
-          "bbox",
-          "parameter",
           "heat_number",
-          "unit"
+          "parameter",
+          "value",
+          "unit",
+          "confidence",
+          "page",
+          "box"
         ],
         "required": [
+          "heat_number",
+          "parameter",
+          "value",
+          "unit",
           "confidence",
-          "parameter"
+          "page",
+          "box"
         ],
-        "title": "LabResult",
+        "title": "LabEntry",
         "type": "OBJECT"
       },
       "title": "Test Results",
       "type": "ARRAY"
-    },
-    "total_gross_weight_kg": {
-      "description": "A FieldRef for a measured quantity (a weight): the number as printed plus the unit as printed.\n\n``value`` stays exactly as printed (\"14,280.50\", 14280.5, ...) and ``unit`` is what the document says\n(\"KGS\", \"MT\", \"LBS\", ...). Nothing is converted at extraction time; the deterministic engine converts\nwith app.domain.units and reports every assumption it had to make.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "unit": {
-          "description": "unit exactly as printed, e.g. KGS, MT, LBS; never converted",
-          "nullable": true,
-          "title": "Unit",
-          "type": "STRING"
-        },
-        "value": {
-          "any_of": [
-            {
-              "type": "STRING"
-            },
-            {
-              "type": "NUMBER"
-            },
-            {
-              "type": "INTEGER"
-            }
-          ],
-          "nullable": true,
-          "title": "Value"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox",
-        "unit"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "QuantityRef",
-      "type": "OBJECT"
-    },
-    "total_net_weight_kg": {
-      "description": "A FieldRef for a measured quantity (a weight): the number as printed plus the unit as printed.\n\n``value`` stays exactly as printed (\"14,280.50\", 14280.5, ...) and ``unit`` is what the document says\n(\"KGS\", \"MT\", \"LBS\", ...). Nothing is converted at extraction time; the deterministic engine converts\nwith app.domain.units and reports every assumption it had to make.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "unit": {
-          "description": "unit exactly as printed, e.g. KGS, MT, LBS; never converted",
-          "nullable": true,
-          "title": "Unit",
-          "type": "STRING"
-        },
-        "value": {
-          "any_of": [
-            {
-              "type": "STRING"
-            },
-            {
-              "type": "NUMBER"
-            },
-            {
-              "type": "INTEGER"
-            }
-          ],
-          "nullable": true,
-          "title": "Value"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox",
-        "unit"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "QuantityRef",
-      "type": "OBJECT"
-    },
-    "vessel_or_flight": {
-      "description": "A FieldRef for text (identifiers, names, codes): the value is always a string.\n\nA model that returns 73041900 as a JSON number still yields \"73041900\": whole numbers lose any \".0\",\nother numbers become their decimal text. The JSON schema offered to Gemini is a plain nullable STRING\nfor these fields instead of a string/number union.",
-      "nullable": true,
-      "properties": {
-        "bbox": {
-          "description": "[ymin, xmin, ymax, xmax] normalised to 0-1000",
-          "items": {
-            "type": "NUMBER"
-          },
-          "nullable": true,
-          "type": "ARRAY"
-        },
-        "confidence": {
-          "description": "Extraction confidence 0.0\u20131.0",
-          "maximum": 1.0,
-          "minimum": 0.0,
-          "title": "Confidence",
-          "type": "NUMBER"
-        },
-        "value": {
-          "nullable": true,
-          "title": "Value",
-          "type": "STRING"
-        }
-      },
-      "property_ordering": [
-        "value",
-        "confidence",
-        "bbox"
-      ],
-      "required": [
-        "confidence"
-      ],
-      "title": "TextRef",
-      "type": "OBJECT"
     }
   },
   "property_ordering": [
-    "document_id",
     "doc_type",
     "doc_type_confidence",
-    "document_number",
-    "consignee",
-    "consignor",
-    "vessel_or_flight",
-    "port_of_loading",
-    "port_of_discharge",
-    "shipment_date",
-    "invoice_value",
-    "invoice_currency",
-    "total_net_weight_kg",
-    "total_gross_weight_kg",
-    "tare_weight_kg",
-    "package_count",
-    "hs_code_header",
-    "incoterm",
-    "country_of_origin",
-    "freight_amount",
-    "freight_currency",
-    "insurance_amount",
-    "insurance_currency",
-    "specification",
+    "fields",
     "heat_numbers",
-    "test_results",
-    "line_items"
+    "line_cells",
+    "test_results"
   ],
   "required": [
-    "document_id",
     "doc_type",
-    "doc_type_confidence"
+    "doc_type_confidence",
+    "fields",
+    "heat_numbers",
+    "line_cells",
+    "test_results"
   ],
-  "title": "ExtractedDocument",
+  "title": "Answer",
   "type": "OBJECT"
 }

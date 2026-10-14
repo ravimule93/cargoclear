@@ -1,0 +1,3115 @@
+{
+  "declared": {
+    "model": "gemini-2.5-flash",
+    "note": "synthetic rendered documents, not scans; the new cell-list response schema; 4 of 24 runs ended in a network error (ConnectError, ReadError), not a schema rejection; the two affected documents were re-run (next entry)"
+  },
+  "documents": [
+    {
+      "agreement": {
+        "fields": 5,
+        "identical_every_run": 5,
+        "pct": 100.0
+      },
+      "file": "bill_of_lading.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.269,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.267,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.31,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.249,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.249,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 32494,
+            "output_tokens": 509,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": "ExtractionError",
+          "failed": [],
+          "iou_mean": null,
+          "rows": [],
+          "stats": {}
+        },
+        {
+          "error": "ExtractionError",
+          "failed": [],
+          "iou_mean": null,
+          "rows": [],
+          "stats": {}
+        }
+      ]
+    },
+    {
+      "agreement": {
+        "fields": 11,
+        "identical_every_run": 11,
+        "pct": 100.0
+      },
+      "file": "commercial_invoice.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": "ExtractionError",
+          "failed": [],
+          "iou_mean": null,
+          "rows": [],
+          "stats": {}
+        },
+        {
+          "error": "ExtractionError",
+          "failed": [],
+          "iou_mean": null,
+          "rows": [],
+          "stats": {}
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.25,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.0,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.311,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.251,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.07,
+              "kind": "country",
+              "name": "country_of_origin",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.202,
+              "kind": "text",
+              "name": "incoterm",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.344,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.428,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.428,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 3,
+            "latency_ms": 53007,
+            "output_tokens": 1172,
+            "prompt_tokens": 5407
+          }
+        }
+      ]
+    },
+    {
+      "agreement": {
+        "fields": 41,
+        "identical_every_run": 41,
+        "pct": 100.0
+      },
+      "file": "mtc_pipe_test_cert.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.284,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.225,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.311,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.249,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.172,
+              "kind": "hs",
+              "name": "hs_code_header",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.177,
+              "kind": "text",
+              "name": "specification",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.299,
+              "kind": "heat",
+              "name": "heat_numbers[0]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.299,
+              "kind": "heat",
+              "name": "heat_numbers[1]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.C]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Mn]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Si]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.374,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.P]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.374,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.S]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Cr]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Ni]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Mo]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Cu]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.V]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Nb]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Ti]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.24,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.YS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.24,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.UTS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.142,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.EL]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.C]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Mn]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Si]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.374,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.P]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.374,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.S]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Cr]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Ni]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Mo]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Cu]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.V]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Nb]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Ti]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.24,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.YS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.24,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.UTS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.142,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.EL]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.35,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.42,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.424,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 11808,
+            "output_tokens": 3039,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.284,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.225,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.311,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.249,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.172,
+              "kind": "hs",
+              "name": "hs_code_header",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.177,
+              "kind": "text",
+              "name": "specification",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.299,
+              "kind": "heat",
+              "name": "heat_numbers[0]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.299,
+              "kind": "heat",
+              "name": "heat_numbers[1]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.C]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Mn]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Si]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.374,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.P]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.374,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.S]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Cr]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Ni]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Mo]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Cu]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.V]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Nb]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Ti]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.24,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.YS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.24,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.UTS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.142,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.EL]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.C]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Mn]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Si]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.374,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.P]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.374,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.S]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Cr]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Ni]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Mo]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Cu]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.V]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Nb]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Ti]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.24,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.YS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.24,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.UTS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.142,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.EL]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.35,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.42,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.424,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 14653,
+            "output_tokens": 3049,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.282,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.225,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.311,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.249,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.172,
+              "kind": "hs",
+              "name": "hs_code_header",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.177,
+              "kind": "text",
+              "name": "specification",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.299,
+              "kind": "heat",
+              "name": "heat_numbers[0]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.299,
+              "kind": "heat",
+              "name": "heat_numbers[1]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.C]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Mn]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Si]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.365,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.P]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.365,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.S]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Cr]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Ni]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Mo]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Cu]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.276,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.V]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.276,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Nb]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.276,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.Ti]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.24,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.YS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.24,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.UTS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.142,
+              "kind": "lab",
+              "name": "test_results[H-24-0881.EL]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.C]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Mn]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Si]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.365,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.P]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.365,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.S]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Cr]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Ni]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Mo]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Cu]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.276,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.V]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.276,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Nb]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.276,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.Ti]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.24,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.YS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.24,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.UTS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.142,
+              "kind": "lab",
+              "name": "test_results[H-24-0882.EL]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.344,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.42,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.424,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 12511,
+            "output_tokens": 3039,
+            "prompt_tokens": 5407
+          }
+        }
+      ]
+    },
+    {
+      "agreement": {
+        "fields": 13,
+        "identical_every_run": 13,
+        "pct": 100.0
+      },
+      "file": "packing_list.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.311,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.219,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.35,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.285,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.273,
+              "kind": "weight",
+              "name": "total_net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.273,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.217,
+              "kind": "weight",
+              "name": "tare_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.044,
+              "kind": "country",
+              "name": "country_of_origin",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.304,
+              "kind": "heat",
+              "name": "heat_numbers[0]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.296,
+              "kind": "heat",
+              "name": "heat_numbers[1]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.448,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.51,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.51,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 6670,
+            "output_tokens": 1286,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.311,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.219,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.35,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.285,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.273,
+              "kind": "weight",
+              "name": "total_net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.273,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.217,
+              "kind": "weight",
+              "name": "tare_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.044,
+              "kind": "country",
+              "name": "country_of_origin",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.304,
+              "kind": "heat",
+              "name": "heat_numbers[0]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.296,
+              "kind": "heat",
+              "name": "heat_numbers[1]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.448,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.51,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.51,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 6883,
+            "output_tokens": 1286,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.311,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.219,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.35,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.285,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.273,
+              "kind": "weight",
+              "name": "total_net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.273,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.217,
+              "kind": "weight",
+              "name": "tare_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.044,
+              "kind": "country",
+              "name": "country_of_origin",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.304,
+              "kind": "heat",
+              "name": "heat_numbers[0]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.296,
+              "kind": "heat",
+              "name": "heat_numbers[1]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.448,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.51,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.51,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 5937,
+            "output_tokens": 1286,
+            "prompt_tokens": 5407
+          }
+        }
+      ]
+    },
+    {
+      "agreement": {
+        "fields": 5,
+        "identical_every_run": 5,
+        "pct": 100.0
+      },
+      "file": "case_d_bill_of_lading.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.273,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.287,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.241,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.314,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.249,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 4537,
+            "output_tokens": 641,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.273,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.287,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.241,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.314,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.249,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 3967,
+            "output_tokens": 641,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.273,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.287,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.241,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.314,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.249,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 4189,
+            "output_tokens": 641,
+            "prompt_tokens": 5407
+          }
+        }
+      ]
+    },
+    {
+      "agreement": {
+        "fields": 11,
+        "identical_every_run": 11,
+        "pct": 100.0
+      },
+      "file": "case_d_commercial_invoice.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.271,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.265,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.24,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.314,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.082,
+              "kind": "country",
+              "name": "country_of_origin",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.158,
+              "kind": "text",
+              "name": "incoterm",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.339,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.422,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.422,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 6790,
+            "output_tokens": 1218,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.267,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.265,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.224,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.292,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.082,
+              "kind": "country",
+              "name": "country_of_origin",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.158,
+              "kind": "text",
+              "name": "incoterm",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.339,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.422,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.422,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 6706,
+            "output_tokens": 1237,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.267,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.263,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.224,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.292,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.082,
+              "kind": "country",
+              "name": "country_of_origin",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.158,
+              "kind": "text",
+              "name": "incoterm",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.339,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.422,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.422,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 8238,
+            "output_tokens": 1237,
+            "prompt_tokens": 5407
+          }
+        }
+      ]
+    },
+    {
+      "agreement": {
+        "fields": 41,
+        "identical_every_run": 41,
+        "pct": 100.0
+      },
+      "file": "case_d_mtc_test_cert.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.259,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.215,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.24,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.314,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.158,
+              "kind": "hs",
+              "name": "hs_code_header",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.17,
+              "kind": "text",
+              "name": "specification",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.266,
+              "kind": "heat",
+              "name": "heat_numbers[0]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.266,
+              "kind": "heat",
+              "name": "heat_numbers[1]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.256,
+              "kind": "lab",
+              "name": "test_results[TH-77120.C]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.264,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Mn]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.264,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Si]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.347,
+              "kind": "lab",
+              "name": "test_results[TH-77120.P]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.339,
+              "kind": "lab",
+              "name": "test_results[TH-77120.S]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.254,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Cr]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.254,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Ni]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.254,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Mo]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.254,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Cu]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.254,
+              "kind": "lab",
+              "name": "test_results[TH-77120.V]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.254,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Nb]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.254,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Ti]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.221,
+              "kind": "lab",
+              "name": "test_results[TH-77120.YS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.221,
+              "kind": "lab",
+              "name": "test_results[TH-77120.UTS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.123,
+              "kind": "lab",
+              "name": "test_results[TH-77120.EL]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.256,
+              "kind": "lab",
+              "name": "test_results[TH-77121.C]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.264,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Mn]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.264,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Si]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.347,
+              "kind": "lab",
+              "name": "test_results[TH-77121.P]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.339,
+              "kind": "lab",
+              "name": "test_results[TH-77121.S]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.254,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Cr]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.254,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Ni]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.254,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Mo]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.254,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Cu]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.254,
+              "kind": "lab",
+              "name": "test_results[TH-77121.V]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.254,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Nb]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.254,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Ti]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.221,
+              "kind": "lab",
+              "name": "test_results[TH-77121.YS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.221,
+              "kind": "lab",
+              "name": "test_results[TH-77121.UTS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.123,
+              "kind": "lab",
+              "name": "test_results[TH-77121.EL]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.315,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.392,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.392,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 12960,
+            "output_tokens": 2977,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.242,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.2,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.208,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.271,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.156,
+              "kind": "hs",
+              "name": "hs_code_header",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.147,
+              "kind": "text",
+              "name": "specification",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.246,
+              "kind": "heat",
+              "name": "heat_numbers[0]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.246,
+              "kind": "heat",
+              "name": "heat_numbers[1]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.237,
+              "kind": "lab",
+              "name": "test_results[TH-77120.C]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.244,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Mn]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.244,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Si]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.321,
+              "kind": "lab",
+              "name": "test_results[TH-77120.P]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.321,
+              "kind": "lab",
+              "name": "test_results[TH-77120.S]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.244,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Cr]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.244,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Ni]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.244,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Mo]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.244,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Cu]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.237,
+              "kind": "lab",
+              "name": "test_results[TH-77120.V]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.237,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Nb]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.237,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Ti]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.206,
+              "kind": "lab",
+              "name": "test_results[TH-77120.YS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.206,
+              "kind": "lab",
+              "name": "test_results[TH-77120.UTS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.122,
+              "kind": "lab",
+              "name": "test_results[TH-77120.EL]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.237,
+              "kind": "lab",
+              "name": "test_results[TH-77121.C]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.244,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Mn]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.244,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Si]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.321,
+              "kind": "lab",
+              "name": "test_results[TH-77121.P]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.321,
+              "kind": "lab",
+              "name": "test_results[TH-77121.S]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.244,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Cr]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.244,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Ni]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.244,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Mo]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.244,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Cu]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.237,
+              "kind": "lab",
+              "name": "test_results[TH-77121.V]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.237,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Nb]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.237,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Ti]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.206,
+              "kind": "lab",
+              "name": "test_results[TH-77121.YS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.206,
+              "kind": "lab",
+              "name": "test_results[TH-77121.UTS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.122,
+              "kind": "lab",
+              "name": "test_results[TH-77121.EL]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.292,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.362,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.367,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 15475,
+            "output_tokens": 3005,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.28,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.25,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.224,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.293,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.17,
+              "kind": "hs",
+              "name": "hs_code_header",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.158,
+              "kind": "text",
+              "name": "specification",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.287,
+              "kind": "heat",
+              "name": "heat_numbers[0]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.287,
+              "kind": "heat",
+              "name": "heat_numbers[1]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.276,
+              "kind": "lab",
+              "name": "test_results[TH-77120.C]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Mn]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Si]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.374,
+              "kind": "lab",
+              "name": "test_results[TH-77120.P]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.374,
+              "kind": "lab",
+              "name": "test_results[TH-77120.S]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.282,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Cr]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.282,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Ni]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.282,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Mo]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.282,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Cu]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.273,
+              "kind": "lab",
+              "name": "test_results[TH-77120.V]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.273,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Nb]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.273,
+              "kind": "lab",
+              "name": "test_results[TH-77120.Ti]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.238,
+              "kind": "lab",
+              "name": "test_results[TH-77120.YS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.238,
+              "kind": "lab",
+              "name": "test_results[TH-77120.UTS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.15,
+              "kind": "lab",
+              "name": "test_results[TH-77120.EL]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[TH-77121.C]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Mn]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.285,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Si]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.374,
+              "kind": "lab",
+              "name": "test_results[TH-77121.P]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.374,
+              "kind": "lab",
+              "name": "test_results[TH-77121.S]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.282,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Cr]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.282,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Ni]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.282,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Mo]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.282,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Cu]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.273,
+              "kind": "lab",
+              "name": "test_results[TH-77121.V]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.273,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Nb]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.273,
+              "kind": "lab",
+              "name": "test_results[TH-77121.Ti]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.238,
+              "kind": "lab",
+              "name": "test_results[TH-77121.YS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.238,
+              "kind": "lab",
+              "name": "test_results[TH-77121.UTS]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.15,
+              "kind": "lab",
+              "name": "test_results[TH-77121.EL]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.339,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.422,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.422,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 13343,
+            "output_tokens": 3004,
+            "prompt_tokens": 5407
+          }
+        }
+      ]
+    },
+    {
+      "agreement": {
+        "fields": 13,
+        "identical_every_run": 13,
+        "pct": 100.0
+      },
+      "file": "case_d_packing_list.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.256,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.252,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.224,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.293,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.193,
+              "kind": "weight",
+              "name": "tare_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.079,
+              "kind": "country",
+              "name": "country_of_origin",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.191,
+              "kind": "heat",
+              "name": "heat_numbers[0]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.191,
+              "kind": "heat",
+              "name": "heat_numbers[1]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.344,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.422,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.422,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 5610,
+            "output_tokens": 954,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.256,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.252,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.224,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.293,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.193,
+              "kind": "weight",
+              "name": "tare_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.079,
+              "kind": "country",
+              "name": "country_of_origin",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.191,
+              "kind": "heat",
+              "name": "heat_numbers[0]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.191,
+              "kind": "heat",
+              "name": "heat_numbers[1]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.344,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.422,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.422,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 6479,
+            "output_tokens": 954,
+            "prompt_tokens": 5407
+          }
+        },
+        {
+          "error": null,
+          "failed": [],
+          "iou_mean": 0.256,
+          "rows": [
+            {
+              "gating": true,
+              "iou": null,
+              "kind": "doc_type",
+              "name": "doc_type",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.252,
+              "kind": "text",
+              "name": "document_number",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.224,
+              "kind": "entity",
+              "name": "consignee",
+              "status": "OK"
+            },
+            {
+              "gating": false,
+              "iou": 0.293,
+              "kind": "entity",
+              "name": "consignor",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.233,
+              "kind": "weight",
+              "name": "total_gross_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.193,
+              "kind": "weight",
+              "name": "tare_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.079,
+              "kind": "country",
+              "name": "country_of_origin",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.191,
+              "kind": "heat",
+              "name": "heat_numbers[0]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.191,
+              "kind": "heat",
+              "name": "heat_numbers[1]",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.344,
+              "kind": "hs",
+              "name": "line_items[0].hs_code_declared",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.422,
+              "kind": "weight",
+              "name": "line_items[0].net_weight_kg",
+              "status": "OK"
+            },
+            {
+              "gating": true,
+              "iou": 0.422,
+              "kind": "weight",
+              "name": "line_items[0].gross_weight_kg",
+              "status": "OK"
+            }
+          ],
+          "stats": {
+            "attempts": 1,
+            "latency_ms": 13255,
+            "output_tokens": 954,
+            "prompt_tokens": 5407
+          }
+        }
+      ]
+    }
+  ],
+  "environment": {
+    "location": "asia-south1",
+    "model": "gemini-2.5-flash",
+    "page_image_mode": "bw",
+    "pages": "png",
+    "preprocess_deskew": false,
+    "sdk_version": "2.29.0",
+    "thinking_budget": 0
+  },
+  "kind": "extraction",
+  "label": "smoke-8docs-x3-full-schema",
+  "recorded_at": "2026-10-14T11:37:51.254362+00:00",
+  "runs_per_document": 3,
+  "schema": "cargoclear.measurement/1",
+  "tool": "scripts/live_smoke_extraction.py"
+}

@@ -1,0 +1,127 @@
+{
+  "declared": {
+    "model": "gemini-3.5-flash",
+    "note": "gemini-3.5-flash with the default GEMINI_THINKING_BUDGET=0: every request refused (HTTP 400, thinking budget not supported for this model); a negative result, not a schema problem"
+  },
+  "documents": [
+    {
+      "file": "bill_of_lading.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": "ExtractionError",
+          "failed": [],
+          "iou_mean": null,
+          "rows": [],
+          "stats": {}
+        }
+      ]
+    },
+    {
+      "file": "commercial_invoice.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": "ExtractionError",
+          "failed": [],
+          "iou_mean": null,
+          "rows": [],
+          "stats": {}
+        }
+      ]
+    },
+    {
+      "file": "mtc_pipe_test_cert.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": "ExtractionError",
+          "failed": [],
+          "iou_mean": null,
+          "rows": [],
+          "stats": {}
+        }
+      ]
+    },
+    {
+      "file": "packing_list.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": "ExtractionError",
+          "failed": [],
+          "iou_mean": null,
+          "rows": [],
+          "stats": {}
+        }
+      ]
+    },
+    {
+      "file": "case_d_bill_of_lading.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": "ExtractionError",
+          "failed": [],
+          "iou_mean": null,
+          "rows": [],
+          "stats": {}
+        }
+      ]
+    },
+    {
+      "file": "case_d_commercial_invoice.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": "ExtractionError",
+          "failed": [],
+          "iou_mean": null,
+          "rows": [],
+          "stats": {}
+        }
+      ]
+    },
+    {
+      "file": "case_d_mtc_test_cert.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": "ExtractionError",
+          "failed": [],
+          "iou_mean": null,
+          "rows": [],
+          "stats": {}
+        }
+      ]
+    },
+    {
+      "file": "case_d_packing_list.pdf",
+      "has_expectations": true,
+      "runs": [
+        {
+          "error": "ExtractionError",
+          "failed": [],
+          "iou_mean": null,
+          "rows": [],
+          "stats": {}
+        }
+      ]
+    }
+  ],
+  "environment": {
+    "location": "asia-south1",
+    "model": "gemini-3.5-flash",
+    "page_image_mode": "bw",
+    "pages": "png",
+    "preprocess_deskew": false,
+    "sdk_version": "2.29.0",
+    "thinking_budget": 0
+  },
+  "kind": "extraction",
+  "label": "smoke-8docs-x1-replacement-model-default-config",
+  "recorded_at": "2026-10-14T11:50:12.222367+00:00",
+  "runs_per_document": 1,
+  "schema": "cargoclear.measurement/1",
+  "tool": "scripts/live_smoke_extraction.py"
+}

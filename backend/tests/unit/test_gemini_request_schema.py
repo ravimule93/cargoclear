@@ -9,7 +9,8 @@ fake-client tests cannot:
   3. that the retry policy classifies the SDK's REAL error classes (HTTP 503 / 404 / ...) correctly.
 
 The response schema is pinned in ``gemini_request_schema_snapshot.json`` (a golden file): any change to
-``ExtractedDocument`` that changes what Gemini is asked for fails here and must be a deliberate edit. To accept
+``agents/extraction_wire.py`` (or to a reference field of ``ExtractedDocument``, whose names it derives) that changes what Gemini is
+asked for fails here and must be a deliberate edit. To accept
 a change: ``UPDATE_GEMINI_SCHEMA_SNAPSHOT=1 .venv/bin/python -m pytest tests/unit/test_gemini_request_schema.py``
 and review the diff of the JSON file.
 """
@@ -36,8 +37,7 @@ from tests.unit.extraction_fakes import ctx_for, good_doc
 
 SNAPSHOT = Path(__file__).with_name("gemini_request_schema_snapshot.json")
 ALLOWED_KEYWORDS = {
-    "any_of", "description", "enum", "items", "maximum", "minimum", "nullable", "properties", "property_ordering",
-    "required", "title", "type",
+    "description", "enum", "items", "maximum", "minimum", "nullable", "properties", "property_ordering", "required", "title", "type",
 }
 
 
@@ -168,7 +168,7 @@ async def test_the_request_the_sdk_sends_for_a_page_image_bundle(offline, monkey
     assert content["role"] == "user"
     parts = content["parts"]
     assert [p.get("text") for p in parts] == [
-        "Page 1 of 2.", None, "Page 2 of 2.", None, "Extract all trade data into the requested JSON schema.",
+        "Page 1 of 2.", None, "Page 2 of 2.", None, extraction.EXTRACT_INSTRUCTION,
     ]
     assert pick(parts[1]["inlineData"], "mime_type") == "image/png"
     assert parts[1]["inlineData"]["data"] == base64.b64encode(b"doc-1-p1").decode()
@@ -185,7 +185,7 @@ async def test_a_raw_pdf_passthrough_is_one_unlabelled_application_pdf_part(offl
 
     parts = wire.body()["contents"][0]["parts"]
     assert [pick(p["inlineData"], "mime_type") if "inlineData" in p else p["text"] for p in parts] == [
-        "application/pdf", "Extract all trade data into the requested JSON schema.",
+        "application/pdf", extraction.EXTRACT_INSTRUCTION,
     ]
 
 
@@ -260,15 +260,51 @@ async def test_the_schema_uses_only_the_keywords_vertex_accepts(offline) -> None
 
 
 @pytest.mark.asyncio
-async def test_the_schema_requires_only_the_three_document_level_fields(offline) -> None:
+async def test_the_schema_is_four_lists_of_entries_with_the_field_name_as_an_enum(offline) -> None:
+    """The shape that fits Gemini's limit on constraint states (agents/extraction_wire.py): one object shape per list, every
+    property required, the field names an enum derived from the document model."""
+    from app.agents import extraction_wire
+
     schema = await _request_schema(offline)
 
     assert schema["type"] == "OBJECT"
-    assert schema["required"] == ["document_id", "doc_type", "doc_type_confidence"]
+    assert schema["required"] == ["doc_type", "doc_type_confidence", "fields", "heat_numbers", "line_cells", "test_results"]
     assert schema["properties"]["doc_type"]["enum"][0] == "COMMERCIAL_INVOICE"
-    weight = schema["properties"]["total_net_weight_kg"]
-    assert "unit" in weight["properties"] and weight["properties"]["unit"]["nullable"] is True
-    assert schema["properties"]["consignee"]["properties"]["value"]["type"] == "STRING"  # text fields are plain strings
+    assert "document_id" not in schema["properties"]  # the id is the system's, never the model's
+
+    header = schema["properties"]["fields"]["items"]
+    assert header["required"] == ["name", "value", "unit", "confidence", "page", "box"]
+    assert header["properties"]["name"]["enum"] == list(extraction_wire.HEADER_FIELDS)
+    assert header["properties"]["value"]["type"] == "STRING" and header["properties"]["value"]["nullable"] is True
+    assert header["properties"]["box"]["type"] == "ARRAY" and header["properties"]["box"]["items"] == {"type": "NUMBER"}
+
+    line = schema["properties"]["line_cells"]["items"]
+    assert line["properties"]["name"]["enum"] == list(extraction_wire.LINE_FIELDS)
+    assert line["properties"]["row"]["type"] == "INTEGER"
+
+    lab = schema["properties"]["test_results"]["items"]
+    assert {"heat_number", "parameter", "value", "unit"} <= set(lab["required"])
+
+
+@pytest.mark.asyncio
+async def test_the_schema_stays_far_below_the_size_and_shape_gemini_refused(offline) -> None:
+    """Gemini refuses a response schema whose constrained-decoding grammar has too many states ("too many states for serving").
+    Measured against gemini-2.5-flash and gemini-3.5-flash in asia-south1 on 2026-10-14: this shape (about 6 KB on the wire) is
+    accepted with room to spare (40 more field names, or four more lists, were still accepted); the nested ExtractedDocument (about
+    47 KB) was refused, and so was every nested variant above about 14 KB, those below it fitting with no room for one more field.
+    Size is only a tripwire. What the grammar pays for is the number of distinct nested objects, so this also caps those. Passing is
+    not proof of acceptance (that is scripts/preflight_gcp.py against the real endpoint); failing means the shape is drifting back."""
+    schema = await _request_schema(offline)
+
+    def object_shapes(node: Any) -> int:
+        if isinstance(node, dict):
+            return (node.get("type") == "OBJECT") + sum(object_shapes(child) for child in node.values())
+        if isinstance(node, list):
+            return sum(object_shapes(child) for child in node)
+        return 0
+
+    assert len(json.dumps(schema, separators=(",", ":"))) <= 12_000
+    assert object_shapes(schema) - 1 <= 6, "the root is not counted: four entry shapes today, two more lists of room"
 
 
 def test_the_snapshot_file_is_a_deliberate_artifact() -> None:

@@ -97,5 +97,7 @@ npm run build
 - **API configuration**: Deployed with `--max-instances 10`, `--min-instances 1`, `--concurrency 80`, a 300-second request timeout, and CPU always allocated.
 - **UI configuration**: Runs with Next.js BFF proxy routing `/api/proxy/...` directly to the backend API, preserving same-origin semantics for both HTTP requests and SSE event streams, with dual cookie handling (`__session` and `cargoclear_session_token`) for Firebase Hosting CDN rewrites.
 - **Live GCP Integrations**: BigQuery vector search on tariff dataset `cargoclear-hackathon:ahtn`, Firestore hash-chained audit logging, GCS PDF storage (`cargoclear-raw-pdfs`), and multimodal extraction with Vertex AI `gemini-2.5-flash`.
+- **Prompt-Injection Guard**: Prompt-injection guard tested and verified across synthetic fixtures and attack variants ([docs/INJECTION_TEST.md](docs/INJECTION_TEST.md), [docs/MEASURED_RESULTS.md](docs/MEASURED_RESULTS.md)).
 - See [docs/01_analysis_and_roadmap.md](docs/01_analysis_and_roadmap.md) for the verified roadmap, [docs/HOW_TO_RUN_AND_DEMO.md](docs/HOW_TO_RUN_AND_DEMO.md) for the operational walkthrough, and [docs/GCP_VERIFICATION.md](docs/GCP_VERIFICATION.md) for verification procedures.
 
+Do not run Docker, Cloud Build, `gcloud`, or deployment commands without authorised project access. See [docs/HOW_TO_RUN_AND_DEMO.md](docs/HOW_TO_RUN_AND_DEMO.md) for the operational walkthrough and [docs/FAQ_ONBOARDING.md](docs/FAQ_ONBOARDING.md) for boundaries and troubleshooting.
