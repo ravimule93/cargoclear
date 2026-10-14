@@ -5,24 +5,24 @@ export const dynamic = "force-dynamic";
 function getPublicOrigin(request: NextRequest): string {
   if (process.env.PUBLIC_URL) return process.env.PUBLIC_URL.replace(/\/$/, "");
 
-  const referer = request.headers.get("referer");
-  if (referer) {
-    try {
-      const parsed = new URL(referer);
-      if (!parsed.host.includes("localhost") && !parsed.host.includes("127.0.0.1")) {
-        return parsed.origin;
-      }
-    } catch {}
-  }
-
   const forwardedHost = request.headers.get("x-forwarded-host");
   const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
-  if (forwardedHost && !forwardedHost.includes("localhost") && !forwardedHost.includes("127.0.0.1")) {
+  if (
+    forwardedHost &&
+    !forwardedHost.includes("localhost") &&
+    !forwardedHost.includes("127.0.0.1") &&
+    !forwardedHost.includes("google.com")
+  ) {
     return `${forwardedProto}://${forwardedHost}`;
   }
 
   const host = request.headers.get("host");
-  if (host && !host.includes("localhost") && !host.includes("127.0.0.1")) {
+  if (
+    host &&
+    !host.includes("localhost") &&
+    !host.includes("127.0.0.1") &&
+    !host.includes("google.com")
+  ) {
     return `${forwardedProto}://${host}`;
   }
 
