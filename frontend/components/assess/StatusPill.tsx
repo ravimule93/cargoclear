@@ -32,6 +32,13 @@ const TOKENS: Record<Status, { label: string; fg: string; bd: string; bg: string
   },
 };
 
+const NOT_ASSESSED = {
+  label: "Not assessed yet",
+  fg: "var(--cc-text-muted)",
+  bd: "var(--cc-border-strong)",
+  bg: "var(--cc-surface-2)",
+};
+
 const PENDING_TOKEN = {
   label: "Pending Assessment",
   fg: "var(--cc-text-muted)",
