@@ -32,15 +32,22 @@ const TOKENS: Record<Status, { label: string; fg: string; bd: string; bg: string
   },
 };
 
-const NOT_ASSESSED = {
-  label: "Not assessed yet",
+const PENDING_TOKEN = {
+  label: "Pending Assessment",
   fg: "var(--cc-text-muted)",
   bd: "var(--cc-border-strong)",
   bg: "var(--cc-surface-2)",
 };
 
-export function StatusPill({ status }: StatusPillProps) {
-  const token = status === null ? NOT_ASSESSED : TOKENS[status] || TOKENS.SPECIALIST_REVIEW_REQUIRED;
+export function StatusPill({ status }: { status: Status | string | null }) {
+  let token = NOT_ASSESSED;
+  if (status && status in TOKENS) {
+    token = TOKENS[status as Status];
+  } else if (status === "PENDING" || status === "DRAFT") {
+    token = PENDING_TOKEN;
+  } else if (status) {
+    token = TOKENS.SPECIALIST_REVIEW_REQUIRED;
+  }
 
   return (
     <span

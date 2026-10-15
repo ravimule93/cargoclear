@@ -8,6 +8,7 @@ import { toErrorEnvelope } from "@/lib/errors";
 import { useMeta } from "@/lib/hooks/useMeta";
 import { ModeBadge } from "@/components/shell/ModeBadge";
 import { UserMenu } from "@/components/shell/UserMenu";
+import { StatusPill } from "@/components/assess/StatusPill";
 import type { Bundle } from "@/lib/types";
 
 type Pending = "empty" | "demo" | "demo-d" | null;
@@ -95,12 +96,22 @@ function RecentBundlesList({
                     </span>
                   </td>
                   <td className="py-2 px-2.5 text-[var(--cc-text-muted)]">
-                    {b.documents?.length ?? 0} {b.documents?.length === 1 ? "doc" : "docs"}
+                    {b.documents && b.documents.length > 0 ? (
+                      <span
+                        title={b.documents.map((d) => d.filename || d.doc_type).join("\n")}
+                        className="inline-flex items-center gap-1.5 rounded bg-[var(--cc-surface)] px-2 py-0.5 border border-[var(--cc-border)] font-medium text-[11px] text-[var(--cc-text)] cursor-help shadow-2xs"
+                      >
+                        <span aria-hidden="true">📄</span>
+                        <span>{b.documents.length} {b.documents.length === 1 ? "doc" : "docs"}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-[var(--cc-text-muted)]">
+                        <span>0 docs</span>
+                      </span>
+                    )}
                   </td>
                   <td className="py-2 px-2.5">
-                    <span className="rounded bg-[var(--cc-surface)] px-2 py-0.5 border border-[var(--cc-border)] text-[10px] font-semibold text-[var(--cc-text)]">
-                      {b.status || "DRAFT"}
-                    </span>
+                    <StatusPill status={b.status} />
                   </td>
                   <td className="py-2 px-2.5 text-[var(--cc-text-muted)] text-[11px]">
                     {b.created_at ? new Date(b.created_at).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" }) : "—"}
