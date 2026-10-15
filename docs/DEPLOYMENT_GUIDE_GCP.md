@@ -341,12 +341,95 @@ python scripts/test_case_d_live.py
 
 ---
 
-## 12. Troubleshooting & Common Pitfalls
+## 12. Gemini Model & Thinking Budget Configuration
+
+CargoClear leverages Google Vertex AI's multimodal Gemini models for document OCR, layout understanding, and structured JSON parsing.
+
+### Controlling the Gemini Thinking Budget
+
+Gemini 2.5 models support internal chain-of-thought reasoning ("thinking") prior to emitting the final response. You can configure this behavior dynamically via `GEMINI_THINKING_BUDGET`:
+
+| `GEMINI_THINKING_BUDGET` | Mode | Behavior | Best Used For |
+| :---: | :--- | :--- | :--- |
+| **`0`** | **Disabled** *(Default in Dev)* | Skips internal reasoning tokens. Directly streams structured JSON. Extraction takes **2–5 seconds** per document at minimum cost. | Routine dev, CI testing, synthetic PDFs, and budget conservation. |
+| **`1024`** or **`2048`** | **Controlled Thinking** | Allocates up to 1,024–2,048 reasoning tokens. Allows the model to reason through ambiguities without runaway costs. | Degraded scans, blurred photocopies, complex multi-column chemical tables. |
+| **`-1`** | **Dynamic / Unconstrained** | Omits the thinking budget parameter completely. Gemini dynamically decides how many tokens to spend. | Deep exploratory analysis and edge cases. |
+
+### How to Toggle Thinking
+
+**1. On Live Cloud Run (`cargoclear-api`):**
+```powershell
+# Enable controlled thinking (1024 tokens)
+gcloud run services update cargoclear-api `
+  --region asia-south1 `
+  --update-env-vars GEMINI_THINKING_BUDGET=1024
+
+# Disable thinking (for fast, zero-extra-cost extractions)
+gcloud run services update cargoclear-api `
+  --region asia-south1 `
+  --update-env-vars GEMINI_THINKING_BUDGET=0
+```
+
+**2. In Local Development:**
+Set in `backend/.env` or PowerShell:
+```powershell
+$env:GEMINI_THINKING_BUDGET = "1024"  # or "0"
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+**3. In Standalone Test Scripts:**
+```powershell
+$env:GEMINI_THINKING_BUDGET = "1024"
+python scripts/test_case_d_live.py
+```
+
+---
+
+## 13. Bundle Cleanup & Test Data Management
+
+During development and testing, numerous assessment bundles accumulate. The repository provides a dedicated administrative tool [`scripts/clean_bundles.py`](file:///C:/Users/703292978/OneDrive%20-%20Genpact/Documents/workspaces/workspace_antigravity/gcp-cup-poc/scripts/clean_bundles.py) to manage and prune test bundles across both **Firestore** and **Cloud Storage**:
+
+### 1. List all existing bundles:
+```bash
+python scripts/clean_bundles.py --list
+```
+Displays all bundles with their ID, reference code, status, tenant, and creation date.
+
+### 2. Delete a single bundle (and its subcollections + GCS files):
+```bash
+python scripts/clean_bundles.py --bundle bnd-c27d3d168ae0
+```
+*(Add `--dry-run` to preview deletions beforehand).*
+
+### 3. Keep the latest $N$ bundles and prune all older test runs:
+```bash
+# Preview keeping the 3 newest bundles:
+python scripts/clean_bundles.py --keep 3 --dry-run
+
+# Execute the pruning:
+python scripts/clean_bundles.py --keep 3
+```
+
+### 4. Wipe ALL test bundles before a live competition demo:
+```bash
+# Execute with interactive confirmation:
+python scripts/clean_bundles.py --all
+
+# Or skip confirmation:
+python scripts/clean_bundles.py --all -y
+```
+> **Safety Guarantee**: The cleanup script deletes only bundle documents, subcollections (`documents`, `iterations`, `audit`), and PDF storage objects. It **never** touches user authentication credentials or BigQuery tariff tables.
+
+---
+
+## 14. Troubleshooting & Cost Optimization
 
 | Issue | Cause | Solution |
 | :--- | :--- | :--- |
 | **`403 Forbidden` on UI Proxy calls** | `cargoclear-ui-sa` lacks `roles/run.invoker` on `cargoclear-api` | Run: `gcloud run services add-iam-policy-binding cargoclear-api --region=asia-south1 --member="serviceAccount:cargoclear-ui-sa@${PROJECT_ID}.iam.gserviceaccount.com" --role="roles/run.invoker"` |
 | **`401 Unauthorized` on API routes** | Client request missing or invalid SSO bearer token | Sign in on the UI landing page using the Corporate SSO or licensed CHA preset (`demo-cha@customs.com`). |
-| **SSE Stream Times Out (503/504)** | Cloud Run timeout too short for long LLM analysis | Verify `cargoclear-api` has `--timeout 1200` and `--no-cpu-throttling` enabled. |
+| **Unexpected Cloud Run Costs** | Service configured with always-on instances (`min-instances 1`) | Update Cloud Run to scale-to-zero: `gcloud run services update cargoclear-api --region asia-south1 --min-instances 0 --cpu-throttling` |
+| **High Vertex AI Token Costs** | Unconstrained thinking tokens on every document | Set `GEMINI_THINKING_BUDGET=0` for routine development and test extractions. |
 | **BigQuery Vector Search Fails** | Missing `roles/bigquery.jobUser` on runtime SA | Ensure `cargoclear-sa` has `roles/bigquery.jobUser` (needed to run query jobs, not just read). |
-| **Gemini 429 Quota Exceeded** | Vertex AI regional quota hit in `asia-south1` | Verify quota in Cloud Console or set `GEMINI_LIVE_MODEL=gemini-2.5-flash` which has higher concurrency limits. |
+| **Artifact Registry Storage Growth** | Old Docker container images accumulating across revisions | Set 7-day cleanup policy: `gcloud artifacts repositories set-cleanup-policies cloud-run-source-deploy --location=asia-south1 --policy=...` |
+
