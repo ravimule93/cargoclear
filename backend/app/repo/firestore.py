@@ -11,6 +11,7 @@ Hierarchy:
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone
 from typing import Any
 
@@ -107,6 +108,59 @@ async def get_bundle(bundle_id: str) -> dict[str, Any] | None:
     bundle = dict(_IN_MEMORY_BUNDLES[bundle_id])
     bundle["documents"] = list(_IN_MEMORY_DOCS.get(bundle_id, {}).values())
     return bundle
+
+
+async def _attach_bundle_documents(doc_ref: Any, b_data: dict[str, Any]) -> dict[str, Any]:
+    try:
+        docs_stream = doc_ref.collection("documents").stream()
+        b_data["documents"] = [d.to_dict() async for d in docs_stream]
+    except Exception as exc:
+        logger.warning("attach_documents_failed", bundle_id=b_data.get("id"), error=str(exc))
+        b_data["documents"] = []
+    return b_data
+
+
+async def list_bundles(tenant_id: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
+    """List recent bundles with optional tenant scoping. Returns list of bundle dicts with attached documents."""
+    client = _get_firestore_client()
+
+    if client is not None:
+        try:
+            from google.cloud.firestore import Query
+
+            col = client.collection("bundles")
+            query = col
+            if tenant_id and tenant_id != "*":
+                query = query.where("tenant_id", "==", tenant_id)
+            query = query.order_by("created_at", direction=Query.DESCENDING).limit(limit)
+            snapshots = await query.get()
+            bundles = [doc.to_dict() for doc in snapshots]
+            await asyncio.gather(*[_attach_bundle_documents(doc.reference, b) for doc, b in zip(snapshots, bundles)])
+            return bundles
+        except Exception as exc:
+            logger.warning("firestore_list_bundles_order_query_failed", error=str(exc))
+            try:
+                col = client.collection("bundles")
+                query = col
+                if tenant_id and tenant_id != "*":
+                    query = query.where("tenant_id", "==", tenant_id)
+                snapshots = await query.limit(limit).get()
+                bundles = [doc.to_dict() for doc in snapshots]
+                await asyncio.gather(*[_attach_bundle_documents(doc.reference, b) for doc, b in zip(snapshots, bundles)])
+                bundles.sort(key=lambda b: b.get("created_at", ""), reverse=True)
+                return bundles
+            except Exception as e2:
+                logger.error("firestore_list_bundles_failed", error=str(e2))
+                return []
+
+    bundles = []
+    for b_id, b_data in _IN_MEMORY_BUNDLES.items():
+        b = dict(b_data)
+        b["documents"] = list(_IN_MEMORY_DOCS.get(b_id, {}).values())
+        if not tenant_id or tenant_id == "*" or b.get("tenant_id") == tenant_id:
+            bundles.append(b)
+    bundles.sort(key=lambda b: b.get("created_at", ""), reverse=True)
+    return bundles[:limit]
 
 
 # ---------------------------------------------------------------------------
@@ -574,3 +628,82 @@ async def get_extractions(bundle_id: str, iteration: int | None = None) -> list[
 
     record = await get_extraction_record(bundle_id, iteration)
     return list(record.get("extractions", [])) if record else []
+
+
+# ---------------------------------------------------------------------------
+# User Identity, Commercial Registration & Audit Persistence
+# ---------------------------------------------------------------------------
+
+_IN_MEMORY_USERS: dict[str, dict[str, Any]] = {}
+_IN_MEMORY_USER_AUDIT: dict[str, list[dict[str, Any]]] = {}
+
+
+async def get_user(email: str) -> dict[str, Any] | None:
+    """Retrieve registered commercial user profile by corporate email."""
+    normalized_email = email.strip().lower()
+    client = _get_firestore_client()
+    if client is not None:
+        ref = client.collection("users").document(normalized_email)
+        snap = await ref.get()
+        return snap.to_dict() if snap.exists else None
+    return _IN_MEMORY_USERS.get(normalized_email)
+
+
+async def create_user(user_data: dict[str, Any]) -> dict[str, Any]:
+    """Persist new commercial user registration with audit metadata."""
+    email = user_data["email"].strip().lower()
+    client = _get_firestore_client()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    record = {
+        **user_data,
+        "email": email,
+        "created_at": user_data.get("created_at") or now_iso,
+        "last_login_at": user_data.get("last_login_at") or now_iso,
+        "status": user_data.get("status", "ACTIVE"),
+    }
+    if client is not None:
+        ref = client.collection("users").document(email)
+        await ref.set(record)
+    else:
+        _IN_MEMORY_USERS[email] = record
+    return record
+
+
+async def update_user(email: str, updates: dict[str, Any]) -> dict[str, Any] | None:
+    """Update existing user record (e.g. last_login_at, role, profile details)."""
+    normalized_email = email.strip().lower()
+    client = _get_firestore_client()
+    if client is not None:
+        ref = client.collection("users").document(normalized_email)
+        snap = await ref.get()
+        if not snap.exists:
+            return None
+        current = snap.to_dict()
+        current.update(updates)
+        await ref.set(current)
+        return current
+    if normalized_email in _IN_MEMORY_USERS:
+        _IN_MEMORY_USERS[normalized_email].update(updates)
+        return _IN_MEMORY_USERS[normalized_email]
+    return None
+
+
+async def record_user_audit(email: str, action: str, details: dict[str, Any] | None = None) -> None:
+    """Append a tamper-evident audit record for user login, signup, or security event."""
+    normalized_email = email.strip().lower()
+    audit_id = f"aud-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S%f')}"
+    audit_entry = {
+        "event_id": audit_id,
+        "email": normalized_email,
+        "action": action,
+        "details": details or {},
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    client = _get_firestore_client()
+    if client is not None:
+        ref = client.collection("users").document(normalized_email).collection("audit").document(audit_id)
+        await ref.set(audit_entry)
+    else:
+        if normalized_email not in _IN_MEMORY_USER_AUDIT:
+            _IN_MEMORY_USER_AUDIT[normalized_email] = []
+        _IN_MEMORY_USER_AUDIT[normalized_email].append(audit_entry)

@@ -45,6 +45,20 @@ class ValidationError(CargoClearError):
     http_status = 422
 
 
+class AuthenticationError(CargoClearError):
+    """Missing, expired, or invalid authentication credentials."""
+
+    code = "UNAUTHORIZED"
+    http_status = 401
+
+
+class ForbiddenError(CargoClearError):
+    """The authenticated user lacks permission for this action or tenant resource."""
+
+    code = "FORBIDDEN"
+    http_status = 403
+
+
 class ConflictError(CargoClearError):
     code = "CONFLICT"
     http_status = 409
@@ -55,14 +69,6 @@ class UnauthorizedError(CargoClearError):
 
     code = "UNAUTHORIZED"
     http_status = 401
-
-
-class ForbiddenError(CargoClearError):
-    """The caller of an internal endpoint is known and not allowed."""
-
-    code = "FORBIDDEN"
-    http_status = 403
-
 
 class PayloadTooLargeError(CargoClearError):
     """A request body or an uploaded file is larger than the configured limit."""

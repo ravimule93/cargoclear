@@ -4,10 +4,12 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
+from app.domain.auth import UserIdentity
 from app.domain.schemas import BundleResponse, CreateBundleRequest
-from app.gateway.errors import ConflictError, NotFoundError
+from app.gateway.auth import get_current_user
+from app.gateway.errors import ConflictError, ForbiddenError, NotFoundError
 from app.repo import firestore
 from app.services import audit, corrections, signing
 
@@ -20,8 +22,11 @@ router = APIRouter(tags=["bundles"])
     status_code=201,
     summary="Create a new trade assessment bundle",
 )
-async def create_bundle(body: CreateBundleRequest) -> BundleResponse:
-    """Initialise a new shipment bundle and persist to Firestore."""
+async def create_bundle(
+    body: CreateBundleRequest,
+    current_user: UserIdentity = Depends(get_current_user),
+) -> BundleResponse:
+    """Initialise a new shipment bundle, scoped to the user's brokerage tenant."""
     bundle_id = f"bnd-{uuid.uuid4().hex[:12]}"
     now = datetime.now(timezone.utc).isoformat()
 
@@ -33,6 +38,8 @@ async def create_bundle(body: CreateBundleRequest) -> BundleResponse:
         "current_iteration": 0,
         "created_at": now,
         "updated_at": now,
+        "tenant_id": current_user.tenant_id,
+        "created_by": current_user.email,
     }
 
     await firestore.create_bundle(bundle_data)
@@ -44,8 +51,10 @@ async def create_bundle(body: CreateBundleRequest) -> BundleResponse:
         "audit_payload": {
             "reference": body.reference,
             "destination_country": body.destination_country.upper(),
+            "tenant_id": current_user.tenant_id,
+            "created_by": current_user.email,
         },
-        "actor": "user",
+        "actor": f"cha:{current_user.email}",
     })
 
     return BundleResponse(
@@ -56,7 +65,36 @@ async def create_bundle(body: CreateBundleRequest) -> BundleResponse:
         current_iteration=0,
         documents=[],
         created_at=now,
+        tenant_id=current_user.tenant_id,
+        created_by=current_user.email,
     )
+
+
+@router.get(
+    "/bundles",
+    response_model=list[BundleResponse],
+    summary="List recent trade assessment bundles",
+)
+async def list_bundles(
+    limit: int = Query(default=30, ge=1, le=100),
+    current_user: UserIdentity = Depends(get_current_user),
+) -> list[BundleResponse]:
+    """Retrieve recent bundles scoped to the authenticated tenant."""
+    bundles = await firestore.list_bundles(tenant_id=current_user.tenant_id, limit=limit)
+    return [
+        BundleResponse(
+            id=b["id"],
+            reference=b.get("reference"),
+            destination_country=b.get("destination_country", "SG"),
+            status=b.get("status", "PENDING"),
+            current_iteration=b.get("current_iteration", 0),
+            documents=b.get("documents", []),
+            created_at=b.get("created_at", ""),
+            tenant_id=b.get("tenant_id") or current_user.tenant_id,
+            created_by=b.get("created_by") or current_user.email,
+        )
+        for b in bundles
+    ]
 
 
 @router.get(
@@ -64,11 +102,22 @@ async def create_bundle(body: CreateBundleRequest) -> BundleResponse:
     response_model=BundleResponse,
     summary="Get bundle details and attached documents",
 )
-async def get_bundle(bundle_id: str) -> BundleResponse:
-    """Retrieve an existing bundle with all attached evidence documents."""
+async def get_bundle(
+    bundle_id: str,
+    current_user: UserIdentity = Depends(get_current_user),
+) -> BundleResponse:
+    """Retrieve an existing bundle with multi-tenant domain authorization."""
     bundle = await firestore.get_bundle(bundle_id)
     if bundle is None:
         raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
+
+    # Multi-tenant scoping: if bundle has tenant_id and user is in a different tenant
+    bundle_tenant = bundle.get("tenant_id")
+    if bundle_tenant and bundle_tenant != current_user.tenant_id and current_user.tenant_id != "*":
+        raise ForbiddenError(
+            f"Access denied: Bundle belongs to organization '{bundle_tenant}'.",
+            detail={"bundle_tenant": bundle_tenant, "user_tenant": current_user.tenant_id},
+        )
 
     return BundleResponse(
         id=bundle["id"],
@@ -78,7 +127,10 @@ async def get_bundle(bundle_id: str) -> BundleResponse:
         current_iteration=bundle.get("current_iteration", 0),
         documents=bundle.get("documents", []),
         created_at=bundle.get("created_at", ""),
+        tenant_id=bundle_tenant or current_user.tenant_id,
+        created_by=bundle.get("created_by") or current_user.email,
     )
+
 
 
 @router.get(

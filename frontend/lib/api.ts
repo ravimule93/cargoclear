@@ -11,6 +11,11 @@ import {
   Meta,
   RunResponse,
   TransformMetadataResponse,
+  CheckUserResponse,
+  AuthResponse,
+  SignUpRequest,
+  SignInRequest,
+  UserAuditResponse,
 } from "./types";
 import type { ExtractedDoc } from "./corrections";
 
@@ -63,6 +68,10 @@ export const api = {
 
   async getBundle(bundleId: string): Promise<Bundle> {
     return request<Bundle>(`/bundles/${bundleId}`);
+  },
+
+  async listBundles(limit: number = 20): Promise<Bundle[]> {
+    return request<Bundle[]>(`/bundles?limit=${limit}`);
   },
 
   async uploadDocument(bundleId: string, file: File): Promise<DocumentRecord> {
@@ -189,5 +198,29 @@ export const api = {
 
   async getMeta(): Promise<Meta> {
     return request<Meta>("/meta");
+  },
+
+  async checkUser(email: string): Promise<CheckUserResponse> {
+    return request<CheckUserResponse>(`/auth/check?email=${encodeURIComponent(email)}`);
+  },
+
+  async signUp(data: SignUpRequest): Promise<AuthResponse> {
+    return request<AuthResponse>("/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async signIn(data: SignInRequest): Promise<AuthResponse> {
+    return request<AuthResponse>("/auth/signin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getUserAudit(): Promise<UserAuditResponse> {
+    return request<UserAuditResponse>("/auth/audit");
   },
 };

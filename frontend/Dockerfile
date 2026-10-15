@@ -16,14 +16,14 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN mkdir -p /app/public
+RUN node scripts/copy-pdf-worker.mjs
 RUN npm run build
 
 # 3. Production runner
 FROM base AS runner
 ENV NODE_ENV=production
 ENV PORT=8080
-# Local Docker default only; Cloud Run provides the deployed API URL at runtime.
-ENV API_BASE=http://localhost:8080
+# Cloud Run provides the deployed API URL at runtime via API_BASE environment variable.
 EXPOSE 8080
 
 # Copy necessary files from builder. Owned by the unprivileged `node` user: `next start` writes its cache under .next/.

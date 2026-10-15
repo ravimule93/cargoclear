@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { toErrorEnvelope } from "@/lib/errors";
 import { useMeta } from "@/lib/hooks/useMeta";
 import { ModeBadge } from "@/components/shell/ModeBadge";
+import { UserMenu } from "@/components/shell/UserMenu";
+import { StatusPill } from "@/components/assess/StatusPill";
 import type { Bundle } from "@/lib/types";
 
 type Pending = "empty" | "demo" | "demo-d" | null;
@@ -17,6 +20,120 @@ const DESTINATIONS = [
 ] as const;
 type Destination = (typeof DESTINATIONS)[number]["code"];
 
+function RecentBundlesList({
+  bundles,
+  loading,
+  error,
+  onRefresh,
+}: {
+  bundles: Bundle[];
+  loading: boolean;
+  error: string | null;
+  onRefresh: () => void;
+}) {
+  return (
+    <div className="rounded-lg border border-[var(--cc-border)] bg-[var(--cc-surface-2)] p-4 shadow-xs space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-[var(--cc-text)] flex items-center gap-1.5">
+          <span>📁</span> Recent Bundles & Assessments
+        </h2>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={loading}
+          className="text-xs text-[var(--cc-text-muted)] hover:text-[var(--cc-text)] disabled:opacity-50 cursor-pointer flex items-center gap-1"
+        >
+          {loading ? "Refreshing..." : "↻ Refresh"}
+        </button>
+      </div>
+
+      {loading && bundles.length === 0 && (
+        <p className="text-xs text-[var(--cc-text-muted)] py-3 text-center">Loading recent bundles...</p>
+      )}
+
+      {error && (
+        <p className="text-xs text-red-500 py-1">{error}</p>
+      )}
+
+      {!loading && bundles.length === 0 && (
+        <div className="rounded border border-dashed border-[var(--cc-border-strong)] p-4 text-center">
+          <p className="text-xs text-[var(--cc-text-muted)]">
+            No bundles created yet in this workspace.
+          </p>
+          <p className="text-[11px] text-[var(--cc-text-muted)] mt-1">
+            Click <strong>&quot;New empty bundle&quot;</strong> or choose a demo case above to run your first clearance assessment.
+          </p>
+        </div>
+      )}
+
+      {bundles.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-[var(--cc-border)] text-[11px] text-[var(--cc-text-muted)] uppercase tracking-wider font-semibold">
+                <th className="py-2 px-2.5">Bundle ID</th>
+                <th className="py-2 px-2.5">Destination</th>
+                <th className="py-2 px-2.5">Documents</th>
+                <th className="py-2 px-2.5">Status</th>
+                <th className="py-2 px-2.5">Created</th>
+                <th className="py-2 px-2.5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--cc-border)]">
+              {bundles.map((b) => (
+                <tr key={b.id} className="hover:bg-[var(--cc-surface-3)] transition-colors">
+                  <td className="py-2 px-2.5 font-mono font-medium text-[var(--cc-text)]">
+                    <Link href={`/workbench/${b.id}`} className="hover:underline text-[var(--cc-focus)]">
+                      {b.id}
+                    </Link>
+                    {b.reference && (
+                      <span className="block text-[10px] text-[var(--cc-text-muted)] font-sans">{b.reference}</span>
+                    )}
+                  </td>
+                  <td className="py-2 px-2.5 text-[var(--cc-text-muted)]">
+                    <span className="rounded bg-[var(--cc-surface)] px-1.5 py-0.5 border border-[var(--cc-border)] font-semibold">
+                      {b.destination_country}
+                    </span>
+                  </td>
+                  <td className="py-2 px-2.5 text-[var(--cc-text-muted)]">
+                    {b.documents && b.documents.length > 0 ? (
+                      <span
+                        title={b.documents.map((d) => d.filename || d.doc_type).join("\n")}
+                        className="inline-flex items-center gap-1.5 rounded bg-[var(--cc-surface)] px-2 py-0.5 border border-[var(--cc-border)] font-medium text-[11px] text-[var(--cc-text)] cursor-help shadow-2xs"
+                      >
+                        <span aria-hidden="true">📄</span>
+                        <span>{b.documents.length} {b.documents.length === 1 ? "doc" : "docs"}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] text-[var(--cc-text-muted)]">
+                        <span>0 docs</span>
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-2 px-2.5">
+                    <StatusPill status={b.status} />
+                  </td>
+                  <td className="py-2 px-2.5 text-[var(--cc-text-muted)] text-[11px]">
+                    {b.created_at ? new Date(b.created_at).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" }) : "—"}
+                  </td>
+                  <td className="py-2 px-2.5 text-right">
+                    <Link
+                      href={`/workbench/${b.id}`}
+                      className="inline-flex items-center gap-1 rounded bg-[var(--cc-surface)] border border-[var(--cc-border-strong)] px-2.5 py-1 text-[11px] font-medium text-[var(--cc-text)] hover:bg-[var(--cc-focus)] hover:text-white transition-colors"
+                    >
+                      Open →
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const { meta, loading: metaLoading, error: metaError, retry: retryMeta } = useMeta();
@@ -24,14 +141,47 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [destination, setDestination] = useState<Destination>("SG");
 
+  const [bundles, setBundles] = useState<Bundle[]>([]);
+  const [bundlesLoading, setBundlesLoading] = useState(false);
+  const [bundlesError, setBundlesError] = useState<string | null>(null);
+
+  const loadBundles = useCallback(async () => {
+    setBundlesLoading(true);
+    setBundlesError(null);
+    try {
+      const data = await api.listBundles(15);
+      setBundles(data);
+    } catch (err: unknown) {
+      console.warn("Could not load recent bundles", err);
+      setBundlesError("Could not load recent bundles");
+    } finally {
+      setBundlesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!meta?.auth?.enabled || meta?.user) {
+      loadBundles();
+    }
+  }, [meta, loadBundles]);
+
   const start = async (kind: Exclude<Pending, null>, create: () => Promise<Bundle>) => {
+    if (meta?.auth?.enabled && !meta?.user) {
+      setError("Authentication required: Please enter your CHA corporate email below to sign in before creating a bundle.");
+      return;
+    }
     setPending(kind);
     setError(null);
     try {
       const bundle = await create();
       router.push(`/workbench/${bundle.id}`);
     } catch (err: unknown) {
-      setError(toErrorEnvelope(err).message);
+      const env = toErrorEnvelope(err);
+      if (env.code === "UNAUTHORIZED") {
+        setError("Authentication required: Please sign in with your corporate email below to continue.");
+      } else {
+        setError(env.message);
+      }
       setPending(null);
     }
   };
@@ -39,11 +189,27 @@ export default function Home() {
   const showDemo = meta?.app_mode === "demo";
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-6 p-6">
+    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center gap-6 p-6">
       <header className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight text-[var(--cc-text)]">CargoClear-JAPAC</h1>
-          <ModeBadge />
+          <div className="flex items-center gap-2">
+            <ModeBadge />
+            <UserMenu
+              user={meta?.user ?? null}
+              onLogin={(email) => {
+                const token = `mock-jwt-${email}-LICENSED_CHA`;
+                document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
+                document.cookie = `cargoclear_session_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+                window.location.reload();
+              }}
+              onLogout={() => {
+                document.cookie = "__session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                window.location.href = "/api/auth/logout";
+              }}
+            />
+          </div>
         </div>
         <p className="text-sm text-[var(--cc-text-muted)] leading-relaxed">
           Pre-submission customs document assessment. Create a bundle, add trade documents and run
@@ -51,54 +217,179 @@ export default function Home() {
         </p>
       </header>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 text-sm text-[var(--cc-text-muted)]">
-          Destination
-          <select
-            data-testid="destination-select"
-            value={destination}
-            disabled={pending !== null}
-            onChange={(e) => setDestination(e.target.value as Destination)}
-            className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] bg-transparent px-2 py-1.5 text-sm text-[var(--cc-text)] cursor-pointer"
-          >
-            {DESTINATIONS.map((d) => (
-              <option key={d.code} value={d.code}>
-                {d.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          disabled={pending !== null}
-          onClick={() => start("empty", () => api.createBundle(undefined, destination))}
-          className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-4 py-2 text-sm font-semibold text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 cursor-pointer"
-        >
-          {pending === "empty" ? "Creating bundle..." : "New empty bundle"}
-        </button>
+      {meta?.auth?.enabled && !meta?.user && (
+        <div className="rounded-lg border border-[var(--cc-focus)]/30 bg-[var(--cc-surface-2)] p-4 shadow-xs space-y-3">
+          <div>
+            <h2 className="text-sm font-semibold text-[var(--cc-text)] flex items-center gap-1.5">
+              <span>🔐</span> Commercial Single Sign-On (SSO) & Registration
+            </h2>
+            <p className="text-xs text-[var(--cc-text-muted)] mt-1">
+              Sign in with your corporate Google Workspace account, corporate email/password, or register a new customs user account.
+            </p>
+          </div>
 
-        {showDemo && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            <Link
+              href="/auth/signin?tab=signin"
+              className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-2.5 text-xs font-semibold text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] transition-colors text-center shadow-2xs"
+            >
+              <span>🔑 Sign In to Account</span>
+            </Link>
+            <Link
+              href="/auth/signin?tab=signup"
+              className="flex items-center justify-center gap-1.5 rounded-lg bg-[var(--cc-focus)] p-2.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity text-center shadow-2xs"
+            >
+              <span>📝 Create New Account</span>
+            </Link>
+          </div>
+
+          <a
+            href="/api/auth/signin/google"
+            className="flex items-center justify-center gap-2.5 w-full rounded-lg border border-[var(--cc-border-strong)] bg-white dark:bg-[#1f1f1f] py-2 px-3 text-xs font-semibold text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-[#2a2a2a] shadow-xs transition-colors cursor-pointer"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+            </svg>
+            <span>Continue with Google SSO</span>
+          </a>
+
+          <div className="relative flex items-center justify-center">
+            <div className="w-full border-t border-[var(--cc-border)]" />
+            <span className="bg-[var(--cc-surface-2)] px-2 text-[10px] uppercase tracking-wider text-[var(--cc-text-muted)] absolute">
+              or quick demo access
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <span className="text-[10px] text-[var(--cc-text-muted)]">1-Click presets:</span>
+            <button
+              type="button"
+              onClick={() => {
+                const token = "mock-jwt-demo-cha@customs.com-LICENSED_CHA";
+                document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
+                document.cookie = `cargoclear_session_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+                window.location.reload();
+              }}
+              className="text-[10px] rounded bg-[var(--cc-surface)] border border-[var(--cc-border)] px-2 py-0.5 text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
+            >
+              🏢 customs.com
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const token = "mock-jwt-agent@dhl.com-LICENSED_CHA";
+                document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
+                document.cookie = `cargoclear_session_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+                window.location.reload();
+              }}
+              className="text-[10px] rounded bg-[var(--cc-surface)] border border-[var(--cc-border)] px-2 py-0.5 text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
+            >
+              📦 dhl.com
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const token = "mock-jwt-broker@fedex.com-LICENSED_CHA";
+                document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
+                document.cookie = `cargoclear_session_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+                window.location.reload();
+              }}
+              className="text-[10px] rounded bg-[var(--cc-surface)] border border-[var(--cc-border)] px-2 py-0.5 text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
+            >
+              ✈️ fedex.com
+            </button>
+          </div>
+        </div>
+      )}
+
+      {meta?.user && (
+        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[var(--cc-text)]">
+              Signed in as <strong className="font-semibold">{meta.user.email}</strong>
+            </span>
+            <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              Tenant: {meta.user.tenant_id}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              document.cookie = "__session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+              document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+              window.location.href = "/api/auth/logout";
+            }}
+            className="text-[11px] text-[var(--cc-text-muted)] hover:text-red-500 underline cursor-pointer"
+          >
+            Sign out
+          </button>
+        </div>
+      )}
+
+      {/* Bundle creation controls: only shown when signed in or auth is disabled */}
+      {(!meta?.auth?.enabled || meta?.user) && (
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-[var(--cc-text-muted)]">
+            Destination
+            <select
+              data-testid="destination-select"
+              value={destination}
+              disabled={pending !== null}
+              onChange={(e) => setDestination(e.target.value as Destination)}
+              className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] bg-transparent px-2 py-1.5 text-sm text-[var(--cc-text)] cursor-pointer"
+            >
+              {DESTINATIONS.map((d) => (
+                <option key={d.code} value={d.code}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             disabled={pending !== null}
-            onClick={() => start("demo", () => api.createCaseCDemo())}
-            className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-4 py-2 text-sm font-semibold text-white hover:brightness-90 disabled:opacity-50 cursor-pointer"
+            onClick={() => start("empty", () => api.createBundle(undefined, destination))}
+            className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-4 py-2 text-sm font-semibold text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 cursor-pointer"
           >
-            {pending === "demo" ? "Starting demo..." : "Start Case C demo"}
+            {pending === "empty" ? "Creating bundle..." : "New empty bundle"}
           </button>
-        )}
 
-        {showDemo && (
-          <button
-            type="button"
-            disabled={pending !== null}
-            onClick={() => start("demo-d", () => api.createCaseDDemo())}
-            className="rounded-[var(--cc-radius)] border border-[var(--cc-focus)] px-4 py-2 text-sm font-semibold text-[var(--cc-focus)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 cursor-pointer"
-          >
-            {pending === "demo-d" ? "Starting demo..." : "Start Case D demo (India import)"}
-          </button>
-        )}
-      </div>
+          {showDemo && (
+            <button
+              type="button"
+              disabled={pending !== null}
+              onClick={() => start("demo", () => api.createCaseCDemo())}
+              className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-4 py-2 text-sm font-semibold text-white hover:brightness-90 disabled:opacity-50 cursor-pointer"
+            >
+              {pending === "demo" ? "Starting demo..." : "Start Case C demo"}
+            </button>
+          )}
+
+          {showDemo && (
+            <button
+              type="button"
+              disabled={pending !== null}
+              onClick={() => start("demo-d", () => api.createCaseDDemo())}
+              className="rounded-[var(--cc-radius)] border border-[var(--cc-focus)] px-4 py-2 text-sm font-semibold text-[var(--cc-focus)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 cursor-pointer"
+            >
+              {pending === "demo-d" ? "Starting demo..." : "Start Case D demo (India import)"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {(!meta?.auth?.enabled || meta?.user) && (
+        <RecentBundlesList
+          bundles={bundles}
+          loading={bundlesLoading}
+          error={bundlesError}
+          onRefresh={loadBundles}
+        />
+      )}
 
       {metaLoading && (
         <p role="status" className="text-xs text-[var(--cc-text-muted)]">

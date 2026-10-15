@@ -1,15 +1,18 @@
 "use client";
 
 import { ChangeEvent, useRef } from "react";
-import { Bundle, Status } from "@/lib/types";
+import Link from "next/link";
+import { Bundle, Status, UserIdentity } from "@/lib/types";
 import type { StreamConnection } from "@/lib/hooks/useBundleStream";
 import { StatusPill } from "../assess/StatusPill";
 import { ModeBadge } from "./ModeBadge";
+import { UserMenu } from "./UserMenu";
 
 interface TopBarProps {
   bundle: Bundle;
   /** null = not assessed yet */
   status: Status | null;
+  user?: UserIdentity | null;
   isRunning?: boolean;
   isUploading?: boolean;
   uploadProgress?: { current: number; total: number; filename?: string } | null;
@@ -20,11 +23,14 @@ interface TopBarProps {
   actionError?: string | null;
   onRun?: () => void;
   onFilesSelected?: (files: File[]) => void;
+  onLogin?: (email: string) => void;
+  onLogout?: () => void;
 }
 
 export function TopBar({
   bundle,
   status,
+  user,
   isRunning = false,
   isUploading = false,
   uploadProgress = null,
@@ -32,7 +38,10 @@ export function TopBar({
   connection = "open",
   onRun,
   onFilesSelected,
+  onLogin,
+  onLogout,
 }: TopBarProps) {
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -43,9 +52,22 @@ export function TopBar({
 
   return (
     <header className="cc-top">
-      <div className="flex items-center gap-2 font-semibold">
-        <span aria-hidden="true" className="text-xl">🛃</span>
-        <span className="tracking-tight text-base font-bold text-[var(--cc-text)]">CargoClear</span>
+      <div className="flex items-center gap-2">
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-semibold hover:opacity-85 transition-opacity"
+          title="Return to Dashboard"
+        >
+          <span aria-hidden="true" className="text-xl">🛃</span>
+          <span className="tracking-tight text-base font-bold text-[var(--cc-text)]">CargoClear</span>
+        </Link>
+        <Link
+          href="/"
+          className="text-[11px] text-[var(--cc-text-muted)] hover:text-[var(--cc-text)] px-2 py-1 rounded border border-[var(--cc-border)] hover:bg-[var(--cc-surface-2)] transition-colors ml-1"
+          title="View all bundles and assessments"
+        >
+          ← All Bundles
+        </Link>
       </div>
 
       <div className="text-xs text-[var(--cc-text-muted)] border-l border-[var(--cc-border)] pl-3 flex items-center gap-2">
@@ -72,9 +94,15 @@ export function TopBar({
         <span
           data-testid="stream-connection"
           aria-live="polite"
-          className="text-[11px] text-[var(--cc-text-muted)]"
+          className="text-[11px] text-[var(--cc-text-muted)] flex items-center gap-1"
         >
-          Live updates: {connection}…
+          {connection === "polling" ? (
+            <span className="rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 border border-emerald-500/20 text-[10px]">
+              ⚡ Polling active
+            </span>
+          ) : (
+            <span>Live updates: {connection}…</span>
+          )}
         </span>
       )}
 
@@ -105,6 +133,13 @@ export function TopBar({
           tabIndex={-1}
           onChange={handleFileChange}
         />
+        <Link
+          href="/"
+          className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-3 py-1.5 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] transition-colors cursor-pointer flex items-center gap-1"
+          title="Create a new bundle"
+        >
+          <span>+ New Bundle</span>
+        </Link>
         <button
           type="button"
           disabled={isUploading}
@@ -138,7 +173,9 @@ export function TopBar({
           )}
           <span>{runMode === "analyze" ? "Run analysis" : "Reassess"}</span>
         </button>
+        <UserMenu user={user} onLogin={onLogin} onLogout={onLogout} />
       </div>
     </header>
   );
 }
+
