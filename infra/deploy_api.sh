@@ -42,8 +42,9 @@ GEMINI_LIVE_MODEL="${GEMINI_LIVE_MODEL:-gemini-2.5-flash}"
 GEMINI_LIVE_LOCATION="${GEMINI_LIVE_LOCATION:-${REGION}}"
 BQ_MODEL_EMBEDDING="${BQ_MODEL_EMBEDDING:-embedding_model}"
 RUN_DISPATCH="${RUN_DISPATCH:-local}"
-MIN_INSTANCES="${MIN_INSTANCES:-1}"
+MIN_INSTANCES="${MIN_INSTANCES:-0}"
 MAX_INSTANCES="${MAX_INSTANCES:-1}"
+CPU_THROTTLING_FLAG="${CPU_THROTTLING_FLAG:---cpu-throttling}"
 TASKS_QUEUE="${TASKS_QUEUE:-cargoclear-runs}"
 SIGNING_KEY_VERSION="${SIGNING_KEY_VERSION:-}"
 
@@ -79,7 +80,7 @@ gcloud run deploy cargoclear-api \
   --concurrency 80 \
   --min-instances "${MIN_INSTANCES}" \
   --max-instances "${MAX_INSTANCES}" \
-  --no-cpu-throttling \
+  ${CPU_THROTTLING_FLAG} \
   --service-account "${RUNTIME_SERVICE_ACCOUNT}" \
   --no-allow-unauthenticated \
   --quiet \

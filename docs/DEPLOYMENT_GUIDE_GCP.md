@@ -202,9 +202,9 @@ gcloud run deploy cargoclear-api `
   --region $env:REGION `
   --timeout 1200 `
   --concurrency 80 `
-  --min-instances 1 `
+  --min-instances 0 `
   --max-instances 1 `
-  --no-cpu-throttling `
+  --cpu-throttling `
   --service-account "cargoclear-sa@$($env:PROJECT_ID).iam.gserviceaccount.com" `
   --no-allow-unauthenticated `
   --set-env-vars `
