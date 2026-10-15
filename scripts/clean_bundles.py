@@ -64,11 +64,20 @@ def get_access_token() -> str:
         )
 
 
+DOC_PREFIX = f"projects/{PROJECT_ID}/databases/{DATABASE}/documents/"
+
+
 def firestore_request(
     token: str, path: str, method: str = "GET", data: dict | None = None
 ) -> dict | None:
     """Execute authenticated HTTP request to Firestore REST API."""
-    url = f"{BASE_FIRESTORE_URL}/{path}" if path else BASE_FIRESTORE_URL
+    if path.startswith("http://") or path.startswith("https://"):
+        url = path
+    elif path.startswith("projects/"):
+        url = f"https://firestore.googleapis.com/v1/{path}"
+    else:
+        url = f"{BASE_FIRESTORE_URL}/{path.lstrip('/')}" if path else BASE_FIRESTORE_URL
+
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
@@ -87,31 +96,43 @@ def firestore_request(
 
 
 def list_bundles(token: str) -> list[dict[str, Any]]:
-    """List all bundle documents from Firestore."""
-    res = firestore_request(token, "bundles?pageSize=100")
-    if not res or "documents" not in res:
-        return []
-
+    """List all bundle documents from Firestore with pagination support."""
     bundles = []
-    for doc in res.get("documents", []):
-        fields = doc.get("fields", {})
-        bundle_id = (
-            fields.get("id", {}).get("stringValue") or doc.get("name", "").split("/")[-1]
-        )
-        status = fields.get("status", {}).get("stringValue", "UNKNOWN")
-        ref = fields.get("reference", {}).get("stringValue", "—")
-        created = fields.get("created_at", {}).get("stringValue", doc.get("createTime", "—"))
-        tenant = fields.get("tenant_id", {}).get("stringValue", "default")
-        bundles.append(
-            {
-                "id": bundle_id,
-                "status": status,
-                "reference": ref,
-                "created_at": created,
-                "tenant_id": tenant,
-                "path": doc.get("name", ""),
-            }
-        )
+    page_token = None
+
+    while True:
+        query_param = "bundles?pageSize=300"
+        if page_token:
+            query_param += f"&pageToken={page_token}"
+
+        res = firestore_request(token, query_param)
+        if not res or "documents" not in res:
+            break
+
+        for doc in res.get("documents", []):
+            fields = doc.get("fields", {})
+            bundle_id = (
+                fields.get("id", {}).get("stringValue") or doc.get("name", "").split("/")[-1]
+            )
+            status = fields.get("status", {}).get("stringValue", "UNKNOWN")
+            ref = fields.get("reference", {}).get("stringValue", "—")
+            created = fields.get("created_at", {}).get("stringValue", doc.get("createTime", "—"))
+            tenant = fields.get("tenant_id", {}).get("stringValue", "default")
+            bundles.append(
+                {
+                    "id": bundle_id,
+                    "status": status,
+                    "reference": ref,
+                    "created_at": created,
+                    "tenant_id": tenant,
+                    "path": doc.get("name", ""),
+                }
+            )
+
+        page_token = res.get("nextPageToken")
+        if not page_token:
+            break
+
     bundles.sort(key=lambda b: b.get("created_at", ""), reverse=True)
     return bundles
 
@@ -120,16 +141,16 @@ def delete_bundle_subcollections(token: str, bundle_id: str, dry_run: bool = Fal
     """Delete subcollection documents (documents, iterations, audit)."""
     subcollections = ["documents", "iterations", "audit"]
     for sub in subcollections:
-        res = firestore_request(token, f"bundles/{bundle_id}/{sub}?pageSize=100")
+        res = firestore_request(token, f"bundles/{bundle_id}/{sub}?pageSize=300")
         if not res or "documents" not in res:
             continue
         for child in res.get("documents", []):
             child_name = child.get("name", "")
-            relative_path = child_name.replace(f"{BASE_FIRESTORE_URL}/", "")
+            display_path = child_name.replace(DOC_PREFIX, "")
             if dry_run:
-                print(f"  [DRY-RUN] Would delete subdoc: {relative_path}")
+                print(f"  [DRY-RUN] Would delete subdoc: {display_path}")
             else:
-                firestore_request(token, relative_path, method="DELETE")
+                firestore_request(token, child_name, method="DELETE")
 
 
 def delete_gcs_files(bundle_id: str, dry_run: bool = False):
