@@ -20,10 +20,13 @@ flowchart TD
     Vertex["Vertex AI<br/>Gemini 2.5 Flash Multimodal"]
     Tasks["Cloud Tasks<br/>cargoclear-runs queue"]
     KMS["Cloud KMS<br/>Audit Head Signing Key"]
+    SM[("Secret Manager<br/>OAuth Client Secret & JWT Keys")]
 
     User -->|HTTPS| Firebase
     Firebase -->|Rewrite| UI
     User -.->|Direct HTTPS| UI
+    SM -.->|In-Memory Mount: GOOGLE_CLIENT_SECRET| UI
+    SM -.->|In-Memory Mount: AUTH_JWT_SECRET| API
     UI -->|Google ID Token (roles/run.invoker)| API
     API -->|Raw PDFs & Metadata| GCS
     API -->|Audit Ledger & State| FS
@@ -38,6 +41,7 @@ flowchart TD
 2. **Dedicated UI Identity**: `cargoclear-ui` runs under `cargoclear-ui-sa` and holds only `roles/run.invoker` on `cargoclear-api`. It has **no** access to Firestore, Cloud Storage, BigQuery, or Vertex AI.
 3. **Dedicated Backend Identity**: `cargoclear-api` runs under `cargoclear-sa` with least-privilege IAM roles (`roles/aiplatform.user`, `roles/storage.objectAdmin`, `roles/bigquery.dataViewer`, `roles/bigquery.jobUser`, `roles/datastore.user`).
 4. **Data Residency**: All compute, storage, databases, and AI model inference are anchored to `asia-south1`.
+5. **Zero Plaintext Secrets (Key Vault Pattern)**: No credentials or client secrets are committed to git or exposed in plaintext environment variables. Application secrets (`GOOGLE_CLIENT_SECRET`, `AUTH_JWT_SECRET`) are stored in **Google Cloud Secret Manager** and injected into container memory at startup via Cloud Run's native `--set-secrets` integration. Immutable audit chain heads are signed via **Cloud KMS**.
 
 ---
 
@@ -207,6 +211,7 @@ gcloud run deploy cargoclear-api `
   --cpu-throttling `
   --service-account "cargoclear-sa@$($env:PROJECT_ID).iam.gserviceaccount.com" `
   --no-allow-unauthenticated `
+  --set-secrets="AUTH_JWT_SECRET=auth-jwt-secret:latest" `
   --set-env-vars `
 APP_MODE="live",`
 ENABLE_API_DOCS="false",`
@@ -265,8 +270,10 @@ Deploy the Next.js 15 UI to Cloud Run as a **public** service.
      --port 8080 `
      --timeout 300 `
      --concurrency 80 `
+     --min-instances 0 `
      --service-account "cargoclear-ui-sa@$($env:PROJECT_ID).iam.gserviceaccount.com" `
      --allow-unauthenticated `
+     --set-secrets="GOOGLE_CLIENT_SECRET=google-client-secret:latest" `
      --set-env-vars `
    API_BASE="$API_URL",`
    API_AUTH_MODE="google-id-token",`

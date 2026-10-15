@@ -42,9 +42,9 @@ GEMINI_LIVE_MODEL="${GEMINI_LIVE_MODEL:-gemini-2.5-flash}"
 GEMINI_LIVE_LOCATION="${GEMINI_LIVE_LOCATION:-${REGION}}"
 BQ_MODEL_EMBEDDING="${BQ_MODEL_EMBEDDING:-embedding_model}"
 RUN_DISPATCH="${RUN_DISPATCH:-local}"
-MIN_INSTANCES="${MIN_INSTANCES:-0}"
+MIN_INSTANCES="${MIN_INSTANCES:-1}"
 MAX_INSTANCES="${MAX_INSTANCES:-1}"
-CPU_THROTTLING_FLAG="${CPU_THROTTLING_FLAG:---cpu-throttling}"
+CPU_THROTTLING_FLAG="${CPU_THROTTLING_FLAG:---no-cpu-throttling}"
 TASKS_QUEUE="${TASKS_QUEUE:-cargoclear-runs}"
 SIGNING_KEY_VERSION="${SIGNING_KEY_VERSION:-}"
 
@@ -80,10 +80,12 @@ gcloud run deploy cargoclear-api \
   --concurrency 80 \
   --min-instances "${MIN_INSTANCES}" \
   --max-instances "${MAX_INSTANCES}" \
-  ${CPU_THROTTLING_FLAG} \
+  --no-cpu-throttling \
   --service-account "${RUNTIME_SERVICE_ACCOUNT}" \
   --no-allow-unauthenticated \
   --quiet \
+  --set-secrets \
+AUTH_JWT_SECRET="auth-jwt-secret:latest" \
   --set-env-vars \
 APP_MODE="live",\
 ENABLE_API_DOCS="false",\
