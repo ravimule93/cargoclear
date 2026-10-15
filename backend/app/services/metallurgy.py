@@ -12,6 +12,8 @@ what the documents state. Every check names the rule set it used (``rule_set`` /
   M-002  Carbon equivalent (IIW), or Pcm for low-carbon heats, against the limit of the certificate's own specification.
   M-003  Composition and strength limits of that specification, heat by heat.
   M-004  Traceability: every heat on the packing list is on a certificate.
+  M-005  One certificate, one value per heat and parameter: a certificate that states two different values for the same heat
+         and parameter is a finding for a person. The checks above use the first printed value and say nothing about the other.
 
 A certificate can satisfy its own standard and still contradict a non-alloy declaration (ASTM A106 allows 0.40 % Cr;
 Note 1(f) makes a steel alloy at 0.30 %): M-001 and M-003 are independent on purpose.
@@ -76,11 +78,20 @@ class Reading:
 
 
 @dataclass
+class Conflict:
+    """A later row of a certificate that states a different value for a heat and parameter already read from an earlier row."""
+
+    kept: Reading   # the first printed value: the one every check uses
+    other: Reading  # the later row that disagrees with it
+
+
+@dataclass
 class Heat:
     key: str
     label: str
     doc: ExtractedDocument
     readings: dict[str, Reading] = field(default_factory=dict)
+    conflicts: list[Conflict] = field(default_factory=list)
 
     def value(self, element: str) -> float | None:
         reading = self.readings.get(element)
@@ -101,6 +112,16 @@ def _read_row(doc: ExtractedDocument, index: int, row: LabResult) -> Reading | N
     return Reading(param, Measure(measure.value, measure.bound, assumptions=[*parsed.assumptions, *measure.assumptions], error=measure.error), index, row, doc)
 
 
+def _same_reading(kept: Reading, other: Reading) -> bool:
+    """Do two readable values of one heat and parameter say the same thing? The same number and the same bound ("<0.01" is not
+    0.01), after unit conversion (ppm and %, ksi and MPa); a strength may differ by the rounding of that conversion (0.1 %)."""
+    a, b = kept.measure, other.measure
+    if a.bound != b.bound or a.value is None or b.value is None:
+        return False
+    tolerance = 1e-3 * abs(a.value) if kept.param in ("YS", "UTS") else 1e-9 * max(1.0, abs(a.value))
+    return abs(a.value - b.value) <= tolerance
+
+
 def certificates(docs: list[ExtractedDocument]) -> list[ExtractedDocument]:
     return [d for d in docs if d.doc_type == "MILL_TEST_CERTIFICATE"]
 
@@ -114,7 +135,9 @@ def collect_heats(doc: ExtractedDocument) -> list[Heat]:
             continue
         key = normalize_heat(row.heat_number)
         heat = heats.setdefault(key, Heat(key=key, label=(row.heat_number or "").strip(), doc=doc))
-        heat.readings.setdefault(reading.param, reading)  # a repeated column keeps its first value
+        kept = heat.readings.setdefault(reading.param, reading)  # a repeated column keeps its first value ...
+        if kept is not reading and kept.value is not None and reading.value is not None and not _same_reading(kept, reading):
+            heat.conflicts.append(Conflict(kept, reading))  # ... and a different second value is recorded (M-005)
     return list(heats.values())
 
 
@@ -526,7 +549,48 @@ def check_heat_traceability(docs: list[ExtractedDocument], reference: Reference 
                        message=f"Every heat on the packing list ({', '.join(v[0] for v in shipped.values())}) is covered by a certificate.{tail}")
 
 
+# ---------------------------------------------------------------------------
+# one value per heat and parameter
+# ---------------------------------------------------------------------------
+
+MAX_CONFLICTS_LISTED = 6
+
+
+def check_conflicting_readings(docs: list[ExtractedDocument], reference: Reference | None = None) -> CheckResult | None:  # noqa: ARG001 - same signature as the other checks
+    """M-005. A certificate that prints two different values for one heat and parameter (a re-test row, a second table, a value the
+    model read twice, a forged copy of a cell) leaves the checks above resting on whichever row comes first. That is not decided by
+    this engine, so a person is told. A WARN, never a MATERIAL: real certificates can carry a heat analysis beside a product
+    analysis, or a re-test, so a second value is a question, not a contradiction. Repeats that agree are not a finding. Only
+    rows of ONE certificate are compared; two certificates for one heat are a matter for M-004."""
+    found: list[tuple[Heat, str, list[Conflict]]] = []
+    for certificate in certificates(docs):
+        for heat in collect_heats(certificate):
+            by_parameter: dict[str, list[Conflict]] = {}
+            for conflict in heat.conflicts:
+                by_parameter.setdefault(conflict.kept.param, []).append(conflict)
+            found.extend((heat, parameter, conflicts) for parameter, conflicts in by_parameter.items())
+    if not found:
+        return None
+
+    lines: list[str] = []
+    evidence: list[dict[str, Any]] = []
+    for heat, parameter, conflicts in found:
+        kept = conflicts[0].kept
+        others = list(dict.fromkeys(c.other.printed() for c in conflicts))
+        lines.append(f"heat {heat.label or 'n/a'} {parameter}: {kept.printed()} (printed first) and {' and '.join(others)}")
+        evidence.append(kept.evidence(heat.label))
+        evidence.extend(c.other.evidence(heat.label) for c in conflicts)
+    shown = "; ".join(lines[:MAX_CONFLICTS_LISTED])
+    more = f"; and {len(lines) - MAX_CONFLICTS_LISTED} more" if len(lines) > MAX_CONFLICTS_LISTED else ""
+    return CheckResult(
+        check_id="M-005", severity="WARN", evidence=evidence,
+        assumptions=["the first printed value of a repeated heat and parameter was used by the certificate checks"],
+        message=(f"The certificate states different values for the same heat and parameter: {shown}{more}. The checks use the value "
+                 f"printed first; a person must confirm which one the laboratory certified."),
+    )
+
+
 def run(docs: list[ExtractedDocument], reference: Reference | None = None) -> list[CheckResult]:
     reference = reference or get_reference()
-    checks = (check_alloy_status, check_carbon_equivalent, check_specification_limits, check_heat_traceability)
+    checks = (check_alloy_status, check_carbon_equivalent, check_specification_limits, check_heat_traceability, check_conflicting_readings)
     return [result for check in checks if (result := check(docs, reference)) is not None]

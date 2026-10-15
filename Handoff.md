@@ -549,8 +549,9 @@ one-sentence guard (165 counted runs per arm). **One of them got through the shi
    cell (at most 0.13).
 3. **Engine finding, not built:** on a certificate the model returned both the printed and the amended row in 93 of 96 runs; the engines keep
    the first of a repeated column and say nothing about the other, so "held" there depended on row order (pinned offline:
-   `test_a_second_conflicting_reading_of_a_certificate_cell_is_silent_and_which_one_counts_depends_on_the_order`). A finding for two
-   different values of one heat and parameter is item 7 of the fix list in `docs/REDTEAM.md`.
+   `test_a_second_conflicting_reading_of_a_certificate_cell_is_flagged_by_m_005_whichever_row_comes_first`, the test's name today: at
+   the time of the live runs it was `..._is_silent_and_which_one_counts_depends_on_the_order`). A finding for two different values of
+   one heat and parameter was item 7 of the fix list in `docs/REDTEAM.md`; it is built (the entry "M-005" below).
 4. **How the runs went:** both `gemini-3.5-flash` arms lost the network at 19:55 IST (ConnectError on every call after it; 56 and 68 of 174
    errored, including the bill of lading control). Those errors were not counted; the affected cells were re-run with the same options
    (no errors, every run held) and each cell counted once. A separate script re-graded all 660 counted runs from the saved reports without
@@ -562,6 +563,36 @@ one-sentence guard (165 counted runs per arm). **One of them got through the shi
    (repeated cell, `--guard-aware`, the `also read` column, the engine's silence on a second reading). Backend suite: 2673 tests
    collected, all pass (2026-10-14); ruff F and B clean on the changed files.
 
-**Needs the owner:** decide whether to build item 7 (a finding for a conflicting second reading) and whether to add a rule to the guard for
-an amended cell next to a printed one; either needs the live test again (`--guard-aware --targets all`). Still open: an attacker who iterates
+**Needs the owner:** (item 7, a finding for a conflicting second reading, is since built: see the entry "M-005" below) decide whether to
+add a rule to the guard for an amended cell next to a printed one; that needs the live test again (`--guard-aware --targets all`). Still open: an attacker who iterates
 against the model, a consistent injection across two documents, a forged row or table, the packing list and other document types.
+
+## 2026-10-14 — M-005: one value per heat and parameter
+
+Asked: "Build item 7" (the follow-up to the guard-aware injection test, after the first commit).
+
+1. **What it is.** A new check, `M-005` in `backend/app/services/metallurgy.py`: when ONE certificate states two different values for the
+   same heat and parameter, a WARN cites both cells (evidence with both rows and boxes) and says a person must confirm which the
+   laboratory certified. It appears only then (no change to any output without a repeated cell, so Case C and Case D are untouched).
+2. **Decisions** (mine, from the plan the owner saw before building): **WARN only**, never MATERIAL: real certificates can carry a heat
+   analysis beside a product analysis, or a re-test, so a second value is a question and not a contradiction. **Repeats that agree are
+   ignored** (same number and bound after unit conversion; a strength within the 0.1 % rounding of ksi to MPa). A row with no readable
+   value is not a conflict. The checks still read the **first** printed value as before; M-005 does not pick a winner. Only rows of one
+   certificate are compared (two certificates for one heat are M-004's business).
+3. **What it does and does not close.** It closes the "held because of the row order" case from the guard-aware test (the model listed
+   the printed and the amended row, 93 of 96 certificate runs): the second value is now a finding in either order. It does **not**
+   change any count on `docs/INJECTION_TEST.md`: the 21 poisoned runs returned one value, so there was nothing to flag. The live runs
+   there predate M-005 and were not repeated; the offline test is the evidence (claim C-58, PROVEN offline, not seen in a live run).
+4. **Touched:** `metallurgy.py` (`Conflict`, `Heat.conflicts`, `_same_reading`, `check_conflicting_readings`, `MAX_CONFLICTS_LISTED`),
+   the comment in `calculation.py`, the title map in `frontend/components/assess/CheckList.tsx` ("Conflicting Values for One
+   Certificate Cell"; **the frontend was not built or type-checked here: no `node_modules`**), CLAIMS (C-58 added, PROVEN 29; C-56
+   updated), REDTEAM (the pitch answer and fix list item 7, and the duplicate "7." renumbered), `docs/INJECTION_TEST.md`, `Product.md`,
+   the roadmap row. The injection runner test that asserted the old silence was renamed and now asserts M-005 in both orders.
+5. **Tests:** 19 new cases (15 test functions) in `test_metallurgy.py` (agreeing repeats, other units, both row orders, the checks still reading the first value,
+   bounds, unreadable repeats, strengths, three rows, the cap of six listed with every cell cited, two certificates, the pipeline).
+   Backend suite: 2660 tests collected in this commit's tree, all pass (verified on an export of the staged index); ruff F and B
+   clean on the changed files. The demo fixtures' certificates trigger no M-005.
+
+**Needs the owner:** nothing new from this. A repeated cell is a WARN by design; if you want a spread large enough to matter (a value
+that would change another check) to be a MATERIAL, that is a decision about real certificates, not one the tests can settle. Still open
+from the injection test: a guard rule for an amended cell next to a printed one (needs the live test again).

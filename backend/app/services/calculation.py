@@ -730,7 +730,7 @@ async def run(ctx: dict) -> dict:
     # Entity alignment across all documents
     results.extend(check_entity_alignment(docs))
 
-    # Invoice arithmetic (I-001..I-003), the certificate against the declaration (M-001..M-004), origin and trade
+    # Invoice arithmetic (I-001..I-003), the certificate against the declaration (M-001..M-005), origin and trade
     # remedies (E-origin, SEC-001, SEC-002). Each rests on its own module; the curated tables they use are named on
     # the checks (rule_set / regulation_ref) and fingerprinted below.
     destination = str(ctx.get("destination_country", "SG"))

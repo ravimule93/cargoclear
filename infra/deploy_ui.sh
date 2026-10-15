@@ -42,9 +42,12 @@ gcloud run deploy cargoclear-ui \
   --port 8080 \
   --timeout 300 \
   --concurrency 80 \
+  --min-instances 0 \
   --service-account "${UI_SERVICE_ACCOUNT}" \
   --allow-unauthenticated \
   --quiet \
+  --set-secrets \
+GOOGLE_CLIENT_SECRET="google-client-secret:latest" \
   --set-env-vars \
 API_BASE="${API_URL}",\
 API_AUTH_MODE="google-id-token",\

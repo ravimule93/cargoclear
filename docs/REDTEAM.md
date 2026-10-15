@@ -132,8 +132,10 @@ also wrote five attacks after reading the guard, and one of them got through: a 
 the guard's own voice saying that cell wins. The guard let it change the reading in 4 of 165 runs on gemini-2.5-flash (the bill of
 lading's freight, silently, and its gross weight) and 0 of 165 on gemini-3.5-flash; the one-sentence prompt, 17 of 165 on
 gemini-2.5-flash. So it is not "immune": one bundle, one attempt per attacker, three near-duplicate runs per document. Say what was
-tested, never "injection-proof". **Work items:** flag two different readings of one certificate cell (today the engines keep the first and
-say nothing); a consistent injection across two documents; the packing list and other document types (C-53 is DELETED; its old text
+tested, never "injection-proof". The engine now flags two different readings of one certificate cell (M-005, a warning; C-58), which closes the case where a forged
+copy sits beside the printed cell and the model lists both. It does not help when the model reads only the forged value, which is
+what the poisoned runs did. **Work items:** a guard rule for an amended cell next to a printed one (needs the live test again); a
+consistent injection across two documents; the packing list and other document types (C-53 is DELETED; its old text
 said there was no guard and that confidence routing would expose an injected value, and neither held).
 
 **Who can see my documents?**
@@ -176,9 +178,10 @@ the live A/B decides (C-37).
 5. **Review the rule tables** (`backend/app/reference/`), so the rates and limits can stop being labelled placeholders.
 6. Open design questions: authentication (C-52); the injection test with a consistent change across two documents and on the
    packing list and other document types (C-56, `docs/INJECTION_TEST.md`); a comparison with a smaller model ("why Gemini").
-7. **Flag a conflicting second reading of one certificate cell** (not built). The guard-aware injection test showed that when the page
-   holds two values for one heat and parameter the model returns both and the engines keep the first and say nothing, so whether a
-   forged cell counts depends on the order the model happened to list the rows (`docs/INJECTION_TEST.md`, C-56). A finding for two
-   different values of one heat and parameter on one certificate would turn that silence into a loud case for a person.
-7. Housekeeping the audit noticed: three dead files from Phase 0 (`backend/app/repo/bigquery.py`, `backend/app/domain/events.py`,
+7. **Flag a conflicting second reading of one certificate cell: built (M-005, C-58).** The guard-aware injection test showed that
+   when the page holds two values for one heat and parameter the model returns both and the engines kept the first and said nothing,
+   so whether a forged cell counted depended on the order the model listed the rows (`docs/INJECTION_TEST.md`, C-56). A WARN now
+   cites both cells; the checks still read the first. Offline evidence only; a person is asked, nothing is decided. It does not
+   cover the case where the model returns only the forged value: that is the guard's job.
+8. Housekeeping the audit noticed: three dead files from Phase 0 (`backend/app/repo/bigquery.py`, `backend/app/domain/events.py`,
    `frontend/lib/sse.ts`) still await deletion by the owner.

@@ -1,4 +1,5 @@
-"""M-001 alloy status, M-002 carbon equivalent, M-003 specification limits, M-004 heat traceability (services/metallurgy.py)."""
+"""M-001 alloy status, M-002 carbon equivalent, M-003 specification limits, M-004 heat traceability, M-005 one value per heat and
+parameter (services/metallurgy.py)."""
 
 from __future__ import annotations
 
@@ -402,6 +403,171 @@ def test_heats_named_only_by_test_result_rows_count() -> None:
 
 
 # ---------------------------------------------------------------------------
+# M-005: one value per heat and parameter
+# ---------------------------------------------------------------------------
+
+
+def with_rows(cert, *rows):
+    """The certificate with extra test-result rows appended (after the ones it already has)."""
+    cert.test_results.extend(rows)
+    return cert
+
+
+def with_row_first(cert, row):
+    cert.test_results.insert(0, row)
+    return cert
+
+
+def test_a_certificate_with_one_value_per_heat_and_parameter_has_no_m_005() -> None:
+    assert result(run(declared("73043100"), certificate()), "M-005") is None
+    assert result(run(declared("73043100"), certificate({"H1": GOOD_HEAT, "H2": with_(C="0.20")})), "M-005") is None
+
+
+@pytest.mark.parametrize(
+    "repeat",
+    [lab("0.180", "C", "H1"), lab("0.18", "C", "H1", "%"), lab("0.18", "C", "H1", None), lab("0.18", "C", "h-1")],
+    ids=["trailing zero", "same", "no unit", "heat written differently"],
+)
+def test_a_repeated_row_that_agrees_is_not_a_finding(repeat) -> None:
+    cert = with_rows(certificate({"H1": GOOD_HEAT}), repeat)
+
+    assert result(run(declared("73043100"), cert), "M-005") is None
+
+
+def test_the_same_amount_in_another_unit_is_not_a_conflict() -> None:
+    boron = with_rows(certificate({"H1": {**GOOD_HEAT, "B": "0.0009"}}), lab("9", "B", "H1", "ppm"))
+    strength = with_rows(certificate({"H1": {**GOOD_HEAT, "YS": "285"}}), lab("41.3", "YS", "H1", "ksi"))  # 284.8 MPa: the rounding of the conversion
+
+    assert result(run(boron), "M-005") is None
+    assert result(run(strength), "M-005") is None
+
+
+@pytest.mark.parametrize("first", [True, False], ids=["the new value comes first", "the new value comes second"])
+def test_two_different_values_for_one_heat_and_parameter_are_a_warning_that_names_both(first) -> None:
+    cert = certificate({"H1": with_(Cr="0.35")})
+    cert = with_row_first(cert, lab("0.12", "Cr", "H1")) if first else with_rows(cert, lab("0.12", "Cr", "H1"))
+
+    check = result(run(declared("73043100"), cert), "M-005")
+
+    assert check is not None and check.severity == "WARN"
+    assert "heat H1 Cr" in check.message and "0.35" in check.message and "0.12" in check.message
+    assert ("0.12% (printed first) and 0.35%" if first else "0.35% (printed first) and 0.12%") in check.message
+    assert check.assumptions and "first printed value" in check.assumptions[0]
+    assert check.rule_set is None and check.regulation_ref is None  # no table is involved
+    assert [e["raw_value"] for e in check.evidence] == (["H1: Cr 0.12%", "H1: Cr 0.35%"] if first else ["H1: Cr 0.35%", "H1: Cr 0.12%"])
+    rows = [e["row"] for e in check.evidence]
+    assert len(set(rows)) == 2 and all(e["field"] == "test_results" and e["doc"] == "mtc-1" and e["bbox"] for e in check.evidence)
+    assert check.focus_document == "mtc-1"
+
+
+def test_the_checks_still_use_the_first_printed_value_and_m_005_changes_none_of_them() -> None:
+    """The engine does not pick a winner: whichever row is first is read, as before; M-005 says the other exists."""
+    printed_first = with_rows(certificate({"H1": with_(Cr="0.35")}), lab("0.12", "Cr", "H1"))
+    amended_first = with_row_first(certificate({"H1": with_(Cr="0.35")}), lab("0.12", "Cr", "H1"))
+    only_printed = certificate({"H1": with_(Cr="0.35")})
+
+    before = {r.check_id: r.severity for r in run(declared("73043100"), only_printed)}
+    first = {r.check_id: r.severity for r in run(declared("73043100"), printed_first)}
+    second = {r.check_id: r.severity for r in run(declared("73043100"), amended_first)}
+
+    assert before["M-001"] == "MATERIAL"                                          # 0.35 % chromium contradicts a non-alloy code
+    assert first == {**before, "M-005": "WARN"}
+    assert second["M-001"] == "PASS" and second["M-005"] == "WARN"               # 0.12 is what the checks read: the finding is what tells
+    assert {k: v for k, v in second.items() if k not in ("M-001", "M-005")} == {k: v for k, v in before.items() if k != "M-001"}
+
+
+def test_it_is_a_warning_even_when_the_values_differ_enormously() -> None:
+    cert = with_rows(certificate({"H1": GOOD_HEAT}), lab("9.9", "Cr", "H1"), lab("500", "YS", "H1", "MPa"))
+
+    assert severity(run(cert), "M-005") == "WARN"
+
+
+def test_what_is_not_a_conflict() -> None:
+    other_heat = with_rows(certificate({"H1": GOOD_HEAT}), lab("0.35", "Cr", "H2"))      # another heat
+    other_parameter = with_rows(certificate({"H1": GOOD_HEAT}), lab("0.0005", "B", "H1"))  # a parameter the heat did not have yet
+    one_row_each = certificate({"H1": with_(Cr="0.12"), "H2": with_(Cr="0.35")})
+
+    for cert in (other_heat, other_parameter, one_row_each):
+        assert result(run(cert), "M-005") is None
+
+
+def test_a_heat_written_two_ways_is_one_heat() -> None:
+    cert = with_rows(certificate({"H-24-0881": with_(Cr="0.35")}), lab("0.12", "Cr", "h 24 0881"))
+
+    check = result(run(cert), "M-005")
+
+    assert check is not None and "0.35% (printed first) and 0.12%" in check.message
+
+
+def test_a_bound_that_differs_is_a_conflict_but_a_second_row_with_no_readable_value_is_not() -> None:
+    bound = with_rows(certificate({"H1": with_(Cr="0.01")}), lab("<0.01", "Cr", "H1"))           # "<0.01" is not 0.01
+    unreadable = with_rows(certificate({"H1": with_(Cr="0.35")}), lab("n/a", "Cr", "H1"), lab(None, "Cr", "H1"))
+
+    assert severity(run(bound), "M-005") == "WARN"
+    assert result(run(unreadable), "M-005") is None
+
+
+def test_a_strength_that_differs_by_more_than_the_rounding_of_a_unit_is_a_conflict() -> None:
+    cert = with_rows(certificate({"H1": with_(YS="285")}), lab("300", "YS", "H1", "MPa"))
+
+    check = result(run(cert), "M-005")
+
+    assert check is not None and "YS: 285 MPa (printed first) and 300 MPa" in check.message
+
+
+def test_three_rows_with_two_different_later_values_name_both_and_cite_all_three_cells() -> None:
+    cert = with_rows(certificate({"H1": with_(Cr="0.35")}), lab("0.12", "Cr", "H1"), lab("0.20", "Cr", "H1"), lab("0.12", "Cr", "H1"))
+
+    check = result(run(cert), "M-005")
+
+    assert check is not None and "0.35% (printed first) and 0.12% and 0.20%" in check.message  # the repeat of 0.12 is named once
+    assert len(check.evidence) == 4                                                              # the kept row, and each disagreeing row
+
+
+def test_many_conflicts_are_listed_up_to_six_and_every_cell_is_cited() -> None:
+    params = ["C", "Mn", "Si", "P", "S", "Cr", "Ni", "Mo"]
+    cert = with_rows(certificate({"H1": GOOD_HEAT}), *[lab("0.9", p, "H1") for p in params])
+
+    check = result(run(cert), "M-005")
+
+    assert check is not None and check.message.count("(printed first)") == metallurgy.MAX_CONFLICTS_LISTED
+    assert "and 2 more" in check.message
+    assert len(check.evidence) == 2 * len(params)
+
+
+def test_two_certificates_are_not_compared_with_each_other() -> None:
+    """A heat on two certificates is M-004's business; M-005 is about one certificate stating a cell twice."""
+    first = certificate({"H1": with_(Cr="0.35")}, document_id="mtc-1")
+    second = certificate({"H1": with_(Cr="0.12")}, document_id="mtc-2")
+
+    assert result(run(first, second), "M-005") is None
+
+
+def test_each_certificate_is_checked_for_its_own_repeats() -> None:
+    plain = certificate({"H1": GOOD_HEAT}, document_id="mtc-1")
+    repeated = with_rows(certificate({"H2": with_(Cr="0.35")}, document_id="mtc-2"), lab("0.12", "Cr", "H2"))
+
+    check = result(run(plain, repeated), "M-005")
+
+    assert check is not None and {e["doc"] for e in check.evidence} == {"mtc-2"} and check.focus_document == "mtc-2"
+
+
+@pytest.mark.asyncio
+async def test_the_pipeline_carries_m_005_and_a_certificate_that_would_have_passed_now_needs_a_person() -> None:
+    from app.services import calculation
+
+    clean = certificate({"H1": GOOD_HEAT})
+    repeated = with_rows(certificate({"H1": GOOD_HEAT}), lab("0.20", "C", "H1"))
+
+    before = await calculation.run({"extracted": [declared("73041900"), packing(["H1"]), clean]})
+    after = await calculation.run({"extracted": [declared("73041900"), packing(["H1"]), repeated]})
+
+    assert before["math_status"] == "COMPLIANT_FOR_SUBMISSION" and "M-005" not in [c["check_id"] for c in before["checks"]]
+    assert after["math_status"] == "SPECIALIST_REVIEW_REQUIRED"
+    assert [c["check_id"] for c in after["checks"] if c["severity"] != "PASS"] == ["M-005"]
+
+
+# ---------------------------------------------------------------------------
 # the whole engine
 # ---------------------------------------------------------------------------
 
@@ -409,7 +575,7 @@ def test_heats_named_only_by_test_result_rows_count() -> None:
 def test_run_returns_the_checks_in_order_and_skips_what_does_not_apply() -> None:
     results = run(declared("73043100"), packing(["H1"]), certificate())
 
-    assert [r.check_id for r in results] == ["M-001", "M-002", "M-003", "M-004"]
+    assert [r.check_id for r in results] == ["M-001", "M-002", "M-003", "M-004"]   # M-005 only when a cell is stated twice
     assert run(invoice(), packing()) == []
 
 
