@@ -70,6 +70,10 @@ export const api = {
     return request<Bundle>(`/bundles/${bundleId}`);
   },
 
+  async listBundles(limit: number = 20): Promise<Bundle[]> {
+    return request<Bundle[]>(`/bundles?limit=${limit}`);
+  },
+
   async uploadDocument(bundleId: string, file: File): Promise<DocumentRecord> {
     const formData = new FormData();
     formData.append("file", file);

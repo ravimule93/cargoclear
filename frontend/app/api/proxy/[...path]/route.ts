@@ -51,7 +51,16 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
 async function handleProxy(request: NextRequest, params: { path: string[] }) {
   const requestId = requestIdFor(request.headers);
-  const base = backendBase();
+  let base: string;
+  try {
+    base = backendBase();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Backend service configuration error.";
+    return NextResponse.json(proxyError("CONFIG_ERROR", message, requestId), {
+      status: 503,
+      headers: { "x-request-id": requestId },
+    });
+  }
 
   const target = buildTargetUrl(base, params.path ?? [], request.nextUrl.search);
   if (target === null) {

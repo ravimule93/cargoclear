@@ -11,6 +11,7 @@ Hierarchy:
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone
 from typing import Any
 
@@ -107,6 +108,59 @@ async def get_bundle(bundle_id: str) -> dict[str, Any] | None:
     bundle = dict(_IN_MEMORY_BUNDLES[bundle_id])
     bundle["documents"] = list(_IN_MEMORY_DOCS.get(bundle_id, {}).values())
     return bundle
+
+
+async def _attach_bundle_documents(doc_ref: Any, b_data: dict[str, Any]) -> dict[str, Any]:
+    try:
+        docs_stream = doc_ref.collection("documents").stream()
+        b_data["documents"] = [d.to_dict() async for d in docs_stream]
+    except Exception as exc:
+        logger.warning("attach_documents_failed", bundle_id=b_data.get("id"), error=str(exc))
+        b_data["documents"] = []
+    return b_data
+
+
+async def list_bundles(tenant_id: str | None = None, limit: int = 50) -> list[dict[str, Any]]:
+    """List recent bundles with optional tenant scoping. Returns list of bundle dicts with attached documents."""
+    client = _get_firestore_client()
+
+    if client is not None:
+        try:
+            from google.cloud.firestore import Query
+
+            col = client.collection("bundles")
+            query = col
+            if tenant_id and tenant_id != "*":
+                query = query.where("tenant_id", "==", tenant_id)
+            query = query.order_by("created_at", direction=Query.DESCENDING).limit(limit)
+            snapshots = await query.get()
+            bundles = [doc.to_dict() for doc in snapshots]
+            await asyncio.gather(*[_attach_bundle_documents(doc.reference, b) for doc, b in zip(snapshots, bundles)])
+            return bundles
+        except Exception as exc:
+            logger.warning("firestore_list_bundles_order_query_failed", error=str(exc))
+            try:
+                col = client.collection("bundles")
+                query = col
+                if tenant_id and tenant_id != "*":
+                    query = query.where("tenant_id", "==", tenant_id)
+                snapshots = await query.limit(limit).get()
+                bundles = [doc.to_dict() for doc in snapshots]
+                await asyncio.gather(*[_attach_bundle_documents(doc.reference, b) for doc, b in zip(snapshots, bundles)])
+                bundles.sort(key=lambda b: b.get("created_at", ""), reverse=True)
+                return bundles
+            except Exception as e2:
+                logger.error("firestore_list_bundles_failed", error=str(e2))
+                return []
+
+    bundles = []
+    for b_id, b_data in _IN_MEMORY_BUNDLES.items():
+        b = dict(b_data)
+        b["documents"] = list(_IN_MEMORY_DOCS.get(b_id, {}).values())
+        if not tenant_id or tenant_id == "*" or b.get("tenant_id") == tenant_id:
+            bundles.append(b)
+    bundles.sort(key=lambda b: b.get("created_at", ""), reverse=True)
+    return bundles[:limit]
 
 
 # ---------------------------------------------------------------------------

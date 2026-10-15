@@ -11,7 +11,7 @@ export interface StreamRunState {
   message?: string | null;
 }
 
-export type StreamConnection = "connecting" | "open" | "reconnecting";
+export type StreamConnection = "connecting" | "open" | "reconnecting" | "polling" | "disconnected";
 
 export interface BundleStream {
   /** Latest iteration seen on the stream (full object: grounding, documents, data_source, ...). */
@@ -118,13 +118,19 @@ export function useBundleStream(bundleId: string | null): BundleStream {
           setError(data?.message ?? "Stream error");
           return;
         }
-        setConnection("reconnecting");
         if (es.readyState === EventSource.CLOSED) {
-          // The browser will not retry a closed stream by itself; retry with exponential backoff.
           es.close();
-          const delay = Math.min(30000, 3000 * Math.pow(1.5, retryAttempt));
+          if (retryAttempt >= 3) {
+            // Degrade gracefully to polling if SSE disconnected/timed out
+            setConnection("polling");
+            return;
+          }
+          setConnection("reconnecting");
+          const delay = Math.min(10000, 2000 * Math.pow(1.5, retryAttempt));
           retryAttempt++;
           reopenTimer = setTimeout(connect, delay);
+        } else {
+          setConnection("reconnecting");
         }
       });
     };

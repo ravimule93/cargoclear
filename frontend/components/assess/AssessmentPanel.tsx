@@ -36,24 +36,41 @@ interface AssessmentPanelProps {
 
 const MTC_MISSING_ID = "ME-MILL_TEST_CERTIFICATE";
 
+const STAGE_LABELS: Record<string, string> = {
+  initializing: "Initializing Pipeline...",
+  preprocess: "Preprocessing & PDF Normalization",
+  extract: "Multimodal Gemini Extraction",
+  discrepancy: "Cross-Document Discrepancy Checks",
+  ground: "Evidence Grounding & Bounding Boxes",
+  confidence: "Confidence Scoring & Threshold Evaluation",
+  synthesize: "Tariff & Regulatory Synthesis",
+  finalize: "Finalizing Cryptographic Audit Ledger",
+};
+
 function RunProgress({ run }: { run?: StreamRunState | null }) {
   const live = run?.state === "RUNNING" || run?.state === "QUEUED";
   const progress = live ? (run?.progress ?? 0) : 0;
+  const rawStage = run?.stage || "";
+  const stageDisplay = STAGE_LABELS[rawStage] || (rawStage ? rawStage.charAt(0).toUpperCase() + rawStage.slice(1) : "Starting Analysis...");
+
   return (
     <div
       role="status"
       aria-live="polite"
       data-testid="run-progress"
-      className="bg-[var(--cc-surface-2)] p-2.5 rounded-[var(--cc-radius)] border border-[var(--cc-focus)] text-xs flex flex-col gap-1.5"
+      className="bg-[var(--cc-surface-2)] p-3 rounded-[var(--cc-radius)] border border-[var(--cc-focus)] text-xs flex flex-col gap-2 shadow-xs"
     >
-      <div className="flex justify-between font-semibold text-[var(--cc-text)]">
-        <span className="capitalize">Stage: {(live && run?.stage) || "starting"}</span>
-        <span>{Math.round(progress * 100)}%</span>
+      <div className="flex justify-between items-center font-semibold text-[var(--cc-text)]">
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border-2 border-[var(--cc-focus)] border-t-transparent" />
+          <span>{stageDisplay}</span>
+        </div>
+        <span className="font-mono text-[11px] text-[var(--cc-focus)]">{Math.round(progress * 100)}%</span>
       </div>
-      <div className="w-full bg-[var(--cc-border)] h-1.5 rounded-full overflow-hidden">
+      <div className="w-full bg-[var(--cc-border)] h-2 rounded-full overflow-hidden">
         <div
-          className="bg-[var(--cc-focus)] h-full transition-all duration-300"
-          style={{ width: `${progress * 100}%` }}
+          className="bg-[var(--cc-focus)] h-full transition-all duration-300 rounded-full"
+          style={{ width: `${Math.max(5, Math.round(progress * 100))}%` }}
         />
       </div>
     </div>
