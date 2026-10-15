@@ -38,7 +38,7 @@ The status is advisory. It does not assert that goods are legal or ready for a g
 
 - **Weights and codes:** packing list vs bill of lading gross (W-001), packing list consistency (W-002), HS consistency across documents (H-002, H-003-*), tariff grounding (G-001), entity alignment (E-*).
 - **Invoice arithmetic:** quantity × unit price = line total (I-001), invoice total = sum of lines (I-002), one currency throughout (I-003).
-- **The certificate against the declaration:** alloy status under HS Chapter 72 Note 1(f) against the declared code (M-001); carbon equivalent against the certificate's standard (M-002); chemistry and strength limits of that standard (M-003); every heat on the packing list covered by a certificate (M-004).
+- **The certificate against the declaration:** alloy status under HS Chapter 72 Note 1(f) against the declared code (M-001); carbon equivalent against the certificate's standard (M-002); chemistry and strength limits of that standard (M-003); every heat on the packing list covered by a certificate (M-004); a certificate that states two different values for one heat and parameter is flagged for a person (M-005).
 - **Origin and trade remedies:** the country of origin agrees across documents (E-origin); a value just under an alloy threshold on a non-alloy declaration (SEC-001); anti-dumping duty that may apply (SEC-002).
 
 The rules behind M-*, SEC-* and the duty estimate are curated tables (`backend/app/reference/`), labelled `demo-curated` and unverified until a reviewer replaces that label. Every check that uses one names it. A result that rests on an assumption is a warning, never a pass.

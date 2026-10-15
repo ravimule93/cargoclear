@@ -33,6 +33,7 @@ const CHECK_TITLES: Record<string, string> = {
   "M-002": "Carbon Equivalent vs Specification",
   "M-003": "Chemistry & Strength vs Specification",
   "M-004": "Heat-Number Traceability (Packing List ↔ Certificate)",
+  "M-005": "Conflicting Values for One Certificate Cell",
   "SEC-001": "Alloy-Threshold Proximity (Circumvention Heuristic)",
   "SEC-002": "Anti-Dumping Exposure",
 };

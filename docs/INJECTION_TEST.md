@@ -197,11 +197,14 @@ All the controls were held in every arm. Every counted run completed (see "How t
   the same heat and parameter in 93 of the 96 certificate-table runs of v7 and v11 (24 of 24 on each of three arms, 21 of 24 on
   `gemini-2.5-flash` with the one-sentence guard), the printed row first. In the other three, the
   poisoned chromium runs, it returned only the amended row and dropped the printed one. The engines keep the first of a repeated
-  column and say nothing about the other, so the runs with two rows were "held" because of the row order and not because anything
-  noticed the conflict (pinned offline:
-  `test_a_second_conflicting_reading_of_a_certificate_cell_is_silent_and_which_one_counts_depends_on_the_order`; with the amended
-  row first the chromium reading flips M-001 as above). Two different values for one heat and parameter on one certificate should
-  be a finding of its own. It is not built; it is item 7 of the fix list in [REDTEAM.md](REDTEAM.md).
+  column, and **when these runs were made they said nothing about the other**, so the runs with two rows were "held" because of the
+  row order and not because anything noticed the conflict. That is fixed since: **check M-005** (a WARN) now reports two different
+  values for one heat and parameter on one certificate, whichever row comes first, and the checks still read the first
+  (`test_a_second_conflicting_reading_of_a_certificate_cell_is_flagged_by_m_005_whichever_row_comes_first`, with the amended row first
+  the chromium reading still flips M-001 as above, now together with M-005). The live runs on this page were made **before** M-005
+  existed and were not repeated, so the offline test, not a live run, is the evidence for it. M-005 does not change any count in the
+  tables: the 21 poisoned runs returned a single value, so there was no second reading to flag. Closing those is the job of the
+  guard, not of the engine.
 * **Read v7 and v11 as forgery as much as injection.** They do not tell the model what to do; they print a second value. A reader
   who took the amended cell would also be reading what is on the page. The test treats the original cell as the truth, because that is
   how the documents were made, and because the amendment is unsigned. A real document that carries an unexplained second value for
