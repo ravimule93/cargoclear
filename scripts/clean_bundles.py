@@ -27,6 +27,7 @@ Usage:
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.error
@@ -37,6 +38,7 @@ from typing import Any
 PROJECT_ID = os.environ.get("PROJECT_ID", "cargoclear-hackathon")
 DATABASE = os.environ.get("FIRESTORE_DATABASE", "(default)")
 RAW_BUCKET = os.environ.get("RAW_BUCKET", "cargoclear-raw-pdfs")
+BUNDLE_ID_RE = re.compile(r"^bnd-[a-z0-9]{8,64}$")
 
 BASE_FIRESTORE_URL = (
     f"https://firestore.googleapis.com/v1/projects/{PROJECT_ID}/databases/{DATABASE}/documents"
@@ -51,7 +53,6 @@ def get_access_token() -> str:
             capture_output=True,
             text=True,
             check=True,
-            shell=True,
         )
         token = proc.stdout.strip()
         if not token:
@@ -138,8 +139,8 @@ def list_bundles(token: str) -> list[dict[str, Any]]:
 
 
 def delete_bundle_subcollections(token: str, bundle_id: str, dry_run: bool = False):
-    """Delete subcollection documents (documents, iterations, audit)."""
-    subcollections = ["documents", "iterations", "audit"]
+    """Delete every bundle-owned subcollection before its parent document."""
+    subcollections = ["documents", "runs", "iterations", "extractions", "audit", "control"]
     for sub in subcollections:
         res = firestore_request(token, f"bundles/{bundle_id}/{sub}?pageSize=300")
         if not res or "documents" not in res:
@@ -161,20 +162,19 @@ def delete_gcs_files(bundle_id: str, dry_run: bool = False):
         return
 
     try:
-        subprocess.run(
-            ["gsutil", "-m", "rm", "-r", gcs_prefix],
-            capture_output=True,
-            text=True,
-            check=False,
-            shell=True,
-        )
+        subprocess.run(["gsutil", "-m", "rm", "-r", gcs_prefix], capture_output=True, text=True, check=True)
     except Exception as e:
-        print(f"  Warning: could not delete GCS files for {bundle_id}: {e}")
+        raise RuntimeError(f"Could not delete GCS files for {bundle_id}: {e}") from e
 
 
 def delete_single_bundle(token: str, bundle_id: str, dry_run: bool = False):
     """Delete a single bundle from Firestore and GCS."""
+    if not BUNDLE_ID_RE.fullmatch(bundle_id):
+        raise ValueError("Bundle ID must match bnd- followed by 8-64 lowercase letters or digits.")
     print(f"\nProcessing bundle {bundle_id}...")
+    # Remove raw and derived evidence first. If storage deletion fails, leave
+    # Firestore untouched so the object remains visible for manual recovery.
+    delete_gcs_files(bundle_id, dry_run=dry_run)
     delete_bundle_subcollections(token, bundle_id, dry_run=dry_run)
 
     if dry_run:
@@ -183,7 +183,6 @@ def delete_single_bundle(token: str, bundle_id: str, dry_run: bool = False):
         firestore_request(token, f"bundles/{bundle_id}", method="DELETE")
         print(f"  Deleted Firestore document: bundles/{bundle_id}")
 
-    delete_gcs_files(bundle_id, dry_run=dry_run)
     if not dry_run:
         print(f"  Deleted GCS files: gs://{RAW_BUCKET}/bundles/{bundle_id}")
 
@@ -214,6 +213,10 @@ def main():
     )
 
     args = parser.parse_args()
+    if args.bundle and not BUNDLE_ID_RE.fullmatch(args.bundle):
+        parser.error("--bundle must match bnd- followed by 8-64 lowercase letters or digits.")
+    if args.bundle and not args.dry_run and not args.yes:
+        parser.error("--bundle deletion requires --yes (or use --dry-run to preview it).")
     token = get_access_token()
 
     if args.list:

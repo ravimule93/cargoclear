@@ -102,6 +102,24 @@ def create_app() -> FastAPI:
     async def readyz() -> dict:
         return {"status": "ok"}
 
+    @app.get("/version", tags=["ops"], summary="Non-sensitive release identity")
+    async def version() -> dict:
+        """Identify the deployed build without exposing credentials or customer data.
+
+        This endpoint deliberately reports configuration that a reviewer needs to
+        connect a hosted result to its source revision. It is not a health check
+        and must not be used to infer that external dependencies are available.
+        """
+        return {
+            "application_version": app.version,
+            "release_sha": settings.release_sha,
+            "release_timestamp": settings.release_timestamp,
+            "app_mode": settings.app_mode,
+            "region": settings.region,
+            "gemini_live_model": settings.gemini_live_model,
+            "gemini_live_location": settings.gemini_live_location,
+        }
+
     return app
 
 

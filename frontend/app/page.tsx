@@ -224,11 +224,13 @@ export default function Home() {
               <span>🔐</span> Commercial Single Sign-On (SSO) & Registration
             </h2>
             <p className="text-xs text-[var(--cc-text-muted)] mt-1">
-              Sign in with your corporate Google Workspace account, corporate email/password, or register a new customs user account.
+              {showDemo
+                ? "Sign in with Google, a local demo account, or register a demo customs user."
+                : "Sign in with your corporate Google Workspace account to continue."}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+          {showDemo && <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
             <Link
               href="/auth/signin?tab=signin"
               className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-2.5 text-xs font-semibold text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] transition-colors text-center shadow-2xs"
@@ -241,7 +243,7 @@ export default function Home() {
             >
               <span>📝 Create New Account</span>
             </Link>
-          </div>
+          </div>}
 
           <a
             href="/api/auth/signin/google"
@@ -256,14 +258,15 @@ export default function Home() {
             <span>Continue with Google SSO</span>
           </a>
 
-          <div className="relative flex items-center justify-center">
-            <div className="w-full border-t border-[var(--cc-border)]" />
-            <span className="bg-[var(--cc-surface-2)] px-2 text-[10px] uppercase tracking-wider text-[var(--cc-text-muted)] absolute">
-              or quick demo access
-            </span>
-          </div>
+          {showDemo && <>
+            <div className="relative flex items-center justify-center">
+              <div className="w-full border-t border-[var(--cc-border)]" />
+              <span className="bg-[var(--cc-surface-2)] px-2 text-[10px] uppercase tracking-wider text-[var(--cc-text-muted)] absolute">
+                or quick demo access
+              </span>
+            </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
             <span className="text-[10px] text-[var(--cc-text-muted)]">1-Click presets:</span>
             <button
               type="button"
@@ -301,7 +304,8 @@ export default function Home() {
             >
               ✈️ fedex.com
             </button>
-          </div>
+            </div>
+          </>}
         </div>
       )}
 

@@ -18,6 +18,8 @@ import { isIP } from "node:net";
 
 /** The header the API reads the end user's IP from (backend: CLIENT_IP_HEADER). Always overwritten here. */
 export const CLIENT_IP_HEADER = "x-cargoclear-client-ip";
+/** A verified end-user Google ID token. Only the private BFF may send it upstream. */
+export const END_USER_TOKEN_HEADER = "x-cargoclear-user-token";
 
 /** Request headers that are forwarded to the API. Everything else (cookies, authorization, ...) is dropped. */
 const FORWARDED_REQUEST_HEADERS = [
@@ -121,6 +123,7 @@ export function trustedProxyHops(env: NodeJS.ProcessEnv = process.env): number {
 
 export interface UpstreamHeaderOptions {
   idToken: string | null;
+  endUserToken: string | null;
   clientIp: string | null;
   requestId: string;
 }
@@ -136,6 +139,7 @@ export function upstreamRequestHeaders(incoming: Headers, options: UpstreamHeade
   // never copied from the browser: set here from what this server itself observed
   if (options.clientIp) headers.set(CLIENT_IP_HEADER, options.clientIp);
   if (options.idToken) headers.set("authorization", `Bearer ${options.idToken}`);
+  if (options.endUserToken) headers.set(END_USER_TOKEN_HEADER, options.endUserToken);
   return headers;
 }
 

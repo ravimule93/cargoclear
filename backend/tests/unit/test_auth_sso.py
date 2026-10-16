@@ -1,11 +1,10 @@
 """Unit tests for backend SSO authentication, JWT validation, and multi-tenancy."""
 
-import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
-from app.core.config import settings
+from app.core.config import Settings, settings
 from app.domain.auth import UserIdentity
-from app.gateway.auth import get_current_user
 from app.main import create_app
 
 
@@ -102,6 +101,103 @@ def test_auth_enabled_requires_bearer_token(monkeypatch):
     )
     assert resp_with_token.status_code == 201
     assert resp_with_token.json()["tenant_id"] == "customs.com"
+
+
+def test_live_mode_refuses_mock_tokens_and_service_only_requests(monkeypatch):
+    """A private API must not treat a demo token or its BFF service token as a person."""
+    monkeypatch.setattr(settings, "auth_enabled", True)
+    monkeypatch.setattr(settings, "app_mode", "live")
+
+    app = create_app()
+    client = TestClient(app)
+
+    mock = client.post(
+        "/api/v1/bundles",
+        json={"reference": "TEST-LIVE-MOCK", "destination_country": "SG"},
+        headers={"Authorization": "Bearer mock-jwt-demo-cha@customs.com-LICENSED_CHA"},
+    )
+    service_only = client.post(
+        "/api/v1/bundles",
+        json={"reference": "TEST-LIVE-SERVICE", "destination_country": "SG"},
+        headers={"Authorization": "Bearer service.identity.token"},
+    )
+
+    assert mock.status_code == 401
+    assert service_only.status_code == 401
+
+
+def test_live_settings_require_a_real_identity_configuration():
+    """A deployment cannot accidentally start live mode with demo identity defaults."""
+    try:
+        Settings(_env_file=None, APP_MODE="live")
+    except ValidationError:
+        pass
+    else:  # pragma: no cover - this must remain fail-closed
+        raise AssertionError("live settings unexpectedly accepted demo identity defaults")
+
+    configured = Settings(
+        _env_file=None,
+        APP_MODE="live",
+        AUTH_ENABLED="true",
+        OAUTH_CLIENT_ID="test-client.apps.googleusercontent.com",
+    )
+    assert configured.auth_enabled is True
+
+
+def test_live_mode_does_not_expose_legacy_password_or_mock_token_routes(monkeypatch):
+    """Production uses Google SSO only; password routes cannot mint demo tokens."""
+    monkeypatch.setattr(settings, "auth_enabled", True)
+    monkeypatch.setattr(settings, "app_mode", "live")
+    client = TestClient(create_app())
+
+    for path, payload in (
+        ("/api/v1/auth/check?email=agent@customs.com", None),
+        (
+            "/api/v1/auth/signup",
+            {
+                "email": "agent@customs.com",
+                "password": "not-a-production-password",
+                "name": "Agent",
+            },
+        ),
+        (
+            "/api/v1/auth/signin",
+            {"email": "agent@customs.com", "password": "not-a-production-password"},
+        ),
+    ):
+        response = client.get(path) if payload is None else client.post(path, json=payload)
+        assert response.status_code == 404
+
+
+def test_bundle_resources_do_not_cross_tenant_boundaries(monkeypatch):
+    """Every bundle-derived route must conceal another tenant's data."""
+    monkeypatch.setattr(settings, "auth_enabled", False)
+    monkeypatch.setattr(settings, "app_mode", "demo")
+    client = TestClient(create_app())
+
+    created = client.post(
+        "/api/v1/bundles",
+        json={"reference": "TENANT-BOUNDARY", "destination_country": "SG"},
+        headers={"X-Test-User-Email": "agent@customs.com"},
+    )
+    assert created.status_code == 201
+    bundle_id = created.json()["id"]
+
+    other_tenant = {"X-Test-User-Email": "agent@dhl.com"}
+    protected_paths = (
+        f"/api/v1/bundles/{bundle_id}",
+        f"/api/v1/bundles/{bundle_id}/audit",
+        f"/api/v1/bundles/{bundle_id}/extractions",
+        f"/api/v1/bundles/{bundle_id}/assessment",
+        f"/api/v1/bundles/{bundle_id}/iterations",
+        f"/api/v1/bundles/{bundle_id}/corrections",
+        f"/api/v1/bundles/{bundle_id}/prefill",
+        f"/api/v1/bundles/{bundle_id}/documents/not-a-document/file",
+    )
+    for path in protected_paths:
+        response = client.get(path, headers=other_tenant)
+        assert response.status_code == 404, path
+        assert response.json()["code"] == "NOT_FOUND"
 
 
 def test_domain_restriction_enforcement(monkeypatch):

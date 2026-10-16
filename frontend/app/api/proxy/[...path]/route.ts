@@ -85,23 +85,20 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
 
   try {
     const idToken = authMode() === "google-id-token" ? await idTokens.get(new URL(base).origin) : null;
+    // The service ID token proves this BFF may call the private API. The
+    // separate HttpOnly Google ID-token cookie identifies the human user; it
+    // is never readable by browser JavaScript and is never treated as the
+    // service Authorization token.
+    const endUserToken =
+      request.cookies.get("cargoclear_google_id_token")?.value ?? request.cookies.get("__session")?.value ?? null;
     const headers = upstreamRequestHeaders(request.headers, {
       idToken,
+      endUserToken,
       clientIp: clientIpFrom(request.headers, trustedProxyHops()),
       requestId,
     });
 
-    // Read active auth session from cookie if Authorization header is not explicitly present.
-    // Firebase Hosting CDN rewrites forward ONLY the '__session' cookie, so we check both.
-    const sessionToken =
-      request.cookies.get("__session")?.value ||
-      request.cookies.get("cargoclear_session_token")?.value;
-    if (sessionToken && !headers.has("authorization")) {
-      headers.set("authorization", `Bearer ${sessionToken}`);
-    }
-
-    // POST only: DELETE (document remove) must not stream a body through duplex fetch.
-    const hasBody = request.method === "POST";
+    const hasBody = request.method !== "GET" && request.method !== "HEAD";
     const signals: AbortSignal[] = [request.signal];
     if (!isStreamPath(params.path)) signals.push(AbortSignal.timeout(REQUEST_DEADLINE_MS));
 

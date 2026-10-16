@@ -1,13 +1,14 @@
 """Assessment router — analyze, reassess, get assessment, list iterations."""
 
-from fastapi import APIRouter, Path
+from fastapi import APIRouter, Depends, Path
 
 from app.domain.schemas import AssessmentIteration, RunResponse
+from app.gateway.authorization import require_authorized_bundle
 from app.gateway.errors import NotFoundError
 from app.repo import firestore
 from app.services import orchestrator
 
-router = APIRouter(tags=["assessment"])
+router = APIRouter(tags=["assessment"], dependencies=[Depends(require_authorized_bundle)])
 
 
 @router.post(

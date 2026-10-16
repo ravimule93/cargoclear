@@ -41,6 +41,11 @@ steps:
       - 'PROJECT_ID=$PROJECT_ID'
       - 'REGION=$_REGION'
       - 'RUNTIME_SERVICE_ACCOUNT=$_RUNTIME_SERVICE_ACCOUNT'
+      # Required: deploy_api.sh refuses an unidentifiable release. Supply both
+      # substitutions from the release workflow rather than relying on a
+      # Cloud Build source archive to contain a .git directory.
+      - 'RELEASE_SHA=$_RELEASE_SHA'
+      - 'RELEASE_TIMESTAMP=$_RELEASE_TIMESTAMP'
 
   # =========================================================================
   # Step 4: Build & Deploy Frontend UI to Cloud Run
@@ -65,6 +70,10 @@ substitutions:
   # Required for the UI deployment: the UI's own identity, which is granted roles/run.invoker on the private API.
   # Cloud Build's deployer needs iam.serviceAccounts.actAs on it (and run.services.setIamPolicy on cargoclear-api).
   _UI_SERVICE_ACCOUNT: ''
+  # The release workflow must set both values. Empty defaults intentionally
+  # fail closed in infra/deploy_api.sh instead of publishing an unknown build.
+  _RELEASE_SHA: ''
+  _RELEASE_TIMESTAMP: ''
 
 options:
   logging: CLOUD_LOGGING_ONLY

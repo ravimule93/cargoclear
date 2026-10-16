@@ -24,6 +24,10 @@ def test_cloud_build_deploys_scripts_from_repository_root_with_runtime_identity(
 
     assert "RUNTIME_SERVICE_ACCOUNT=$_RUNTIME_SERVICE_ACCOUNT" in steps["deploy-backend"]["env"]
     assert "_RUNTIME_SERVICE_ACCOUNT" in config["substitutions"]
+    assert "RELEASE_SHA=$_RELEASE_SHA" in steps["deploy-backend"]["env"]
+    assert "RELEASE_TIMESTAMP=$_RELEASE_TIMESTAMP" in steps["deploy-backend"]["env"]
+    assert "_RELEASE_SHA" in config["substitutions"]
+    assert "_RELEASE_TIMESTAMP" in config["substitutions"]
     assert "UI_SERVICE_ACCOUNT=$_UI_SERVICE_ACCOUNT" in steps["deploy-frontend"]["env"]
     assert "_UI_SERVICE_ACCOUNT" in config["substitutions"]
 
@@ -40,7 +44,19 @@ def test_api_deploy_is_single_instance_by_default_and_fails_closed_without_runti
     assert '--timeout "${REQUEST_TIMEOUT}"' in script and "REQUEST_TIMEOUT=300" in script
     assert "--no-cpu-throttling" in script
     assert 'APP_MODE="live"' in script
+    assert 'AUTH_ENABLED="true"' in script
+    assert 'OAUTH_CLIENT_ID="${OAUTH_CLIENT_ID}"' in script
     assert 'ENABLE_API_DOCS="false"' in script
+
+
+def test_api_deploy_requires_a_traceable_release_identity() -> None:
+    script = (ROOT / "infra" / "deploy_api.sh").read_text(encoding="utf-8")
+
+    assert 'RELEASE_SHA="${RELEASE_SHA:-$(git rev-parse --verify HEAD' in script
+    assert 'RELEASE_TIMESTAMP="${RELEASE_TIMESTAMP:-$(git show -s --format=%cI' in script
+    assert 'set RELEASE_SHA and RELEASE_TIMESTAMP' in script
+    assert 'RELEASE_SHA="${RELEASE_SHA}"' in script
+    assert 'RELEASE_TIMESTAMP="${RELEASE_TIMESTAMP}"' in script
 
 
 def test_more_than_one_instance_needs_dispatched_runs_and_a_request_timeout_longer_than_a_run() -> None:
@@ -154,6 +170,7 @@ def test_api_is_private_and_only_the_ui_identity_may_invoke_it() -> None:
     assert "cargoclear-ui-sa" in bootstrap
     # the proxy sends the header the API reads, and never forwards a browser-supplied copy of it
     assert 'CLIENT_IP_HEADER = "x-cargoclear-client-ip"' in proxy
+    assert 'END_USER_TOKEN_HEADER = "x-cargoclear-user-token"' in proxy
     assert "google-id-token" in proxy and "metadata.google.internal" in proxy
     assert "export async function GET" in route and "export async function POST" in route
     # no method beyond these; DELETE exists for removing one document of a bundle, and the route refuses it anywhere else

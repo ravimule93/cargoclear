@@ -42,6 +42,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(errorUrl);
   }
 
+  // OAuth state is a CSRF control, not merely a carrier for the return URL.
+  // The callback must be for the browser that started the sign-in flow.
+  const expectedState = request.cookies.get("cargoclear_oauth_state")?.value;
+  if (!state || !expectedState || state !== expectedState) {
+    const errorUrl = new URL("/auth/signin", origin);
+    errorUrl.searchParams.set("error", "invalid_oauth_state");
+    return NextResponse.redirect(errorUrl);
+  }
+
   // Parse returnTo from state
   let returnTo = "/";
   try {
@@ -102,50 +111,25 @@ export async function GET(request: NextRequest) {
       console.warn("[oauth_callback] Could not parse JWT claims:", e);
     }
 
-    const sessionToken = `mock-jwt-${email}-LICENSED_CHA`;
-
-    // Auto-provision user in backend and record audit event
-    try {
-      const apiBase = process.env.API_BASE || "https://cargoclear-api-448522365737.asia-south1.run.app";
-      await fetch(`${apiBase}/api/v1/auth/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          role: "LICENSED_CHA",
-          password: "GoogleSSO-User-Token-Verified",
-        }),
-      });
-    } catch {
-      // User may already be registered; safe to continue
-    }
-
-    // Redirect user back to requested page with verified session token cookie
+    // The API verifies this Google ID token itself. It is HttpOnly so browser
+    // JavaScript cannot forge, read, or forward it directly.
     const targetUrl = new URL(returnTo, origin);
     const response = NextResponse.redirect(targetUrl);
 
-    // Set both __session (required by Firebase Hosting CDN) and cargoclear_session_token
-    response.cookies.set("__session", sessionToken, {
+    const sessionCookie = {
       path: "/",
-      httpOnly: false, // Accessible to client-side identity UI
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 86400 * 7, // 7 days
-    });
-
-    response.cookies.set("cargoclear_session_token", sessionToken, {
-      path: "/",
-      httpOnly: false,
-      sameSite: "lax",
-      maxAge: 86400 * 7,
-    });
-
-    response.cookies.set("cargoclear_google_id_token", idToken, {
-      path: "/",
-      httpOnly: false,
-      sameSite: "lax",
-      maxAge: 86400 * 7,
-    });
+      // Google ID tokens are short-lived. A stale cookie fails verification
+      // cleanly rather than creating a seven-day unverified session.
+      maxAge: 3600,
+    } as const;
+    // Firebase Hosting forwards __session through a rewrite. Retain the
+    // explicit name too for local/Cloud Run development, but both cookies are
+    // HttpOnly and contain the same short-lived Google ID token.
+    response.cookies.set("__session", idToken, sessionCookie);
+    response.cookies.set("cargoclear_google_id_token", idToken, sessionCookie);
 
     // Clear state cookie
     response.cookies.set("cargoclear_oauth_state", "", {

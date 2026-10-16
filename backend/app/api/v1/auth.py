@@ -10,20 +10,26 @@ Provides:
 from __future__ import annotations
 
 import hashlib
-import os
 import secrets
 from datetime import datetime, timezone
-from typing import Any, Literal
+from typing import Any
+
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
 from app.domain.auth import UserIdentity, UserRole
-from app.gateway.auth import get_current_user, get_optional_user
+from app.gateway.auth import get_current_user
 from app.gateway.errors import AuthenticationError, ConflictError, NotFoundError
 from app.repo import firestore
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def _require_demo_legacy_auth() -> None:
+    """Keep the local password/mock-token flow out of a live deployment."""
+    if settings.app_mode != "demo":
+        raise NotFoundError("This legacy sign-in flow is unavailable.")
 
 
 def _hash_password(password: str, salt: str | None = None) -> tuple[str, str]:
@@ -74,6 +80,7 @@ class AuthResponse(BaseModel):
     summary="Check if a commercial user is already registered",
 )
 async def check_user(email: str = Query(..., description="Email to inspect")) -> CheckUserResponse:
+    _require_demo_legacy_auth()
     clean_email = email.strip().lower()
     user_record = await firestore.get_user(clean_email)
     if user_record:
@@ -95,6 +102,7 @@ async def check_user(email: str = Query(..., description="Email to inspect")) ->
     summary="Register a new commercial CHA user with audit trail",
 )
 async def signup(req: SignUpRequest) -> AuthResponse:
+    _require_demo_legacy_auth()
     clean_email = req.email.strip().lower()
 
     # Check if user already exists
@@ -159,6 +167,7 @@ async def signup(req: SignUpRequest) -> AuthResponse:
     summary="Sign in registered user with email and password",
 )
 async def signin(req: SignInRequest) -> AuthResponse:
+    _require_demo_legacy_auth()
     clean_email = req.email.strip().lower()
     user_record = await firestore.get_user(clean_email)
 

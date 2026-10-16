@@ -55,7 +55,7 @@ export function useMeta(): MetaState {
       .then((value) => {
         if (cancelled) return;
         // If user is not yet populated in meta, read active session from cookie
-        if (value && !value.user && typeof document !== "undefined") {
+        if (value?.app_mode === "demo" && !value.user && typeof document !== "undefined") {
           const match = document.cookie.match(/(?:__session|cargoclear_session_token)=mock-jwt-([^;]+)/);
           if (match && match[1]) {
             const tokenPayload = decodeURIComponent(match[1]);
