@@ -2,17 +2,18 @@
 
 import asyncio
 import weakref
+from typing import Annotated, Any
 
-from fastapi import APIRouter, File, Path, Query, UploadFile
+from fastapi import APIRouter, File, Form, Path, Query, UploadFile
 from fastapi.responses import Response
 
 from app.core.config import settings
-from app.domain.schemas import DocumentResponse, TransformMetadataResponse
+from app.domain.schemas import DocumentDeletedResponse, DocumentResponse, TransformMetadataResponse
 from app.gateway.errors import NotFoundError, PayloadTooLargeError, ValidationError
 from app.repo import firestore
-from app.services import storage
-from app.services.documents import register_document
-from app.services.upload_checks import check_pdf, download_headers
+from app.services import document_identity, orchestrator, relevance, storage
+from app.services.documents import register_document, remove_document
+from app.services.upload_checks import check_pdf, download_headers, shared_pdf_async
 
 router = APIRouter(tags=["documents"])
 
@@ -29,6 +30,30 @@ def _bundle_lock(bundle_id: str) -> asyncio.Lock:
     if lock is None:
         lock = _BUNDLE_LOCKS[bundle_id] = asyncio.Lock()
     return lock
+
+
+# One lock per (bundle, document) around [is it new? -> ask the relevance gate -> register], so that two uploads of the same new bytes
+# ask the model once: the second finds the document registered. Taken BEFORE the bundle lock (nothing takes them the other way round),
+# so the model call never holds up the bundle's other uploads and deletions.
+_UPLOAD_LOCKS: "weakref.WeakValueDictionary[tuple[str, str], asyncio.Lock]" = weakref.WeakValueDictionary()
+
+
+def _upload_lock(bundle_id: str, document_id: str) -> asyncio.Lock:
+    lock = _UPLOAD_LOCKS.get((bundle_id, document_id))
+    if lock is None:
+        lock = _UPLOAD_LOCKS[(bundle_id, document_id)] = asyncio.Lock()
+    return lock
+
+
+def _check_room(bundle: dict[str, Any], document_id: str) -> None:
+    """422 when ``document_id`` is a new document and the bundle already holds MAX_DOCUMENTS_PER_BUNDLE. Identical bytes are the same
+    document (content-addressed id): re-uploading them replaces the record, as it always has, and is not a new document."""
+    known = {d.get("document_id") for d in bundle.get("documents", [])}
+    if document_id not in known and len(known) >= settings.max_documents_per_bundle:
+        raise ValidationError(
+            f"A bundle can hold at most {settings.max_documents_per_bundle} documents.",
+            detail={"max_documents": settings.max_documents_per_bundle},
+        )
 
 
 async def _read_limited(file: UploadFile) -> bytes:
@@ -61,11 +86,20 @@ async def _read_limited(file: UploadFile) -> bytes:
 async def upload_document(
     bundle_id: str = Path(..., description="Target bundle ID"),
     file: UploadFile = File(..., description="PDF file to upload"),
+    declared_type: Annotated[
+        str | None,
+        Form(
+            description="Optional: what the file is, one of " + ", ".join(document_identity.DECLARABLE_TYPES) + ". When the model reads "
+            "another type, the assessment says so (T-001); the file name is never used to guess one."
+        ),
+    ] = None,
 ) -> DocumentResponse:
     """Accepts a PDF, checks size and content, stores it (GCS or local cache) and registers it in Firestore."""
     bundle = await firestore.get_bundle(bundle_id)
     if bundle is None:
         raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
+
+    declared = document_identity.parse_declared_type(declared_type)  # cheap: refused before the file is read
 
     content_type = file.content_type or "application/pdf"
     if content_type not in _ALLOWED_MIME and not (file.filename and file.filename.lower().endswith(".pdf")):
@@ -78,32 +112,87 @@ async def upload_document(
     if len(data) == 0:
         raise ValidationError("Uploaded file is empty (0 bytes).")
 
-    # header, encryption and page count (poppler's pdfinfo is a subprocess): off the event loop
-    await asyncio.to_thread(check_pdf, data, settings.gemini_max_pages)
+    new_id = storage.document_id_from_sha256(storage.compute_sha256(data))
 
-    async with _bundle_lock(bundle_id):
-        bundle = await firestore.get_bundle(bundle_id)  # fresh: another upload may have finished while we waited
-        if bundle is None:
-            raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
+    # One copy of the file on disk for every poppler tool below (header, readability, page count, page sizes, scripts, attachments: poppler's
+    # pdfinfo and pdfdetach are subprocesses, so off the event loop; then the text and the page render of the relevance gate).
+    async with shared_pdf_async(data):
+        await asyncio.to_thread(check_pdf, data, settings.max_pdf_pages, settings.max_page_megapixels)
 
-        # Identical bytes are the same document (content-addressed id): re-uploading them replaces the record, as it
-        # always has, and is not a new document.
-        new_id = storage.document_id_from_sha256(storage.compute_sha256(data))
-        known = {d.get("document_id") for d in bundle.get("documents", [])}
-        if new_id not in known and len(known) >= settings.max_documents_per_bundle:
-            raise ValidationError(
-                f"A bundle can hold at most {settings.max_documents_per_bundle} documents.",
-                detail={"max_documents": settings.max_documents_per_bundle},
-            )
+        async with _upload_lock(bundle_id, new_id):
+            bundle = await firestore.get_bundle(bundle_id)  # fresh: another upload of these bytes may have finished while we waited
+            if bundle is None:
+                raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
+            _check_room(bundle, new_id)  # before the model is asked anything: a file that cannot be added is not worth a request
 
-        doc_data = await register_document(
-            bundle_id,
-            data=data,
-            filename=file.filename or "document.pdf",
-            iteration=bundle.get("current_iteration", 0),
-        )
+            # Is the first page a document the assessment reads? Free from the text layer, else one small vision request (services/relevance.py).
+            # Not asked again for bytes the bundle already holds: that file passed when it came in.
+            existing = next((d for d in bundle.get("documents", []) if d.get("document_id") == new_id), None)
+            gate_usage = (existing or {}).get("gate_usage")  # the same bytes again: what its first check cost stays on the record
+            if existing is None:
+                asked = await relevance.check_document(data)
+                gate_usage = asked.usage if asked is not None and asked.usage["requests"] else None
+
+            async with _bundle_lock(bundle_id):
+                bundle = await firestore.get_bundle(bundle_id)  # fresh: another upload may have finished while we waited
+                if bundle is None:
+                    raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
+                _check_room(bundle, new_id)
+
+                doc_data = await register_document(
+                    bundle_id,
+                    data=data,
+                    filename=file.filename or "document.pdf",
+                    iteration=bundle.get("current_iteration", 0),
+                    gate_usage=gate_usage,
+                    declared_type=declared,
+                )
 
     return DocumentResponse(**doc_data)
+
+
+@router.delete(
+    "/bundles/{bundle_id}/documents/{document_id}",
+    response_model=DocumentDeletedResponse,
+    summary="Remove a document from a bundle, with the files and kept model answers stored for it",
+)
+async def delete_document(
+    bundle_id: str = Path(..., description="Target bundle ID"),
+    document_id: str = Path(..., description="Document ID"),
+) -> DocumentDeletedResponse:
+    """Takes a document out of a bundle, so that one bad document no longer stops the bundle from being assessed.
+
+    Removes the stored PDF, its processed pages and transform metadata, the model's kept answers for it and its record, and appends a
+    DOCUMENT_DELETED event to the audit chain (file name, SHA-256, size, what its upload check cost). It does not rewrite history:
+    earlier assessments and their extraction records, the audit chain and the usage records stay as they were. The newest assessment is
+    not recomputed (``in_latest_assessment`` says whether it used the document); Reassess makes a verdict without it.
+
+    409 while a run is queued or running for the bundle. 404 for an unknown bundle or a document that is not in it. Takes the same lock
+    as an upload, so the two cannot interleave. Repeating a call that failed half way finishes it.
+    """
+    async with _bundle_lock(bundle_id):
+        bundle = await firestore.get_bundle(bundle_id)
+        if bundle is None:
+            raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
+        doc = next((d for d in bundle.get("documents", []) if d.get("document_id") == document_id), None)
+        if doc is None:
+            raise NotFoundError(
+                f"Document '{document_id}' not found in bundle '{bundle_id}'.",
+                detail={"bundle_id": bundle_id, "document_id": document_id},
+            )
+        async with orchestrator.idle_bundle(bundle_id, "delete a document"):
+            removed = await remove_document(bundle_id, doc, iteration=bundle.get("current_iteration", 0))
+
+    latest = await firestore.latest_iteration(bundle_id)
+    return DocumentDeletedResponse(
+        bundle_id=bundle_id,
+        document_id=document_id,
+        filename=doc.get("filename") or "document.pdf",
+        files_removed=removed["files_removed"],
+        cached_answers_removed=removed["cached_answers_removed"],
+        latest_iteration=int(latest["iteration"]) if latest else None,
+        in_latest_assessment=bool(latest and document_id in (latest.get("documents") or [])),
+    )
 
 
 @router.get(

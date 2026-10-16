@@ -73,6 +73,22 @@ export function buildTargetUrl(base: string, segments: string[], search = ""): U
   return url;
 }
 
+/**
+ * Whether the proxy forwards this method for this path. GET and POST go everywhere; DELETE goes to one place only, removing one
+ * document of a bundle (`bundles/<id>/documents/<document>`): the API has no other DELETE route, and the proxy does not open a
+ * method wider than the one thing a person can do with it. Segments are compared as the browser meant them (percent-decoded).
+ */
+export function isForwardable(method: string, segments: string[]): boolean {
+  if (method === "GET" || method === "POST") return true;
+  if (method !== "DELETE" || segments.length !== 4) return false;
+  try {
+    const decoded = segments.map((segment) => decodeURIComponent(segment));
+    return decoded[0] === "bundles" && decoded[2] === "documents" && decoded[1] !== "" && decoded[3] !== "";
+  } catch {
+    return false;
+  }
+}
+
 /** True for the SSE endpoint: it lives as long as the browser keeps it open and must not get a request deadline. */
 export function isStreamPath(segments: string[]): boolean {
   return segments.length > 0 && segments[segments.length - 1] === "stream";

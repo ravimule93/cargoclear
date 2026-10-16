@@ -3,7 +3,9 @@
 import { ChangeEvent, useRef } from "react";
 import { Bundle, Status } from "@/lib/types";
 import type { StreamConnection } from "@/lib/hooks/useBundleStream";
+import { useDeclaredType } from "@/lib/hooks/useDeclaredType";
 import { StatusPill } from "../assess/StatusPill";
+import { DocumentTypeSelect } from "../upload/DocumentTypeSelect";
 import { ModeBadge } from "./ModeBadge";
 
 interface TopBarProps {
@@ -19,7 +21,8 @@ interface TopBarProps {
   /** Visible, role="alert" message for a failed run or upload. */
   actionError?: string | null;
   onRun?: () => void;
-  onFilesSelected?: (files: File[]) => void;
+  /** `declaredType` is set only when the person picked a type, and then for exactly one file (the picker allows one). */
+  onFilesSelected?: (files: File[], declaredType?: string | null) => void;
 }
 
 export function TopBar({
@@ -34,11 +37,13 @@ export function TopBar({
   onFilesSelected,
 }: TopBarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const declared = useDeclaredType(); // what the NEXT file is, if the person says (one file; cleared by every upload)
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     e.target.value = ""; // allow re-selecting the same file
-    if (files.length > 0) onFilesSelected?.(files);
+    if (files.length === 0) return;
+    onFilesSelected?.(files, declared.take());
   };
 
   return (
@@ -97,7 +102,7 @@ export function TopBar({
         <input
           ref={fileInputRef}
           type="file"
-          multiple
+          multiple={declared.allowsSeveralFiles}
           accept="application/pdf,.pdf"
           className="hidden"
           data-testid="upload-input"
@@ -105,6 +110,7 @@ export function TopBar({
           tabIndex={-1}
           onChange={handleFileChange}
         />
+        <DocumentTypeSelect value={declared.declaredType} onChange={declared.setDeclaredType} disabled={isUploading} />
         <button
           type="button"
           disabled={isUploading}

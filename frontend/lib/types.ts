@@ -220,6 +220,20 @@ export interface DocumentRecord {
   bytes: number;
   uploaded_at: string;
   transform_meta_uri?: string | null;
+  /** What the uploader said the file is; an assessment flags a file the model read as another type (T-001). */
+  declared_type?: string | null;
+}
+
+/** Answer of DELETE /bundles/{id}/documents/{document_id}: what was removed, and whether the newest assessment used the document. */
+export interface DocumentDeleted {
+  bundle_id: string;
+  document_id: string;
+  filename: string;
+  files_removed: number;
+  cached_answers_removed: number;
+  latest_iteration: number | null;
+  /** True: the newest assessment was made with this document and is not changed by the removal; reassess to drop it. */
+  in_latest_assessment: boolean;
 }
 
 /** Per-page preprocessing metadata returned through the scoped backend endpoint. */

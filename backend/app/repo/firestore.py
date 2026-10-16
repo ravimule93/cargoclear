@@ -11,7 +11,7 @@ Hierarchy:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import structlog
@@ -30,6 +30,9 @@ _IN_MEMORY_DOCS: dict[str, dict[str, Any]] = {}
 _IN_MEMORY_RUNS: dict[str, dict[str, Any]] = {}
 _IN_MEMORY_ITERATIONS: dict[str, list[dict[str, Any]]] = {}
 _IN_MEMORY_EXTRACTIONS: dict[str, dict[int, dict[str, Any]]] = {}
+_IN_MEMORY_DAILY_TOKENS: dict[str, int] = {}  # UTC day (YYYYMMDD) -> model tokens the service spent that day
+_IN_MEMORY_USAGE: dict[str, dict[str, dict[str, Any]]] = {}  # bundle -> run id -> what that run's model calls cost
+_IN_MEMORY_EXTRACTION_CACHE: dict[str, dict[str, dict[str, Any]]] = {}  # bundle -> request fingerprint -> the model's answer
 
 # Lazy initialized Firestore client
 _firestore_client = None
@@ -137,6 +140,41 @@ async def create_evidence_document(bundle_id: str, doc_data: dict[str, Any]) -> 
         logger.info("document_persisted_in_memory", bundle_id=bundle_id, document_id=doc_id)
 
     return doc_data
+
+
+async def delete_evidence_document(bundle_id: str, document_id: str, gate_tokens: int = 0) -> bool:
+    """Remove a document's record from its bundle. True when there was one; removing a record that is already gone is not an error.
+
+    ``gate_tokens`` (what the document's upload check cost) is added to the bundle's ``deleted_gate_tokens`` in the SAME write that removes
+    the record, and only when there was a record: the figure leaves with the record otherwise, and a repeated delete never counts it twice.
+    """
+    client = _get_firestore_client()
+    now = datetime.now(timezone.utc).isoformat()
+
+    if client is not None:
+        from google.cloud.firestore_v1 import Increment
+
+        bundle_ref = client.collection("bundles").document(bundle_id)
+        doc_ref = bundle_ref.collection("documents").document(document_id)
+        existed = bool((await doc_ref.get()).exists)
+        changes: dict[str, Any] = {"updated_at": now}
+        if existed and gate_tokens:
+            changes["deleted_gate_tokens"] = Increment(gate_tokens)
+        batch = client.batch()
+        batch.delete(doc_ref)
+        batch.update(bundle_ref, changes)
+        await batch.commit()
+        logger.info("document_deleted_firestore", bundle_id=bundle_id, document_id=document_id)
+        return existed
+
+    existed = _IN_MEMORY_DOCS.get(bundle_id, {}).pop(document_id, None) is not None
+    if bundle_id in _IN_MEMORY_BUNDLES:
+        bundle = _IN_MEMORY_BUNDLES[bundle_id]
+        bundle["updated_at"] = now
+        if existed and gate_tokens:
+            bundle["deleted_gate_tokens"] = int(bundle.get("deleted_gate_tokens") or 0) + gate_tokens
+    logger.info("document_deleted_in_memory", bundle_id=bundle_id, document_id=document_id)
+    return existed
 
 
 async def update_document_doc_type(bundle_id: str, document_id: str, doc_type: str) -> None:
@@ -425,6 +463,7 @@ async def write_iteration(ctx: dict[str, Any]) -> dict[str, Any]:
         "reference_data": ctx.get("reference_data"),
         "corrections": ctx.get("corrections", []),
         "run_mode": ctx.get("mode"),
+        "token_usage": ctx.get("token_usage"),
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -525,8 +564,12 @@ async def save_extractions(
     extraction_source: str | None = None,
     derived_from: int | None = None,
     pages_iteration: int | None = None,
+    page_plans: dict[str, dict[str, Any]] | None = None,
 ) -> None:
     """Persist per-document extraction JSON for an iteration: exactly what the model read, never the corrected view.
+
+    ``page_plans`` ({document id: which pages were read, skipped, or left out by the cap}) is stored with it: it says what the model
+    was NOT shown, and a recompute, which reads no document, still has to say so.
 
     ``extraction_source`` ("live" / "fixture") travels with it so a recompute (which reuses this record) knows where the
     data came from; ``derived_from`` is set on a copy a recompute made, naming the iteration that was really extracted;
@@ -542,6 +585,7 @@ async def save_extractions(
         "extraction_source": extraction_source,
         "derived_from": derived_from,
         "pages_iteration": pages_iteration,
+        "page_plans": page_plans,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -552,6 +596,109 @@ async def save_extractions(
         if bundle_id not in _IN_MEMORY_EXTRACTIONS:
             _IN_MEMORY_EXTRACTIONS[bundle_id] = {}
         _IN_MEMORY_EXTRACTIONS[bundle_id][iteration] = data
+
+
+async def get_daily_tokens(day: str) -> int:
+    """Model tokens the service spent on this UTC day (``YYYYMMDD``); 0 when nothing was counted."""
+    client = _get_firestore_client()
+
+    if client is not None:
+        snap = await client.collection("token_budget").document(day).get()
+        return int((snap.to_dict() or {}).get("tokens", 0)) if snap.exists else 0
+
+    return _IN_MEMORY_DAILY_TOKENS.get(day, 0)
+
+
+async def add_daily_tokens(day: str, tokens: int) -> None:
+    """Add ``tokens`` to this day's count, atomically (Firestore ``Increment``: concurrent runs on any instance add up, none is lost).
+    The document carries ``expires_at`` for a TTL policy (infra/firestore/setup_ttl.sh): a day's counter is not read again after it."""
+    client = _get_firestore_client()
+
+    if client is not None:
+        from google.cloud.firestore_v1 import Increment
+
+        expires = datetime.strptime(day, "%Y%m%d").replace(tzinfo=timezone.utc) + timedelta(days=3)
+        await client.collection("token_budget").document(day).set(
+            {"tokens": Increment(tokens), "updated_at": datetime.now(timezone.utc).isoformat(), "expires_at": expires}, merge=True
+        )
+    else:
+        _IN_MEMORY_DAILY_TOKENS[day] = _IN_MEMORY_DAILY_TOKENS.get(day, 0) + tokens
+
+
+async def save_usage(bundle_id: str, run_id: str, record: dict[str, Any]) -> None:
+    """Keep what one run's model calls cost, for a completed run (it has an iteration) and for a failed one (it has none): a failed
+    run spends tokens too. One record per run, keyed by the run id."""
+    client = _get_firestore_client()
+    data = {**record, "bundle_id": bundle_id, "run_id": run_id, "created_at": datetime.now(timezone.utc).isoformat()}
+
+    if client is not None:
+        await client.collection("bundles").document(bundle_id).collection("usage").document(run_id).set(data)
+    else:
+        _IN_MEMORY_USAGE.setdefault(bundle_id, {})[run_id] = data
+
+
+async def list_usage(bundle_id: str) -> list[dict[str, Any]]:
+    """Every run's usage record of a bundle, oldest first."""
+    client = _get_firestore_client()
+
+    if client is not None:
+        records = [snap.to_dict() async for snap in client.collection("bundles").document(bundle_id).collection("usage").stream()]
+    else:
+        records = list(_IN_MEMORY_USAGE.get(bundle_id, {}).values())
+    return sorted((r for r in records if r), key=lambda r: str(r.get("created_at", "")))
+
+
+async def get_cached_answer(bundle_id: str, fingerprint: str) -> dict[str, Any] | None:
+    """The model's answer stored for this bundle under this request fingerprint (agents/extraction.py), or None."""
+    client = _get_firestore_client()
+
+    if client is not None:
+        ref = client.collection("bundles").document(bundle_id).collection("extraction_cache").document(fingerprint)
+        snap = await ref.get()
+        entry = snap.to_dict() if snap.exists else None
+    else:
+        entry = _IN_MEMORY_EXTRACTION_CACHE.get(bundle_id, {}).get(fingerprint)
+    expires = (entry or {}).get("expires_at")
+    if isinstance(expires, datetime) and expires <= datetime.now(timezone.utc):
+        return None  # past its life: Firestore's TTL deletes it within a day or two, and until then it is not used
+    return entry
+
+
+async def put_cached_answer(bundle_id: str, fingerprint: str, entry: dict[str, Any]) -> None:
+    """Keep the model's answer for this bundle under this request fingerprint. Scoped to the bundle: a file uploaded to another
+    bundle is read again, so no bundle's document values are ever served to another."""
+    client = _get_firestore_client()
+    now = datetime.now(timezone.utc)
+    data = {
+        **entry, "bundle_id": bundle_id, "fingerprint": fingerprint, "created_at": now.isoformat(),
+        "expires_at": now + timedelta(days=settings.extraction_cache_ttl_days),  # for the TTL policy (infra/firestore/setup_ttl.sh)
+    }
+
+    if client is not None:
+        ref = client.collection("bundles").document(bundle_id).collection("extraction_cache").document(fingerprint)
+        await ref.set(data)
+    else:
+        _IN_MEMORY_EXTRACTION_CACHE.setdefault(bundle_id, {})[fingerprint] = data
+
+
+async def delete_cached_answers(bundle_id: str, document_id: str) -> int:
+    """Remove the model's answers kept for one document of a bundle (the extraction cache stores the document_id with each).
+    Returns how many were removed."""
+    client = _get_firestore_client()
+
+    if client is not None:
+        cache = client.collection("bundles").document(bundle_id).collection("extraction_cache")
+        removed = 0
+        async for snap in cache.where("document_id", "==", document_id).stream():
+            await snap.reference.delete()
+            removed += 1
+        return removed
+
+    entries = _IN_MEMORY_EXTRACTION_CACHE.get(bundle_id, {})
+    stale = [fingerprint for fingerprint, entry in entries.items() if entry.get("document_id") == document_id]
+    for fingerprint in stale:
+        del entries[fingerprint]
+    return len(stale)
 
 
 async def get_extraction_record(bundle_id: str, iteration: int) -> dict[str, Any] | None:

@@ -43,7 +43,14 @@ export interface Workbench {
   /** Re-run the checks on the stored extraction with the corrections applied (no document is read again). */
   recompute: () => Promise<void>;
 
-  uploadFiles: (files: File[]) => Promise<void>;
+  /** `declaredType` (optional) is what the person said the file is; it labels exactly one file, so it is dropped for a batch. */
+  uploadFiles: (files: File[], declaredType?: string | null) => Promise<void>;
+  /**
+   * Take a document out of the bundle. The documents are refreshed; when the newest assessment used it, the bundle is reassessed
+   * (as after an upload), which costs no model call for the documents that are unchanged. Errors (e.g. a run in progress, 409) go to `actionError`.
+   */
+  removeDocument: (documentId: string) => Promise<void>;
+  isRemoving: boolean;
   /** Call after documents were uploaded elsewhere (e.g. the dropzone). One refresh, one run action. */
   handleUploaded: () => Promise<void>;
   isUploading: boolean;
@@ -83,6 +90,7 @@ export function useWorkbench(bundleId: string): Workbench {
   const [startingRun, setStartingRun] = useState(false);
   const [pendingRunId, setPendingRunId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   // Highest iteration number the page data already reflects; SSE replays at or below it are not "new".
@@ -325,7 +333,7 @@ export function useWorkbench(bundleId: string): Workbench {
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; filename?: string } | null>(null);
 
   const uploadFiles = useCallback(
-    async (files: File[]) => {
+    async (files: File[], declaredType?: string | null) => {
       if (files.length === 0) return;
       setActionError(null);
       setIsUploading(true);
@@ -335,7 +343,7 @@ export function useWorkbench(bundleId: string): Workbench {
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
           setUploadProgress({ current: i + 1, total: files.length, filename: file.name });
-          await api.uploadDocument(bundleId, file);
+          await api.uploadDocument(bundleId, file, files.length === 1 ? declaredType : null);
           uploaded += 1;
         }
       } catch (err: unknown) {
@@ -351,6 +359,25 @@ export function useWorkbench(bundleId: string): Workbench {
       }
     },
     [bundleId, handleUploaded, refreshBundle]
+  );
+
+  const removeDocument = useCallback(
+    async (documentId: string) => {
+      setActionError(null);
+      setIsRemoving(true);
+      try {
+        const removed = await api.deleteDocument(bundleId, documentId);
+        await refreshBundle();
+        // The newest assessment still counts the document until a run drops it: as after an upload, run again when there is one.
+        // The last document leaves nothing to assess, and an assessment that never used it needs no new run.
+        if (removed.in_latest_assessment && documents.length > 1) await runAnalysis();
+      } catch (err: unknown) {
+        setActionError(toErrorEnvelope(err).message);
+      } finally {
+        setIsRemoving(false);
+      }
+    },
+    [bundleId, documents.length, refreshBundle, runAnalysis]
   );
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
@@ -378,6 +405,8 @@ export function useWorkbench(bundleId: string): Workbench {
     revertCorrection,
     recompute,
     uploadFiles,
+    removeDocument,
+    isRemoving,
     handleUploaded,
     isUploading,
     uploadProgress,

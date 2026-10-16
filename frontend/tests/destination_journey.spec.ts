@@ -29,7 +29,7 @@ test.describe("Choosing the destination and uploading", () => {
     await expect(page.getByTestId("status-pill")).toContainText("Not assessed yet");
 
     await page.getByTestId("upload-input").first().setInputFiles(CASE_D_FILES.map(caseDPath));
-    await expect(page.getByLabel("Documents in this bundle").getByRole("button")).toHaveCount(4, { timeout: 30_000 });
+    await expect(page.getByLabel("Documents in this bundle").getByTestId("document-item")).toHaveCount(4, { timeout: 30_000 });
 
     // a click that lands before hydration does nothing: click again unless a run began
     const pill = page.getByTestId("status-pill");

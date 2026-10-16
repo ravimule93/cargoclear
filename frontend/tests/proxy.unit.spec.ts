@@ -8,6 +8,7 @@ import {
   buildTargetUrl,
   clientIpFrom,
   downstreamResponseHeaders,
+  isForwardable,
   isStreamPath,
   requestIdFor,
   trustedProxyHops,
@@ -236,5 +237,37 @@ test.describe("IdTokenSource", () => {
     }) as unknown as typeof fetch;
     await new IdTokenSource(() => NOW, fetchImpl, { GCE_METADATA_HOST: "127.0.0.1:9999" }).get(BASE);
     expect(urls[0].startsWith("http://127.0.0.1:9999/computeMetadata/v1/")).toBe(true);
+  });
+});
+
+test.describe("isForwardable", () => {
+  test("GET and POST go to any path", () => {
+    expect(isForwardable("GET", ["bundles", "bnd-1", "assessment"])).toBe(true);
+    expect(isForwardable("POST", ["bundles", "bnd-1", "analyze"])).toBe(true);
+  });
+
+  test("DELETE goes to one document of one bundle, and nowhere else", () => {
+    expect(isForwardable("DELETE", ["bundles", "bnd-1", "documents", "doc-0123456789abcdef"])).toBe(true);
+    expect(isForwardable("DELETE", ["bundles", "bnd%2D1", "documents", "doc-0123456789abcdef"])).toBe(true);
+    for (const segments of [
+      ["bundles", "bnd-1"],
+      ["bundles", "bnd-1", "documents"],
+      ["bundles", "bnd-1", "documents", "doc-1", "file"],
+      ["bundles", "bnd-1", "corrections", "cor-1"],
+      ["documents", "bnd-1", "bundles", "doc-1"],
+      ["bundles", "", "documents", "doc-1"],
+      ["bundles", "bnd-1", "documents", ""],
+      ["bundles", "bnd-1", "documents", "%E0%A4%A"], // malformed percent-encoding
+      ["meta"],
+      [],
+    ]) {
+      expect(isForwardable("DELETE", segments), JSON.stringify(segments)).toBe(false);
+    }
+  });
+
+  test("no other method is forwarded", () => {
+    for (const method of ["PUT", "PATCH", "OPTIONS", "HEAD", "TRACE", "delete"]) {
+      expect(isForwardable(method, ["bundles", "bnd-1", "documents", "doc-1"]), method).toBe(false);
+    }
   });
 });

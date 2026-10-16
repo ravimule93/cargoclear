@@ -1,0 +1,460 @@
+%PDF-1.3
+%“Œ‹ž ReportLab Generated PDF document (opensource)
+1 0 obj
+<<
+/F1 2 0 R /F2 3 0 R
+>>
+endobj
+2 0 obj
+<<
+/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font
+>>
+endobj
+3 0 obj
+<<
+/BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding /Name /F2 /Subtype /Type1 /Type /Font
+>>
+endobj
+4 0 obj
+<<
+/Contents 8 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 7 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
+
+>> 
+  /Type /Page
+>>
+endobj
+5 0 obj
+<<
+/PageMode /UseNone /Pages 7 0 R /Type /Catalog
+>>
+endobj
+6 0 obj
+<<
+/Author (CargoClear demo fixtures) /CreationDate (D:20000101000000+00'00') /Creator (scripts/generate_case_c_pdfs.py) /Keywords () /ModDate (D:20000101000000+00'00') /Producer (ReportLab PDF Library - \(opensource\)) 
+  /Subject (Synthetic sample document for the CargoClear Case C demo) /Title (MILL TEST CERTIFICATE \(CargoClear Case C sample\)) /Trapped /False
+>>
+endobj
+7 0 obj
+<<
+/Count 1 /Kids [ 4 0 R ] /Type /Pages
+>>
+endobj
+8 0 obj
+<<
+/Length 9423
+>>
+stream
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+0 0 0 rg
+BT /F2 14 Tf 16.8 TL ET
+BT 1 0 0 1 47.62205 811.8898 Tm (MILL TEST CERTIFICATE) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6.5 Tf 7.8 TL ET
+BT 1 0 0 1 47.62205 796.8898 Tm (Synthetic sample for the CargoClear demo - not a real shipping document) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 59.52756 759.5008 Tm (Document No.) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 59.52756 692.1496 Tm (Consignee) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 59.52756 641.6362 Tm (Consignor) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 59.52756 591.1228 Tm (HS Code) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 59.52756 557.4472 Tm (Specification) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 11.90551 405.9071 Tm (Heat No.) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 11.90551 363.8126 Tm (Heat No.) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 86.31496 405.9071 Tm (C) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 119.0551 405.9071 Tm (Mn) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 151.7953 405.9071 Tm (Si) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 184.5354 405.9071 Tm (P) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 217.2756 405.9071 Tm (S) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 250.0157 405.9071 Tm (Cr) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 282.7559 405.9071 Tm (Ni) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 315.4961 405.9071 Tm (Mo) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 348.2362 405.9071 Tm (Cu) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 380.9764 405.9071 Tm (V) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 413.7165 405.9071 Tm (Nb) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 446.4567 405.9071 Tm (Ti) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 479.1969 405.9071 Tm (YS) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 511.937 405.9071 Tm (UTS) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 544.6772 405.9071 Tm (EL) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 86.31496 363.8126 Tm (C) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 119.0551 363.8126 Tm (Mn) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 151.7953 363.8126 Tm (Si) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 184.5354 363.8126 Tm (P) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 217.2756 363.8126 Tm (S) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 250.0157 363.8126 Tm (Cr) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 282.7559 363.8126 Tm (Ni) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 315.4961 363.8126 Tm (Mo) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 348.2362 363.8126 Tm (Cu) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 380.9764 363.8126 Tm (V) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 413.7165 363.8126 Tm (Nb) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 446.4567 363.8126 Tm (Ti) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 479.1969 363.8126 Tm (YS) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 511.937 363.8126 Tm (UTS) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 544.6772 363.8126 Tm (EL) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 59.52756 506.9339 Tm (Description) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 309.5433 506.9339 Tm (Quantity) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 363.1181 506.9339 Tm (Net \(kg\)) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 434.5512 506.9339 Tm (Gross \(kg\)) Tj T* ET
+.45 .45 .45 rg
+BT /F1 6 Tf 7.2 TL ET
+BT 1 0 0 1 505.9843 506.9339 Tm (HS Code) Tj T* ET
+q
+n 59.52756 732.4441 148.8189 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 59.52756 740.0211 Tm (MTC-2024-7712) Tj T* ET
+Q
+q
+n 59.52756 656.674 238.1102 33.67559 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 59.52756 666.7767 Tm (SINGAPORE PRECISION PIPING PTE LTD) Tj T* ET
+Q
+q
+n 59.52756 606.1606 226.2047 33.67559 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 59.52756 616.2633 Tm (BHARAT SEAMLESS PIPES LTD) Tj T* ET
+Q
+q
+n 59.52756 564.0661 119.0551 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 59.52756 571.6431 Tm (73041900) Tj T* ET
+Q
+q
+n 59.52756 530.3906 238.1102 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 59.52756 537.9676 Tm (API 5L PSL2 GR.B) Tj T* ET
+Q
+q
+n 11.90551 378.8504 71.43307 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 11.90551 386.4274 Tm (H-24-0881) Tj T* ET
+Q
+q
+n 11.90551 336.7559 71.43307 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 11.90551 344.3329 Tm (H-24-0882) Tj T* ET
+Q
+q
+n 86.31496 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 86.31496 386.4274 Tm (0.18) Tj T* ET
+Q
+q
+n 119.0551 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 119.0551 386.4274 Tm (0.95) Tj T* ET
+Q
+q
+n 151.7953 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 151.7953 386.4274 Tm (0.25) Tj T* ET
+Q
+q
+n 184.5354 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 184.5354 386.4274 Tm (0.015) Tj T* ET
+Q
+q
+n 217.2756 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 217.2756 386.4274 Tm (0.005) Tj T* ET
+Q
+q
+n 250.0157 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 250.0157 386.4274 Tm (0.08) Tj T* ET
+Q
+q
+n 282.7559 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 282.7559 386.4274 Tm (0.05) Tj T* ET
+Q
+q
+n 315.4961 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 315.4961 386.4274 Tm (0.02) Tj T* ET
+Q
+q
+n 348.2362 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 348.2362 386.4274 Tm (0.10) Tj T* ET
+Q
+q
+n 380.9764 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 380.9764 386.4274 Tm (0.01) Tj T* ET
+Q
+q
+n 413.7165 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 413.7165 386.4274 Tm (0.01) Tj T* ET
+Q
+q
+n 446.4567 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 446.4567 386.4274 Tm (0.01) Tj T* ET
+Q
+q
+n 479.1969 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 479.1969 386.4274 Tm (310) Tj T* ET
+Q
+q
+n 511.937 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 511.937 386.4274 Tm (450) Tj T* ET
+Q
+q
+n 544.6772 378.8504 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 544.6772 386.4274 Tm (28) Tj T* ET
+Q
+q
+n 86.31496 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 86.31496 344.3329 Tm (0.19) Tj T* ET
+Q
+q
+n 119.0551 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 119.0551 344.3329 Tm (0.98) Tj T* ET
+Q
+q
+n 151.7953 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 151.7953 344.3329 Tm (0.26) Tj T* ET
+Q
+q
+n 184.5354 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 184.5354 344.3329 Tm (0.014) Tj T* ET
+Q
+q
+n 217.2756 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 217.2756 344.3329 Tm (0.004) Tj T* ET
+Q
+q
+n 250.0157 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 250.0157 344.3329 Tm (0.09) Tj T* ET
+Q
+q
+n 282.7559 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 282.7559 344.3329 Tm (0.06) Tj T* ET
+Q
+q
+n 315.4961 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 315.4961 344.3329 Tm (0.02) Tj T* ET
+Q
+q
+n 348.2362 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 348.2362 344.3329 Tm (0.11) Tj T* ET
+Q
+q
+n 380.9764 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 380.9764 344.3329 Tm (0.01) Tj T* ET
+Q
+q
+n 413.7165 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 413.7165 344.3329 Tm (0.01) Tj T* ET
+Q
+q
+n 446.4567 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 446.4567 344.3329 Tm (0.01) Tj T* ET
+Q
+q
+n 479.1969 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 479.1969 344.3329 Tm (318) Tj T* ET
+Q
+q
+n 511.937 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 511.937 344.3329 Tm (455) Tj T* ET
+Q
+q
+n 544.6772 336.7559 30.95433 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 544.6772 344.3329 Tm (27) Tj T* ET
+Q
+q
+n 59.52756 479.8772 238.1102 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 59.52756 487.4542 Tm (Chemical & mechanical test report API 5L PSL2) Tj T* ET
+Q
+q
+n 309.5433 479.8772 47.62205 25.25669 re W* n
+0 0 0 rg
+BT /F1 7 Tf 8.4 TL ET
+BT 1 0 0 1 309.5433 487.4542 Tm (120 LENGTHS) Tj T* ET
+Q
+q
+n 363.1181 479.8772 65.48031 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 363.1181 487.4542 Tm (14000.0 KGS) Tj T* ET
+Q
+q
+n 434.5512 479.8772 65.48031 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 434.5512 487.4542 Tm (14280.0 KGS) Tj T* ET
+Q
+q
+n 505.9843 479.8772 59.52756 25.25669 re W* n
+0 0 0 rg
+BT /F1 10 Tf 12 TL ET
+BT 1 0 0 1 505.9843 487.4542 Tm (73041900) Tj T* ET
+Q
+ 
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000061 00000 n 
+0000000102 00000 n 
+0000000209 00000 n 
+0000000321 00000 n 
+0000000524 00000 n 
+0000000592 00000 n 
+0000000977 00000 n 
+0000001036 00000 n 
+trailer
+<<
+/ID 
+[<fa700c6331cb0ea2f54443bbdca6d7f4><fa700c6331cb0ea2f54443bbdca6d7f4>]
+% ReportLab generated PDF document -- digest (opensource)
+
+/Info 6 0 R
+/Root 5 0 R
+/Size 9
+>>
+startxref
+10510
+%%EOF

@@ -2,13 +2,14 @@
 
 from contextlib import asynccontextmanager
 
+import structlog
 from fastapi import Depends, FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api import internal
-from app.api.v1 import assessment, bundles, corrections, demo, documents, meta, prefill, stream
+from app.api.v1 import assessment, bundles, corrections, demo, documents, meta, prefill, stream, usage
 from app.core.config import settings
 from app.gateway.ids import validate_path_ids
 from app.gateway.limits import BodySizeLimitMiddleware, RateLimitMiddleware
@@ -22,6 +23,8 @@ from app.gateway.middleware import (
 from app.reference.loader import require_reference
 from app.services import engines, orchestrator
 
+logger = structlog.get_logger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -29,6 +32,10 @@ async def lifespan(_app: FastAPI):
     (briefly) for them to record that they were cancelled."""
     engines.require_engine(settings.pipeline_engine)
     require_reference()  # a malformed rule table must stop the service here, not change a verdict silently
+    if settings.app_mode == "live" and "daily_token_budget" not in settings.model_fields_set:
+        # nobody chose the number: the placeholder default is enforced, and past it every new analysis answers 429 until 00:00 UTC
+        logger.warning("daily_token_budget_is_the_default", limit_tokens=settings.daily_token_budget,
+                       note="set DAILY_TOKEN_BUDGET to the number of tokens a day you are willing to spend (0 = no limit)")
     yield
     await orchestrator.shutdown(timeout=5)
 
@@ -65,7 +72,7 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.allowed_origins_list,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
         allow_headers=["*"],
         allow_credentials=False,
     )
@@ -79,6 +86,7 @@ def create_app() -> FastAPI:
         corrections.router,
         prefill.router,
         stream.router,
+        usage.router,
         meta.router,
         demo.router,
     ):

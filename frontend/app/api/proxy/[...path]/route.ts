@@ -4,8 +4,9 @@
  * The browser talks to /api/proxy/... only; this handler forwards to the API at the runtime-only API_BASE and streams
  * the answer back (SSE included). Everything that decides HOW it forwards lives in lib/server/proxy.ts:
  *
- * - only GET and POST exist (the API has no other method), and only a fixed list of request headers is forwarded:
- *   cookies, a browser-supplied Authorization and any X-CargoClear-* header never reach the API;
+ * - GET and POST are forwarded, DELETE only to remove one document of a bundle (isForwardable: the API has no other DELETE route),
+ *   and only a fixed list of request headers is forwarded: cookies, a browser-supplied Authorization and any X-CargoClear-*
+ *   header never reach the API;
  * - the path must stay below /api/v1 (no `..`, no encoded slash);
  * - with API_AUTH_MODE=google-id-token the API is a private Cloud Run service and every call carries an ID token of
  *   this service's identity;
@@ -27,6 +28,7 @@ import {
   clientIpFrom,
   downstreamResponseHeaders,
   idTokens,
+  isForwardable,
   isStreamPath,
   proxyError,
   requestIdFor,
@@ -49,6 +51,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   return handleProxy(request, await context.params);
 }
 
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  return handleProxy(request, await context.params);
+}
+
 async function handleProxy(request: NextRequest, params: { path: string[] }) {
   const requestId = requestIdFor(request.headers);
   const base = backendBase();
@@ -61,6 +67,13 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
     });
   }
 
+  if (!isForwardable(request.method, params.path ?? [])) {
+    return NextResponse.json(proxyError("METHOD_NOT_ALLOWED", "This method is not available here.", requestId), {
+      status: 405,
+      headers: { "x-request-id": requestId },
+    });
+  }
+
   try {
     const idToken = authMode() === "google-id-token" ? await idTokens.get(new URL(base).origin) : null;
     const headers = upstreamRequestHeaders(request.headers, {
@@ -69,7 +82,7 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
       requestId,
     });
 
-    const hasBody = request.method !== "GET" && request.method !== "HEAD";
+    const hasBody = request.method === "POST";
     const signals: AbortSignal[] = [request.signal];
     if (!isStreamPath(params.path)) signals.push(AbortSignal.timeout(REQUEST_DEADLINE_MS));
 

@@ -96,10 +96,19 @@ export function CheckList({
       ? "text-[var(--cc-err)] bg-[var(--cc-err-bg)] border-[var(--cc-err-bd)]"
       : "text-[var(--cc-warn)] bg-[var(--cc-warn-bg)] border-[var(--cc-warn-bd)]";
 
+    // P-001 / P-002 / T-001 / L-001 end in the document id (one per document), like H-003 ends in the certificate type
     const friendlyTitle =
       CHECK_TITLES[check.check_id] ||
       (check.check_id.startsWith("H-003")
         ? `Certificate HS Verification (${check.check_id.replace("H-003-", "").replace(/_/g, " ")})`
+        : check.check_id.startsWith("P-001-")
+        ? "Pages Not Read"
+        : check.check_id.startsWith("P-002-")
+        ? "Pages Skipped (Terms and Conditions)"
+        : check.check_id.startsWith("T-001-")
+        ? "Document Type Differs From the Upload"
+        : check.check_id.startsWith("L-001-")
+        ? "Values Not in Latin Script"
         : check.check_id);
 
     const evidenceList = check.evidence ?? [];

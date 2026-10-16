@@ -1,5 +1,6 @@
 import {
   Bundle,
+  DocumentDeleted,
   DocumentRecord,
   AssessmentIteration,
   AuditResponse,
@@ -65,14 +66,24 @@ export const api = {
     return request<Bundle>(`/bundles/${bundleId}`);
   },
 
-  async uploadDocument(bundleId: string, file: File): Promise<DocumentRecord> {
+  /** `declaredType` (optional): what the uploader says the file is. When the model reads another type the assessment warns (T-001). */
+  async uploadDocument(bundleId: string, file: File, declaredType?: string | null): Promise<DocumentRecord> {
     const formData = new FormData();
     formData.append("file", file);
+    if (declaredType) formData.append("declared_type", declaredType);
 
     return request<DocumentRecord>(`/bundles/${bundleId}/documents`, {
       method: "POST",
       body: formData,
     });
+  },
+
+  /** Take a document out of a bundle (its file, kept model answers and record). 409 while a run is in progress. */
+  async deleteDocument(bundleId: string, documentId: string): Promise<DocumentDeleted> {
+    return request<DocumentDeleted>(
+      `/bundles/${encodeURIComponent(bundleId)}/documents/${encodeURIComponent(documentId)}`,
+      { method: "DELETE" }
+    );
   },
 
   async getDocumentTransformMetadata(

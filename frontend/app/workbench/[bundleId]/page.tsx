@@ -93,6 +93,8 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           checks={assessment?.checks ?? []}
           activeDocumentId={wb.activeDocumentId ?? undefined}
           onSelectDocument={wb.selectDocument}
+          onRemoveDocument={wb.removeDocument}
+          removeDisabled={wb.isRunning || wb.isUploading || wb.isRemoving}
         />
       </aside>
 

@@ -30,6 +30,18 @@
 #   GEMINI_LIVE_MODEL     default gemini-2.5-flash. Check Google's model lifecycle page before every
 #                         deployment: Vertex AI lists a retirement date for it (see docs/GCP_VERIFICATION.md).
 #   GEMINI_LIVE_LOCATION  default ${REGION}
+#   MEMORY / CPU          default 4Gi / 2. Set explicitly: Cloud Run's default for a service is 512 MiB, which one ordinary multi-page
+#                         document already exceeds (the render of 16 A4 pages peaked at 626 MB before the pages were rendered one at a time).
+#                         Sized from a measurement (docs/input-gating-audit.md section 16): the heaviest document the page caps allow
+#                         (10 pages just under MAX_PAGE_MEGAPIXELS) peaked at 673 MB for ONE render, MAX_CONCURRENT_RUNS=4 runs can render
+#                         at once, so 4 x 673 MB + the process itself is about 3 GB: 4 GiB leaves headroom. Measured on one machine, not on
+#                         Cloud Run: if the instance is ever OOM-killed, raise MEMORY first. 4 GiB needs at least 1 vCPU; 2 lets renders overlap.
+#   DAILY_TOKEN_BUDGET    REQUIRED: the most model tokens the whole service may spend per UTC day; 0 switches the limit off. The application's
+#                         own default, 5,000,000 (about 180 four-document analyses), is a placeholder and not a decision, so a deployment names
+#                         its number (services/token_budget.py). Past it every new analysis answers 429 until 00:00 UTC.
+#   GEMINI_MAX_OUTPUT_TOKENS  default 16384, the application's own default. An answer that hits it is billed and then thrown away,
+#                         so a larger value is a larger worst case per document (a hostile 30-page table filled 16384 and failed);
+#                         raise it only for a document type that measurably needs more (docs/input-gating-audit.md section 13)
 #   BQ_MODEL_EMBEDDING    default embedding_model
 # =============================================================================
 
@@ -40,6 +52,10 @@ REGION="${REGION:-asia-south1}"
 RUNTIME_SERVICE_ACCOUNT="${RUNTIME_SERVICE_ACCOUNT:?RUNTIME_SERVICE_ACCOUNT must be the dedicated Cloud Run runtime identity}"
 GEMINI_LIVE_MODEL="${GEMINI_LIVE_MODEL:-gemini-2.5-flash}"
 GEMINI_LIVE_LOCATION="${GEMINI_LIVE_LOCATION:-${REGION}}"
+GEMINI_MAX_OUTPUT_TOKENS="${GEMINI_MAX_OUTPUT_TOKENS:-16384}"
+DAILY_TOKEN_BUDGET="${DAILY_TOKEN_BUDGET:?DAILY_TOKEN_BUDGET is the most model tokens the whole service may spend per UTC day (0 = no limit); 5000000 is about 180 four-document analyses. Choose it.}"
+MEMORY="${MEMORY:-4Gi}"
+CPU="${CPU:-2}"
 BQ_MODEL_EMBEDDING="${BQ_MODEL_EMBEDDING:-embedding_model}"
 RUN_DISPATCH="${RUN_DISPATCH:-local}"
 MIN_INSTANCES="${MIN_INSTANCES:-1}"
@@ -76,6 +92,8 @@ gcloud run deploy cargoclear-api \
   --project "${PROJECT_ID}" \
   --region "${REGION}" \
   --timeout "${REQUEST_TIMEOUT}" \
+  --memory "${MEMORY}" \
+  --cpu "${CPU}" \
   --concurrency 80 \
   --min-instances "${MIN_INSTANCES}" \
   --max-instances "${MAX_INSTANCES}" \
@@ -94,7 +112,8 @@ BQ_DATASET="ahtn",\
 BQ_MODEL_EMBEDDING="${BQ_MODEL_EMBEDDING}",\
 GEMINI_LIVE_MODEL="${GEMINI_LIVE_MODEL}",\
 GEMINI_LIVE_LOCATION="${GEMINI_LIVE_LOCATION}",\
-GEMINI_MAX_OUTPUT_TOKENS="65536",\
+GEMINI_MAX_OUTPUT_TOKENS="${GEMINI_MAX_OUTPUT_TOKENS}",\
+DAILY_TOKEN_BUDGET="${DAILY_TOKEN_BUDGET}",\
 RUN_TIMEOUT_SECONDS="1200",\
 CLIENT_IP_HEADER="x-cargoclear-client-ip",\
 TRUST_FORWARDED_FOR="false",\

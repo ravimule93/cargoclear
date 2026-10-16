@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import hashlib
 import json
 import math
 import random
@@ -51,6 +52,7 @@ from app.domain.schemas import (
 from app.agents import extraction_wire as wire
 from app.gateway.errors import ExtractionError, UpstreamError
 from app.repo import firestore
+from app.services import token_usage
 
 logger = structlog.get_logger(__name__)
 
@@ -154,7 +156,7 @@ _BYTES_PER_MB = 1024 * 1024
 _MAX_LOCATIONS = 10
 
 
-def _get_genai_client():
+def _get_genai_client() -> Any:
     """Lazily initialize the google-genai Vertex AI client."""
     global _genai_client
     if _genai_client is not None:
@@ -423,12 +425,22 @@ def _read_response(
         raise _AttemptFailure(
             "finish_reason MAX_TOKENS: the answer was cut off",
             retryable=False,
-            hint=f"raise GEMINI_MAX_OUTPUT_TOKENS (now {settings.gemini_max_output_tokens}) or use a smaller document",
+            hint=(
+                f"the document holds more printed values than one answer of {settings.gemini_max_output_tokens} output tokens can carry "
+                "(thinking tokens count too): use a smaller document, or send fewer pages"
+            ),
         )
     if reason in _BLOCKED_REASONS:
         raise _AttemptFailure(f"answer blocked by the model (finish_reason {reason})", retryable=False)
 
-    text = _response_text(response)
+    return _document_from_text(_response_text(response), doc_id, page_count)
+
+
+def _document_from_text(
+    text: str, doc_id: str, page_count: int | None
+) -> tuple[ExtractedDocument, list[dict[str, str]]]:
+    """The model's answer (its JSON text) as a document, or the _AttemptFailure that says what is wrong with it. Also what a cached
+    answer goes through, so a change to the conversion below applies to answers kept from before it."""
     if not text.strip():
         raise _AttemptFailure("empty response", retryable=True, retry_hint=_rejected("it was empty"))
 
@@ -472,17 +484,20 @@ def _usage(response: Any) -> tuple[int | None, int | None]:
 def _build_parts(types: Any, pages: list[dict[str, Any]]) -> tuple[list[Any], int | None]:
     """The request parts for one document and the number of pages sent (None when unknown).
 
-    Each page image is preceded by a "Page N of M." label so ``bbox.page`` is read from the label. A single raw
-    PDF passed through (mime application/pdf) has an unknown page count and gets no label.
+    Each page image is preceded by a "Page N of M." label so ``bbox.page`` is read from the label; N is the page's number in the FILE
+    (the pages sent need not be 1..n: services/relevance.py skips some) and M the file's page count when the page says it
+    (``total_pages``), else the highest page sent. The count returned, which bounds ``bbox.page``, is the highest page SENT.
+    A single raw PDF passed through (mime application/pdf) has an unknown page count and gets no label.
     """
     passthrough = len(pages) == 1 and pages[0].get("mime", "application/pdf") == "application/pdf"
     # Legacy callers may supply image parts without page metadata.  Those are
     # still one ordered logical document, so use their position as the source
     # page fallback rather than emitting an invalid "of 0" label.
-    total = max(
+    highest = max(
         (int(page.get("source_page", page.get("page", position))) for position, page in enumerate(pages, start=1)),
         default=0,
     )
+    total = max([highest, *(int(page.get("total_pages") or 0) for page in pages)])
     parts: list[Any] = []
     for position, page in enumerate(pages, start=1):
         if not passthrough:
@@ -490,15 +505,45 @@ def _build_parts(types: Any, pages: list[dict[str, Any]]) -> tuple[list[Any], in
             parts.append(types.Part.from_text(text=f"Page {source_page} of {total}."))
         parts.append(types.Part.from_bytes(data=page.get("payload", b""), mime_type=page.get("mime", "application/pdf")))
     parts.append(types.Part.from_text(text=EXTRACT_INSTRUCTION))
-    return parts, None if passthrough else total
+    return parts, None if passthrough else highest
+
+
+# The thinking knob differs by model (measured 2026-10-16, docs/input-gating-audit.md section 13, asia-south1 and global):
+#   gemini-2.5-flash  a budget; 0 switches thinking off
+#   gemini-2.5-pro    a budget, but it cannot be 0 or 1 ("out of range; supported values are integers from 128"): 128 is the floor
+#   gemini-3.x        thinking_budget is refused for EVERY value (0, 1, 256) on a request with an image ("Thinking budget is not
+#                     supported for this model"); thinking_level is accepted (MINIMAL spends no thinking tokens), and the
+#                     2.5 models refuse thinking_level in turn
+_LEVEL_MODELS = ("gemini-3",)
+_MIN_THINKING_BUDGET = {"gemini-2.5-pro": 128}
+
+
+def thinking_config(types: Any, model: str, *, minimal: bool = False) -> Any:
+    """The ThinkingConfig to send for ``model``, or None to send none. ``minimal``: as little thinking as the model allows (the
+    relevance gate, whose answer is one word). A negative GEMINI_THINKING_BUDGET always means "do not send the field"."""
+    if model.startswith(_LEVEL_MODELS):
+        level = "MINIMAL" if minimal else settings.gemini_thinking_level
+        return None if level == "DEFAULT" else types.ThinkingConfig(thinking_level=level)
+    budget = settings.gemini_thinking_budget
+    if budget < 0:
+        return None
+    floor = next((least for prefix, least in _MIN_THINKING_BUDGET.items() if model.startswith(prefix)), 0)
+    return types.ThinkingConfig(thinking_budget=max(0 if minimal else budget, floor))
+
+
+def describe_thinking(types: Any, model: str) -> str:
+    """What ``thinking_config`` sends for ``model``, in words (for the scripts that print the request settings)."""
+    config = thinking_config(types, model)
+    if config is None:
+        knob = f"thinking_level={settings.gemini_thinking_level}" if model.startswith(_LEVEL_MODELS) else f"thinking_budget={settings.gemini_thinking_budget}"
+        return f"{knob}  (field not sent)"
+    if config.thinking_level is not None:
+        return f"thinking_level={getattr(config.thinking_level, 'name', config.thinking_level)}"
+    return f"thinking_budget={config.thinking_budget}"
 
 
 def _request_config(types: Any) -> Any:
-    thinking = (
-        types.ThinkingConfig(thinking_budget=settings.gemini_thinking_budget)
-        if settings.gemini_thinking_budget >= 0
-        else None
-    )
+    thinking = thinking_config(types, settings.gemini_live_model)
     return types.GenerateContentConfig(
         response_mime_type="application/json",
         response_schema=wire.Answer,
@@ -517,6 +562,10 @@ class _Extracted:
     prompt_tokens: int | None
     output_tokens: int | None
     warnings: list[dict[str, str]]
+    answer_text: str = ""      # the model's JSON, kept by the cache
+    cached: bool = False       # True: no request was made, an answer kept from an earlier run was read again
+    thinking_tokens: int | None = None
+    total_tokens: int | None = None   # the API's own total for the request that produced the answer
 
 
 def _final_error(doc_id: str, attempts: int, failure: _AttemptFailure) -> ExtractionError:
@@ -543,22 +592,37 @@ async def _extract_document(client: Any, doc_id: str, pages: list[dict[str, Any]
     failure = _AttemptFailure("no attempt was made", retryable=False)  # replaced by the first attempt's outcome
     attempt = 0
 
+    log = token_usage.CURRENT.get()  # the run's record of what each request cost, whatever became of it (services/token_usage.py)
+
     while attempt < max_attempts:
         attempt += 1
         contents = list(parts)
         if failure.retry_hint:
             contents.append(types.Part.from_text(text=failure.retry_hint))
+        reported: dict[str, int] | None = None
+        finish: str | None = None
         try:
             response = await asyncio.wait_for(
                 client.aio.models.generate_content(model=settings.gemini_live_model, contents=contents, config=config),
                 timeout=settings.gemini_timeout_seconds,
             )
+            reported, finish = token_usage.usage_of(response), _finish_reason(response)
             document, warnings = _read_response(response, doc_id, page_count)
         except _AttemptFailure as exc:
             failure = exc
-        except Exception as exc:  # noqa: BLE001 - classified below; CancelledError is a BaseException and passes
+            if log is not None:  # the model answered and the answer was not used: the tokens were spent all the same
+                log.record(doc_id, attempt, f"refused: {exc.summary}", reported, finish)
+        except asyncio.CancelledError:
+            if log is not None:  # a sibling failed, or the run was cancelled, with the request in flight: its usage is unknown
+                log.record(doc_id, attempt, "cancelled", None)
+            raise
+        except Exception as exc:  # noqa: BLE001 - classified below
             failure = _classify(exc)
+            if log is not None:
+                log.record(doc_id, attempt, f"error: {failure.summary}", None)
         else:
+            if log is not None:
+                log.record(doc_id, attempt, "ok", reported, finish)
             prompt_tokens, output_tokens = _usage(response)
             return _Extracted(
                 document=document,
@@ -567,6 +631,9 @@ async def _extract_document(client: Any, doc_id: str, pages: list[dict[str, Any]
                 prompt_tokens=prompt_tokens,
                 output_tokens=output_tokens,
                 warnings=[{"document_id": doc_id, **warning} for warning in warnings],
+                answer_text=_response_text(response),
+                thinking_tokens=(reported or {}).get("thinking_tokens"),
+                total_tokens=(reported or {}).get("total_tokens"),
             )
 
         if not failure.retryable or attempt >= max_attempts:
@@ -579,6 +646,92 @@ async def _extract_document(client: Any, doc_id: str, pages: list[dict[str, Any]
         await _sleep(delay)
 
     raise _final_error(doc_id, attempt, failure) from failure.cause
+
+
+# ---------------------------------------------------------------------------
+# The answer cache
+# ---------------------------------------------------------------------------
+
+# Bumped when what a kept answer MEANS changes in a way the fingerprint cannot see (not when the conversion of the answer into a
+# document changes: that is applied to a kept answer each time it is read).
+CACHE_VERSION = 1
+
+
+def extraction_fingerprint(types: Any, model: str, pages: list[dict[str, Any]]) -> str:
+    """SHA-256 of everything that decides what the model is asked and how: the request parts exactly as sent (the "Page N of M."
+    labels, the SHA-256 of each page image's bytes, which carry the file, the page plan and the page mode, then the instruction), the
+    system prompt, the response schema, the model, the thinking and output settings. Two requests with the same fingerprint are the same
+    request; a change to any of them is a different one, so a kept answer is never read for a request it was not given for."""
+    parts, _count = _build_parts(types, pages)
+    sent: list[list[str]] = []
+    for part in parts:
+        data = getattr(part, "inline_data", None)
+        if data is not None:
+            sent.append(["bytes", str(data.mime_type), hashlib.sha256(bytes(data.data or b"")).hexdigest()])
+        else:
+            sent.append(["text", str(part.text)])
+    request = {
+        "version": CACHE_VERSION,
+        "model": model,
+        "parts": sent,
+        "system_instruction": SYSTEM_INSTRUCTION,
+        "schema": wire.Answer.model_json_schema(),
+        "thinking": describe_thinking(types, model),
+        "max_output_tokens": settings.gemini_max_output_tokens,
+        "temperature": 0.0,
+    }
+    return hashlib.sha256(json.dumps(request, sort_keys=True, ensure_ascii=True).encode("utf-8")).hexdigest()
+
+
+async def _extract_cached(client: Any, bundle_id: str, doc_id: str, pages: list[dict[str, Any]]) -> _Extracted:
+    """``_extract_document``, except that a document this bundle already had read with the same request is not read again: 0 tokens.
+
+    Only the model's answer is kept (never a result of the checks, never the corrections: those are applied after the extraction
+    stage on every run). A failure of the store, a missing entry, or an entry the current code cannot read is a miss, not an error.
+    Every answer that was read successfully is kept as soon as it is read, so a run that fails on another document leaves it behind.
+    """
+    if not (settings.extraction_cache and bundle_id):
+        return await _extract_document(client, doc_id, pages)
+
+    from google.genai import types
+
+    model = settings.gemini_live_model
+    fingerprint = extraction_fingerprint(types, model, pages)
+    _parts, page_count = _build_parts(types, pages)
+    try:
+        entry = await firestore.get_cached_answer(bundle_id, fingerprint)
+    except Exception as exc:  # noqa: BLE001 - the cache is an optimisation: when it cannot answer, the model is asked
+        logger.warning("extraction_cache_unavailable", operation="read", error_type=type(exc).__name__)
+        entry = None
+    if entry and entry.get("answer_text"):
+        try:
+            document, warnings = _document_from_text(entry["answer_text"], doc_id, page_count)
+        except _AttemptFailure:
+            logger.warning("extraction_cache_entry_unreadable", document_id=doc_id)
+        else:
+            saved = entry.get("total_tokens")
+            if saved is None:  # an entry kept before the totals were: what its first read reported
+                saved = int(entry.get("prompt_tokens") or 0) + int(entry.get("output_tokens") or 0) + int(entry.get("thinking_tokens") or 0)
+            log = token_usage.CURRENT.get()
+            if log is not None:
+                log.record_cached(doc_id, int(saved))
+            return _Extracted(
+                document=document, attempts=0, latency_ms=0, prompt_tokens=0, output_tokens=0, thinking_tokens=0, total_tokens=0,
+                warnings=[{"document_id": doc_id, **warning} for warning in warnings],
+                answer_text=entry["answer_text"], cached=True,
+            )
+
+    result = await _extract_document(client, doc_id, pages)
+    if result.answer_text:
+        try:
+            await firestore.put_cached_answer(bundle_id, fingerprint, {
+                "document_id": doc_id, "model": model, "answer_text": result.answer_text,
+                "prompt_tokens": result.prompt_tokens, "output_tokens": result.output_tokens,
+                "thinking_tokens": result.thinking_tokens, "total_tokens": result.total_tokens,
+            })
+        except Exception as exc:  # noqa: BLE001 - a failed write costs the next run its saving, never this run its result
+            logger.warning("extraction_cache_unavailable", operation="write", error_type=type(exc).__name__)
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -642,8 +795,11 @@ async def run_extraction_agent(ctx: dict[str, Any]) -> dict[str, Any]:
         filename-keyed generator produced the documents; fixtures are demo-mode only)
       - ctx["extraction_warnings"] (list[{document_id, path, reason}]: bounding boxes dropped / confidences
         clamped by the sanitiser)
-      - ctx["extraction_stats"] (list[{document_id, attempts, latency_ms, prompt_tokens, output_tokens,
-        warnings}] per live document; empty for fixtures)
+      - ctx["usage_log"] (services/token_usage.UsageLog): EVERY request made, with what the API reported for it, refused and
+        failed ones included; filled as the requests happen, so a run that fails still has it
+      - ctx["extraction_stats"] (list[{document_id, attempts, latency_ms, prompt_tokens, output_tokens, thinking_tokens,
+        warnings, cached}] per live document; empty for fixtures; ``cached``: the answer of an earlier run was read again, no request
+        was made, so attempts and tokens are 0)
 
     Raises:
       ExtractionError: live mode and there are no processable pages, or a listed document has none (checked before
@@ -693,12 +849,17 @@ async def run_extraction_agent(ctx: dict[str, Any]) -> dict[str, Any]:
                 if failed.is_set():  # a sibling has already failed: do not start a request that will be thrown away
                     raise asyncio.CancelledError
                 try:
-                    return await _extract_document(client, doc_id, pages_by_doc[doc_id])
+                    return await _extract_cached(client, bundle_id, doc_id, pages_by_doc[doc_id])
                 except BaseException:
                     failed.set()
                     raise
 
-        results = await _gather_in_order([extract(doc_id) for doc_id in order])
+        usage_log = ctx.setdefault("usage_log", token_usage.UsageLog())
+        log_token = token_usage.CURRENT.set(usage_log)  # the tasks below copy the context: they append to this run's log
+        try:
+            results = await _gather_in_order([extract(doc_id) for doc_id in order])
+        finally:
+            token_usage.CURRENT.reset(log_token)
 
         for result in results:
             extracted_docs.append(result.document)
@@ -709,7 +870,9 @@ async def run_extraction_agent(ctx: dict[str, Any]) -> dict[str, Any]:
                 "latency_ms": result.latency_ms,
                 "prompt_tokens": result.prompt_tokens,
                 "output_tokens": result.output_tokens,
+                "thinking_tokens": result.thinking_tokens,
                 "warnings": len(result.warnings),
+                "cached": result.cached,
             })
             logger.info(
                 "gemini_extraction_document",
@@ -719,7 +882,9 @@ async def run_extraction_agent(ctx: dict[str, Any]) -> dict[str, Any]:
                 latency_ms=result.latency_ms,
                 prompt_tokens=result.prompt_tokens,
                 output_tokens=result.output_tokens,
+                thinking_tokens=result.thinking_tokens,
                 warnings=len(result.warnings),
+                cached=result.cached,
             )
         if bundle_id:  # only once every document succeeded, so a failed run leaves no partial classification
             for doc in extracted_docs:
@@ -751,7 +916,7 @@ async def run_extraction_agent(ctx: dict[str, Any]) -> dict[str, Any]:
         extractions_json = [d.model_dump() for d in extracted_docs]
         await firestore.save_extractions(
             bundle_id, ctx["iteration"], extractions_json, extraction_source=ctx.get("extraction_source"),
-            pages_iteration=ctx.get("pages_iteration"),
+            pages_iteration=ctx.get("pages_iteration"), page_plans=ctx.get("page_plans"),
         )
 
     return ctx
