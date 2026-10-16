@@ -217,14 +217,14 @@ export function AuditTimeline({ bundleId, refreshKey }: AuditTimelineProps) {
                 </time>
               </div>
               {describe(evt) && <p className="text-[11px] text-[var(--cc-text)] break-words">{describe(evt)}</p>}
-              <div className="flex items-center justify-between gap-3 text-[11px] font-mono text-[var(--cc-text-muted)] pt-1 border-t border-[var(--cc-border)]">
-                <span>
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] font-mono text-[var(--cc-text-muted)] pt-1 border-t border-[var(--cc-border)]">
+                <span className="truncate max-w-[16rem] sm:max-w-none" title={evt.actor}>
                   Actor: <strong className="text-[var(--cc-text)]">{evt.actor}</strong>
                 </span>
-                <span>
+                <span className="whitespace-nowrap">
                   Prev: <code title={evt.prev_hash}>{shortHash(evt.prev_hash)}</code>
                 </span>
-                <span>
+                <span className="whitespace-nowrap">
                   Hash: <code title={evt.hash}>{shortHash(evt.hash)}</code>
                 </span>
               </div>

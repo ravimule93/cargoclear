@@ -83,6 +83,14 @@ The backend persists document-scoped preprocessing metadata. The frontend fetche
 
 The response is `{ "document_id": "…", "transform_meta": [ … ] }`. It maps source pages and supported rotations back to the original viewer. The metadata storage URI is not fetched by the browser.
 
+## Can I take a document out of a bundle?
+
+Yes. In the web app select the document in the left rail and use **Remove** (then confirm); through the API it is `DELETE /api/v1/bundles/{bundle_id}/documents/{document_id}` (not while a run is in progress). It removes the stored PDF, its processed pages, the model's kept answers for it and its record, and the audit chain records a `DOCUMENT_DELETED` event. It does not rewrite history: earlier assessments and the audit chain still describe the document. The web app then reassesses the bundle if the newest assessment used the document; through the API the newest assessment changes only when you reassess. The Android app does not have a screen for it yet (see `docs/input-gating-audit.md`, sections 17 and 19).
+
+## What if a file is not what I uploaded it as, or is not in English?
+
+Say what the next file is with the type menu beside **+ Add Document** (or send `declared_type` through the API); if the model reads another type the assessment warns (`T-001`). A document whose values are mostly not Latin script is flagged too (`L-001`). Names and units are still compared as printed: the warning says a finding about them may be a difference of language. A Latin-script document in another language (Spanish, French) is not flagged. See `docs/input-gating-audit.md`, sections 18 and 19.
+
 ## Does preprocessing fully deskew documents?
 
 Only if you ask it to. By default the pipeline renders 200-DPI 1-bit pages and turns a sideways page by a quarter turn when the evidence is strong. `PREPROCESS_DESKEW=true` also straightens a page that is skewed by 0.3 to 10 degrees, using a reversible, aspect-aware transform: the viewer maps every evidence box back onto the original page. Whether straightening (or `PAGE_IMAGE_MODE=gray`) helps extraction on the real model has not been measured yet; both are off by default until it has (`docs/GCP_VERIFICATION.md`, section 11). Coordinate mapping safely falls back when metadata is absent or not usable.

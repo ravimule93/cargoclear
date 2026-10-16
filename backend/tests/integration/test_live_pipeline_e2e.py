@@ -112,8 +112,9 @@ async def test_case_c_through_the_live_pipeline(monkeypatch, offline_live) -> No
     assert first["data_source"] == second["data_source"] == "fixture"
     assert sources[:2] == ["live", "live"] and set(sources[2:]) == {"fixture"}, "extraction_source: live, then demo's fixtures"
 
-    # The fake saw exactly one request per document per run: 3 for the first analysis, 4 for the reassessment
-    assert len(fake.calls) == 7, [len(parts_of(c)) for c in fake.calls]
+    # The fake saw one request per document that had not been read yet: 3 for the first analysis, and for the reassessment only the
+    # certificate that was added (the other three are kept answers: agents/extraction.py::_extract_cached), 4 in all
+    assert len(fake.calls) == 4, [len(parts_of(c)) for c in fake.calls]
     assert fake.unknown == [], "every request carried a page of a known Case C document"
     for call in fake.calls:
         parts = parts_of(call)
@@ -138,4 +139,4 @@ async def test_the_live_pipeline_reads_exactly_the_documents_of_the_bundle(monke
     ids_second = {d for d in result["second"]["documents"]}
     assert len(ids_first) == 3 and len(ids_second) == 4 and ids_first < ids_second
     stats_calls_first, stats_calls_second = fake.calls[:3], fake.calls[3:]
-    assert len(stats_calls_first) == 3 and len(stats_calls_second) == 4
+    assert len(stats_calls_first) == 3 and len(stats_calls_second) == 1, "the reassessment reads only the document that is new"

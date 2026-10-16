@@ -718,7 +718,9 @@ async def test_max_tokens_fails_at_once_because_temperature_zero_would_truncate_
 
     assert len(fake.calls) == 1 and delays == []
     assert "MAX_TOKENS" in raised.value.message
-    assert "GEMINI_MAX_OUTPUT_TOKENS" in raised.value.detail["hint"]
+    hint = raised.value.detail["hint"]
+    assert str(settings.gemini_max_output_tokens) in hint and "smaller document" in hint
+    assert "raise" not in hint.lower()  # the cap is the worst case per document: the error does not invite raising it
 
 
 @pytest.mark.asyncio
@@ -1021,7 +1023,7 @@ async def test_stats_describe_each_document_in_document_order(install) -> None:
 
     stats = result["extraction_stats"]
     assert [s["document_id"] for s in stats] == ["doc-1", "doc-2"]
-    assert set(stats[0]) == {"document_id", "attempts", "latency_ms", "prompt_tokens", "output_tokens", "warnings"}
+    assert set(stats[0]) == {"document_id", "attempts", "latency_ms", "prompt_tokens", "output_tokens", "thinking_tokens", "warnings", "cached"}
     assert {s["attempts"] for s in stats} == {1, 2}
     for s in stats:
         assert s["latency_ms"] >= 0

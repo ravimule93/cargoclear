@@ -19,12 +19,16 @@ interface DocumentViewerProps {
   highlights?: Highlight[];
   /** The assessment on screen: "What the model saw" is the page image THAT assessment's extraction was shown (latest when absent). */
   iteration?: number | null;
+  /** Whether the viewer tab is active in compact mode */
+  isVisible?: boolean;
 }
 
 type LoadState = "idle" | "loading" | "ready" | "error";
 type TransformMetadataState =
   | { status: "idle" | "loading" | "missing" | "error" }
   | { status: "ready"; data: TransformMetadataResponse };
+
+type ZoomMode = "fit-width" | "fit-page" | "custom";
 
 const WORKER_SRC = "/pdf.worker.min.mjs";
 
@@ -33,7 +37,10 @@ function errorText(err: unknown): string {
 }
 
 function isCancellation(err: unknown): boolean {
-  return err instanceof Error && err.name === "RenderingCancelledException";
+  return (
+    err instanceof Error &&
+    (err.name === "RenderingCancelledException" || err.message.includes("cancelled"))
+  );
 }
 
 export function DocumentViewer({
@@ -42,8 +49,9 @@ export function DocumentViewer({
   activeDocumentId,
   highlights = [],
   iteration = null,
+  isVisible = true,
 }: DocumentViewerProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
@@ -51,7 +59,11 @@ export function DocumentViewer({
   const [error, setError] = useState<string | null>(null);
   const [numPages, setNumPages] = useState(0);
   const [page, setPage] = useState(1);
-  const [containerWidth, setContainerWidth] = useState(0);
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+  const [zoomMode, setZoomMode] = useState<ZoomMode>("fit-width");
+  const [customScale, setCustomScale] = useState(1.0);
+  const [appliedScale, setAppliedScale] = useState(1.0);
+
   // CSS-pixel size of the rendered page; the bbox overlay is laid out in these units.
   const [cssSize, setCssSize] = useState({ w: 0, h: 0 });
   const [transformMetadata, setTransformMetadata] = useState<TransformMetadataState>({ status: "idle" });
@@ -89,19 +101,45 @@ export function DocumentViewer({
     };
   }, [bundleId, activeDocumentId, activeDocument?.transform_meta_uri]);
 
-  // Fit-to-container width.
+  // Robust container measurement: updates on mount, resize, and tab visibility changes
   useEffect(() => {
-    const el = containerRef.current;
+    const el = stageRef.current;
     if (!el) return;
-    // Measure synchronously too: observer callbacks are only delivered while the page is rendering.
-    setContainerWidth(Math.floor(el.getBoundingClientRect().width));
+
+    let rafId: number;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      const w = Math.floor(rect.width);
+      const h = Math.floor(rect.height);
+      if (w > 0) {
+        setContainerSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
+      } else {
+        rafId = requestAnimationFrame(measure);
+      }
+    };
+
+    measure();
+
     const observer = new ResizeObserver((entries) => {
-      const width = entries[0]?.contentRect.width ?? 0;
-      setContainerWidth(Math.floor(width));
+      const entry = entries[0];
+      if (entry) {
+        const w = Math.floor(entry.contentRect.width);
+        const h = Math.floor(entry.contentRect.height);
+        if (w > 0) {
+          setContainerSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
+        }
+      }
     });
     observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+
+    window.addEventListener("resize", measure);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+      cancelAnimationFrame(rafId);
+    };
+  }, [isVisible]);
 
   // Load the PDF whenever the active document changes.
   useEffect(() => {
@@ -145,26 +183,43 @@ export function DocumentViewer({
 
     return () => {
       cancelled = true;
-      // Destroying the loading task also tears down the document and its worker transport.
       void loading.task?.destroy();
     };
   }, [bundleId, activeDocumentId]);
 
-  // Render the current page at devicePixelRatio, fit to the container width.
+  // Render current page: computes scale, applies devicePixelRatio, and renders onto canvas
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!pdf || !canvas || containerWidth <= 0) return;
+    if (!pdf || !canvas || containerSize.w <= 0) return;
 
     let cancelled = false;
     const rendering: { task: RenderTask | null } = { task: null };
 
-    (async () => {
+    // Debounce rendering slightly to avoid thrashing during smooth window resizes
+    const timer = setTimeout(async () => {
       try {
         const pdfPage = await pdf.getPage(page);
         if (cancelled) return;
 
         const baseViewport = pdfPage.getViewport({ scale: 1 });
-        const viewport = pdfPage.getViewport({ scale: containerWidth / baseViewport.width });
+        const padX = 24;
+        const padY = 24;
+        const availW = Math.max(260, containerSize.w - padX);
+        const availH = containerSize.h > 100 ? Math.max(260, containerSize.h - padY) : 800;
+
+        let scale: number;
+        if (zoomMode === "fit-page") {
+          scale = Math.max(0.3, Math.min(availW / baseViewport.width, availH / baseViewport.height));
+        } else if (zoomMode === "custom") {
+          scale = customScale;
+        } else {
+          // "fit-width" (default)
+          scale = Math.max(0.3, availW / baseViewport.width);
+        }
+
+        setAppliedScale(scale);
+
+        const viewport = pdfPage.getViewport({ scale });
         const dpr = window.devicePixelRatio || 1;
 
         canvas.width = Math.floor(viewport.width * dpr);
@@ -187,13 +242,14 @@ export function DocumentViewer({
         setError(errorText(err));
         setLoadState("error");
       }
-    })();
+    }, 40);
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
       rendering.task?.cancel();
     };
-  }, [pdf, page, containerWidth]);
+  }, [pdf, page, containerSize.w, containerSize.h, zoomMode, customScale]);
 
   const boxes: HighlightBox[] = useMemo(
     () => {
@@ -230,87 +286,197 @@ export function DocumentViewer({
       }`
     : null;
 
-  return (
-    <div className="flex flex-col items-center justify-start p-4 h-full">
-      {!hasDocument && (
-        <div className="p-2 text-xs text-[var(--cc-text-muted)] italic">
-          No documents in this bundle yet. Use Add Document to upload a PDF.
-        </div>
-      )}
+  const handleZoomIn = () => {
+    setZoomMode("custom");
+    setCustomScale(Math.min(3.0, Number((appliedScale + 0.15).toFixed(2))));
+  };
 
-      {hasDocument && (
-        <div className="flex items-center gap-2 mb-3 bg-[var(--cc-surface)] px-3 py-1.5 rounded-[var(--cc-radius)] border border-[var(--cc-border)] text-xs text-[var(--cc-text-muted)]">
-          <button
-            type="button"
-            disabled={loadState !== "ready" || page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="px-2 py-0.5 rounded border border-[var(--cc-border)] disabled:opacity-40 cursor-pointer"
-          >
-            Previous
-          </button>
-          <span aria-live="polite">
-            {loadState === "ready" ? `Page ${page} of ${numPages}` : "Page - of -"}
-          </span>
-          <button
-            type="button"
-            disabled={loadState !== "ready" || page >= numPages}
-            onClick={() => setPage((p) => Math.min(numPages, p + 1))}
-            className="px-2 py-0.5 rounded border border-[var(--cc-border)] disabled:opacity-40 cursor-pointer"
-          >
-            Next
-          </button>
-          <span
-            className="pl-2 ml-1 border-l border-[var(--cc-border)] font-mono truncate max-w-[16rem]"
-            title={filename}
-          >
-            {filename}
-          </span>
-          {pageTransform?.deskew_applied && (
-            <span
-              data-testid="deskew-note"
-              className="pl-2 ml-1 border-l border-[var(--cc-border)]"
-              title="The page was straightened before the model read it; evidence boxes are mapped back onto this original page."
-            >
-              straightened {pageTransform.deskew_deg?.toFixed(1)}°
+  const handleZoomOut = () => {
+    setZoomMode("custom");
+    setCustomScale(Math.max(0.4, Number((appliedScale - 0.15).toFixed(2))));
+  };
+
+  return (
+    <div className="flex flex-col h-full w-full overflow-hidden bg-[var(--cc-surface-2)]">
+      {/* Sticky Controls Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 px-3 py-1.5 bg-[var(--cc-surface)] border-b border-[var(--cc-border)] text-xs text-[var(--cc-text-muted)] shrink-0 z-10 w-full shadow-2xs">
+        {/* Left: Pagination & Document Title */}
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          {hasDocument ? (
+            <>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={loadState !== "ready" || page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="px-2 py-0.5 rounded border border-[var(--cc-border)] disabled:opacity-40 hover:bg-[var(--cc-surface-2)] transition-colors cursor-pointer"
+                  title="Previous page"
+                >
+                  ◀
+                </button>
+                <span aria-live="polite" className="font-medium font-mono text-[11px] px-1">
+                  {loadState === "ready" ? `${page} / ${numPages}` : "- / -"}
+                </span>
+                <button
+                  type="button"
+                  disabled={loadState !== "ready" || page >= numPages}
+                  onClick={() => setPage((p) => Math.min(numPages, p + 1))}
+                  className="px-2 py-0.5 rounded border border-[var(--cc-border)] disabled:opacity-40 hover:bg-[var(--cc-surface-2)] transition-colors cursor-pointer"
+                  title="Next page"
+                >
+                  ▶
+                </button>
+              </div>
+
+              <span
+                className="pl-2 border-l border-[var(--cc-border)] font-mono font-medium text-[var(--cc-text)] truncate max-w-[8rem] sm:max-w-[12rem] md:max-w-[16rem]"
+                title={filename}
+              >
+                {filename}
+              </span>
+            </>
+          ) : (
+            <span className="italic text-[11px] text-[var(--cc-text-muted)]">
+              No document selected
             </span>
           )}
-          {modelView && (
-            <a
-              data-testid="model-view-link"
-              href={modelView}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="pl-2 ml-1 border-l border-[var(--cc-border)] font-semibold text-[var(--cc-focus)] hover:underline"
-              title="The page image exactly as the extraction saw it (after orientation, straightening and the image mode)"
-            >
-              What the model saw
-            </a>
-          )}
         </div>
-      )}
 
-      {hasDocument && loadState === "loading" && (
-        <div role="status" className="text-xs text-[var(--cc-text-muted)] mb-2">
-          Loading document...
-        </div>
-      )}
-      {hasDocument && loadState === "error" && (
-        <div role="alert" className="text-xs text-[var(--cc-err)] mb-2">
-          Could not display {filename}: {error}
-        </div>
-      )}
+        {/* Right: Responsive Zoom & View Mode Controls */}
+        {hasDocument && (
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            {/* Zoom Controls Cluster */}
+            <div className="flex items-center bg-[var(--cc-surface-2)] p-0.5 rounded border border-[var(--cc-border)]">
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                disabled={loadState !== "ready"}
+                className="px-1.5 py-0.5 text-xs font-bold rounded hover:bg-[var(--cc-surface)] text-[var(--cc-text)] disabled:opacity-40 cursor-pointer"
+                title="Zoom Out (−)"
+              >
+                −
+              </button>
+              <button
+                type="button"
+                onClick={() => setZoomMode("fit-width")}
+                className="px-1.5 py-0.5 font-mono text-[10px] text-[var(--cc-text-muted)] min-w-[3.2rem] text-center hover:text-[var(--cc-text)] cursor-pointer"
+                title="Click to reset to Fit Width"
+              >
+                {zoomMode === "fit-width"
+                  ? "Fit W"
+                  : zoomMode === "fit-page"
+                  ? "Fit P"
+                  : `${Math.round(appliedScale * 100)}%`}
+              </button>
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                disabled={loadState !== "ready"}
+                className="px-1.5 py-0.5 text-xs font-bold rounded hover:bg-[var(--cc-surface)] text-[var(--cc-text)] disabled:opacity-40 cursor-pointer"
+                title="Zoom In (+)"
+              >
+                +
+              </button>
+            </div>
 
-      {/* Always mounted: this container is measured for fit-to-width; the canvas sizes the page wrapper. */}
-      <div ref={containerRef} className="w-full flex justify-center">
+            {/* Quick Fit Mode Buttons */}
+            <div className="hidden sm:flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setZoomMode("fit-width")}
+                className={`px-1.5 py-0.5 text-[10px] font-medium rounded border transition-colors cursor-pointer ${
+                  zoomMode === "fit-width"
+                    ? "bg-[var(--cc-focus)] text-white border-[var(--cc-focus)] font-semibold"
+                    : "border-[var(--cc-border)] hover:bg-[var(--cc-surface-2)] text-[var(--cc-text-muted)]"
+                }`}
+                title="Fit to width of viewer"
+              >
+                Fit Width
+              </button>
+              <button
+                type="button"
+                onClick={() => setZoomMode("fit-page")}
+                className={`px-1.5 py-0.5 text-[10px] font-medium rounded border transition-colors cursor-pointer ${
+                  zoomMode === "fit-page"
+                    ? "bg-[var(--cc-focus)] text-white border-[var(--cc-focus)] font-semibold"
+                    : "border-[var(--cc-border)] hover:bg-[var(--cc-surface-2)] text-[var(--cc-text-muted)]"
+                }`}
+                title="Fit entire page in view"
+              >
+                Fit Page
+              </button>
+            </div>
+
+            {pageTransform?.deskew_applied && (
+              <span
+                data-testid="deskew-note"
+                className="pl-2 border-l border-[var(--cc-border)] text-[10px] hidden sm:inline"
+                title="The page was straightened before the model read it; evidence boxes are mapped back onto this original page."
+              >
+                straightened {pageTransform.deskew_deg?.toFixed(1)}°
+              </span>
+            )}
+
+            {modelView && (
+              <a
+                data-testid="model-view-link"
+                href={modelView}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="pl-2 border-l border-[var(--cc-border)] font-semibold text-[11px] text-[var(--cc-focus)] hover:underline whitespace-nowrap"
+                title="The page image exactly as the extraction saw it (after orientation, straightening and the image mode)"
+              >
+                Model view ↗
+              </a>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Main Document Stage with 2D Scrollability */}
+      <div
+        ref={stageRef}
+        className="w-full flex-1 overflow-auto flex justify-center items-start p-2 sm:p-4"
+        tabIndex={0}
+        aria-label={`Document viewer for ${filename}`}
+      >
+        {!hasDocument && (
+          <div className="p-4 text-xs text-[var(--cc-text-muted)] italic text-center my-auto">
+            No documents in this bundle yet. Use <strong>+ Add Document</strong> above to upload trade PDFs.
+          </div>
+        )}
+
+        {hasDocument && loadState === "loading" && (
+          <div role="status" className="text-xs text-[var(--cc-text-muted)] flex items-center gap-2 my-auto">
+            <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--cc-focus)] border-t-transparent" />
+            <span>Rendering {filename}...</span>
+          </div>
+        )}
+
+        {hasDocument && loadState === "error" && (
+          <div role="alert" className="text-xs text-[var(--cc-err)] my-auto p-4 text-center">
+            Could not display {filename}: {error}
+          </div>
+        )}
+
+        {/* Scaled PDF Page Canvas Wrapper with BBox Overlay */}
         <div
-          className="relative shadow-[var(--cc-shadow-1)] rounded-[var(--cc-radius)] overflow-hidden"
-          style={{ display: hasDocument && loadState === "ready" ? "block" : "none" }}
+          className="relative shadow-md rounded-[var(--cc-radius)] bg-white shrink-0 my-auto sm:my-0 transition-opacity duration-150"
+          style={{
+            width: `${cssSize.w}px`,
+            height: `${cssSize.h}px`,
+            display: hasDocument && loadState === "ready" ? "block" : "none",
+          }}
         >
           <canvas
             ref={canvasRef}
             role="img"
             aria-label={`Page ${page} of ${numPages}: ${filename}`}
             className="block bg-white"
+            style={{
+              width: `${cssSize.w}px`,
+              height: `${cssSize.h}px`,
+            }}
           />
           <BBoxLayer width={cssSize.w} height={cssSize.h} boxes={boxes} />
         </div>

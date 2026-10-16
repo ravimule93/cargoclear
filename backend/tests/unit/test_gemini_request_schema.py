@@ -204,6 +204,29 @@ async def test_the_thinking_config_reaches_the_wire_only_when_configured(offline
         assert pick(config["thinkingConfig"], "thinking_budget") == budget
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("level", "sent"), [("MINIMAL", "MINIMAL"), ("LOW", "LOW"), ("HIGH", "HIGH"), ("DEFAULT", None)]
+)
+async def test_gemini_3_gets_a_thinking_level_and_never_a_budget(offline, monkeypatch, level, sent) -> None:
+    """gemini-3.x refuses thinking_budget (any value) on a request with an image: it is never on the wire for that family."""
+    monkeypatch.setattr(settings, "gemini_live_model", "gemini-3.5-flash")
+    monkeypatch.setattr(settings, "gemini_thinking_level", level)
+    monkeypatch.setattr(settings, "gemini_thinking_budget", 1024)
+    wire = Wire()
+    offline(wire)
+
+    await run_extraction_agent(ctx_for("doc-1"))
+
+    assert wire.requests[0].url.path.endswith("/models/gemini-3.5-flash:generateContent")
+    config = wire.body()["generationConfig"]
+    if sent is None:
+        assert "thinkingConfig" not in config
+    else:
+        assert pick(config["thinkingConfig"], "thinking_level") == sent and "thinkingBudget" not in config["thinkingConfig"]
+        assert "thinking_budget" not in config["thinkingConfig"]
+
+
 # ---------------------------------------------------------------------------
 # the response schema (golden file)
 # ---------------------------------------------------------------------------

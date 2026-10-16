@@ -21,6 +21,15 @@ from app.services import preprocess
 from tests.helpers import CASE_C_DIR
 
 
+@pytest.fixture(autouse=True)
+def no_pdfinfo(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests render placeholder bytes through a faked renderer: there is no file for pdfinfo to read, so no page plan is made (as
+    when poppler is not installed). A test that is about the plan sets ``read_pdf_facts`` itself."""
+    from app.services import upload_checks
+
+    monkeypatch.setattr(upload_checks, "read_pdf_facts", lambda *_a, **_kw: None)
+
+
 def page_image(seed: int, size: tuple[int, int] = (120, 160)) -> Image.Image:
     """A deterministic RGB 'scan' with some structure (so PNG output depends on every pixel)."""
     image = Image.new("RGB", size, "white")
@@ -122,16 +131,48 @@ async def test_case_c_pdfs_render_as_one_bit_source_pages(name) -> None:
 
 
 @pytest.mark.asyncio
-async def test_a_render_failure_still_falls_back_to_the_raw_pdf(monkeypatch) -> None:
-    def broken(_raw: bytes, **_kw: Any) -> list[Image.Image]:
-        raise RuntimeError("poppler is not installed")
+async def test_a_missing_poppler_still_falls_back_to_the_raw_pdf(monkeypatch) -> None:
+    from pdf2image.exceptions import PDFInfoNotInstalledError
 
-    monkeypatch.setattr("pdf2image.convert_from_bytes", broken)
+    def not_installed(_raw: bytes, **_kw: Any) -> list[Image.Image]:
+        raise PDFInfoNotInstalledError("Unable to get page count. Is poppler installed and in PATH?")
+
+    monkeypatch.setattr("pdf2image.convert_from_bytes", not_installed)
 
     result = await preprocess.run({"raw_bytes": b"%PDF-1.4 raw", "document_id": "doc-1"})
 
     assert [(p["mime"], p["payload"]) for p in result["processed_pages"]] == [("application/pdf", b"%PDF-1.4 raw")]
     assert result["transform_meta"][0]["width"] == 1000
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("failure", [RuntimeError("poppler could not render it"), ValueError("bad"), MemoryError()])
+async def test_a_render_failure_is_the_documents_not_a_reason_to_send_it_raw(monkeypatch, failure) -> None:
+    """Anything poppler (or Pillow) raises about THE DOCUMENT fails the run: the raw PDF is never handed on, because it would reach
+    the model exactly as the upload checks refused it (a polyglot, a truncated file, a decompression bomb)."""
+    from app.gateway.errors import PipelineError
+
+    def broken(_raw: bytes, **_kw: Any) -> list[Image.Image]:
+        raise failure
+
+    monkeypatch.setattr("pdf2image.convert_from_bytes", broken)
+
+    with pytest.raises(PipelineError, match="could not be rendered"):
+        await preprocess.run({"raw_bytes": b"%PDF-1.4 raw", "document_id": "doc-1"})
+
+
+@pytest.mark.asyncio
+async def test_a_page_over_the_pixel_budget_is_refused_before_poppler_renders_it(monkeypatch) -> None:
+    from app.services import upload_checks
+
+    rendered: list[bytes] = []
+    monkeypatch.setattr("pdf2image.convert_from_bytes", lambda raw, **_kw: rendered.append(raw) or [page_image(1)])
+    monkeypatch.setattr(upload_checks, "read_pdf_facts", lambda *_a, **_kw: upload_checks.PdfFacts(1, False, ((1, 6000.0, 6000.0),)))
+
+    with pytest.raises(preprocess.PreprocessError, match="278 megapixels"):
+        await preprocess.run({"raw_bytes": b"%PDF-1.4 big", "document_id": "doc-1"})
+
+    assert rendered == []
 
 
 @pytest.mark.asyncio

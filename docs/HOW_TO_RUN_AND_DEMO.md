@@ -6,7 +6,7 @@ This guide covers verified local behavior. It does not authorize Docker builds, 
 
 - Python 3.12
 - Node.js 22 and npm
-- Optional local Poppler (`pdftoppm`) for actual PDF rasterization. The backend handles the supported fallback when it is absent; the backend container installs Poppler.
+- Optional local Poppler (`pdftoppm`) for actual PDF rasterization. The backend handles the supported fallback when it is absent; the backend container installs Poppler. Without Poppler the upload checks that need it (the file must open, page count and page size, no scripts, no attachments) are skipped, and a document is passed on as the raw PDF: for a demo only, never for a service that holds real documents.
 
 ## 2. Install local dependencies
 
@@ -84,6 +84,40 @@ Each invocation creates its own bundle. Do not navigate to retired routes such a
 5. **Undo** the correction and recompute: the contradiction returns. Saving the value *as it was read* instead records a confirmation (`FIELD_CONFIRMED`).
 
 Through the API: `POST /bundles/{id}/corrections`, `GET /bundles/{id}/corrections`, `POST /bundles/{id}/corrections/{cor-n}/revert`, `POST /bundles/{id}/recompute`, `GET /bundles/{id}/prefill[.pdf]`. Scripted: `python3 scripts/live_e2e_hosted.py --base-url ... --case d --corrections`.
+
+## 4c-2. What the model calls cost
+
+`GET /bundles/{id}/usage` lists every run of a bundle that asked the model something or served an answer from the cache, failed runs
+included, with the tokens the API reported for each request (prompt, output, thinking, total) per document, the requests whose answer
+was not used (cut off, invalid, failed), and the totals. Each assessment carries the same record for its own run (`token_usage` on
+`GET /bundles/{id}/assessment` and `/iterations`), and the audit events `ASSESSMENT_COMPLETED` and `ANALYSIS_FAILED` carry its totals.
+The counts are what Gemini reports; no price is computed. A request that failed before an answer (timeout, 429) or was cancelled reports
+nothing, so it is counted in `unknown_requests` and its tokens are not known.
+
+## 4c-3. Taking a document out of a bundle
+
+In the web app, select a document in the left rail and press **Remove** under it; a second click on **Remove file** confirms (Cancel keeps it).
+The control waits while a run or an upload is in progress. If the newest assessment used the document, the bundle is reassessed without it, as
+after an upload (a reassess reads no document again that is unchanged).
+
+Through the API: `DELETE /api/v1/bundles/{id}/documents/{document_id}` removes the stored PDF, its processed pages and transform metadata, the
+model's kept answers for it and its record. It answers 409 while a run for the bundle is queued or running, and 404 for a document that is not in
+the bundle. The audit chain gets a `DOCUMENT_DELETED` event (file name, SHA-256, size); earlier assessments, the audit chain and the usage
+records keep what they say. The newest assessment still shows the document until you **Reassess** (Recompute is refused until then). The main
+use: a document the model cannot read makes every run of the bundle fail; remove it, then analyse again (the other documents are not read
+again). The UI's proxy forwards `DELETE` for this one path only. The Android client has the call (`DocumentRepository.deleteDocument`) but no
+screen for it yet.
+
+## 4c-4. Saying what a file is when you upload it
+
+In the web app, the type menu beside **+ Add Document** (and above the upload box for a missing certificate) says what the **next** file is. A type
+labels one file, so choosing one limits the file dialog to one file, and the menu goes back to "Type: not stated" after every upload. Through the
+API it is the optional form field `declared_type` of `POST /api/v1/bundles/{id}/documents` (`COMMERCIAL_INVOICE`, `BILL_OF_LADING`,
+`PACKING_LIST`, `CERTIFICATE_OF_ORIGIN`, `PHYTOSANITARY` or `MILL_TEST_CERTIFICATE`; any other value is a 422). If the model reads the file as
+another type, the assessment carries a warning `T-001-<document>` that names both and says whether the declared type is still missing; the file
+name is never used to guess a type. Separately, a document whose values are mostly not in Latin script (a Chinese invoice, for example) gets
+`L-001-<document>`, which says that names and units are compared as printed, so findings about them may be a difference of language. The Android
+client can send the field (`DocumentRepository.upload(..., declaredType)`) but its screens have no type picker yet.
 
 ## 4d. Audit signature and the model's view (Case D)
 

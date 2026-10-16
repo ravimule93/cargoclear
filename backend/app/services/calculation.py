@@ -55,7 +55,7 @@ from app.domain.hs import (
 from app.domain.schemas import CheckResult, ExtractedDocument, FieldRef
 from app.domain.units import parse_number, to_kg, trailing_unit
 from app.reference.loader import fingerprint
-from app.services import invoice_checks, metallurgy, trade_remedies, valuation
+from app.services import document_identity, invoice_checks, metallurgy, page_coverage, trade_remedies, valuation
 
 # ---------------------------------------------------------------------------
 # Constants (from v4.0 §3.1)
@@ -671,7 +671,8 @@ def _roll_up(results: list[CheckResult]) -> str:
 async def run(ctx: dict) -> dict:
     """Deterministic check engine — pipeline stage entry point.
 
-    Reads:  ctx["extracted"]  (list[ExtractedDocument])
+    Reads:  ctx["extracted"]  (list[ExtractedDocument]); ctx["page_plans"] and ctx["documents"] (the pages that were not read, and the
+            type each document was declared as)
     Writes: ctx["checks"]     (list[dict] — serialised CheckResults)
             ctx["math_status"] (str — one of the 4 status strings)
             ctx["valuation"]  (dict — ValuationEstimate; informational)
@@ -737,6 +738,10 @@ async def run(ctx: dict) -> dict:
     results.extend(invoice_checks.run(docs))
     results.extend(metallurgy.run(docs))
     results.extend(trade_remedies.run(docs, destination))
+    # Pages the model was not shown (P-001 / P-002): what a person has to know is NOT in the assessment
+    results.extend(page_coverage.checks(ctx.get("page_plans"), ctx.get("documents", [])))
+    # What each document is against what it was uploaded as (T-001), and whether its values are in a script the others are compared in (L-001)
+    results.extend(document_identity.checks(ctx.get("documents", []), docs))
 
     ctx["checks"] = [r.model_dump() for r in results]
     ctx["math_status"] = _roll_up(results)

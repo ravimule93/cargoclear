@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { UserIdentity } from "@/lib/types";
+import { invalidateMetaCache } from "@/lib/hooks/useMeta";
 
 interface UserMenuProps {
   user?: UserIdentity | null;
@@ -11,12 +12,19 @@ interface UserMenuProps {
 
 export function UserMenu({ user, onLogout }: UserMenuProps) {
   const handleLogout = () => {
+    invalidateMetaCache();
+    const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
+    const secureFlag = isHttps ? "; Secure" : "";
+    document.cookie = `__session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${secureFlag}`;
+    document.cookie = `cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${secureFlag}`;
+    document.cookie = `cargoclear_google_id_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${secureFlag}`;
     document.cookie = "__session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "cargoclear_google_id_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     if (onLogout) {
       onLogout();
     } else {
-      window.location.href = "/api/auth/logout";
+      window.location.href = "/api/auth/logout?returnTo=/";
     }
   };
 
@@ -46,7 +54,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
       <div className="h-6 w-6 rounded-full bg-[var(--cc-focus)]/20 border border-[var(--cc-focus)]/40 flex items-center justify-center text-[10px] font-bold text-[var(--cc-focus)]">
         {user.email.slice(0, 2).toUpperCase()}
       </div>
-      <div className="flex flex-col text-left">
+      <div className="hidden sm:flex flex-col text-left">
         <span className="text-[11px] font-medium text-[var(--cc-text)] leading-tight max-w-[130px] truncate" title={user.email}>
           {user.email}
         </span>

@@ -8,8 +8,8 @@
 .cc-workbench {
   display: grid;
   height: 100dvh;
-  grid-template-columns: 280px minmax(0, 1fr) 380px;
-  grid-template-rows: auto 56px minmax(0, 1fr) var(--cc-drawer-height, 260px);
+  grid-template-columns: 260px minmax(0, 1fr) 360px;
+  grid-template-rows: auto auto minmax(0, 1fr) var(--cc-drawer-height, min(240px, 32vh));
   grid-template-areas:
     "banner banner banner"
     "top    top    top"
@@ -35,6 +35,7 @@
   color: var(--cc-warn);
   background: var(--cc-warn-bg);
   border-bottom: 1px solid var(--cc-warn-bd);
+  word-break: break-word;
 }
 
 /* Full-grid container for the loading / not-found / error states of the workbench page. */
@@ -45,8 +46,11 @@
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  padding: 2rem;
+  padding: 1.5rem;
   text-align: center;
+  min-height: 100dvh;
+  width: 100%;
+  overflow-y: auto;
 }
 
 .cc-top {
@@ -55,9 +59,12 @@
   background: var(--cc-surface);
   display: flex;
   align-items: center;
-  padding: 0 1rem;
-  gap: 1rem;
-  z-index: 10;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  min-height: 52px;
+  gap: 0.75rem;
+  z-index: 20;
+  flex-wrap: wrap;
 }
 
 .cc-rail {
@@ -65,14 +72,17 @@
   border-right: 1px solid var(--cc-border);
   overflow-y: auto;
   background: var(--cc-surface);
+  min-width: 0;
 }
 
 .cc-viewer {
   grid-area: viewer;
-  overflow: auto;
-  scrollbar-gutter: stable;
+  overflow: hidden;
   background: var(--cc-surface-2);
   position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .cc-assess {
@@ -80,6 +90,7 @@
   border-left: 1px solid var(--cc-border);
   overflow-y: auto;
   background: var(--cc-surface);
+  min-width: 0;
 }
 
 .cc-drawer {
@@ -89,29 +100,92 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+/* Compact tabs bar: hidden on desktop, active on compact/mobile */
+.cc-tabs {
+  display: none;
+  grid-area: tabs;
+  background: var(--cc-surface-2);
+  border-bottom: 1px solid var(--cc-border);
+  padding: 0 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  z-index: 15;
+}
+.cc-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.cc-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--cc-text-muted);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex: 1 0 auto;
+}
+.cc-tab-btn:hover {
+  color: var(--cc-text);
+  background: var(--cc-surface);
+}
+.cc-tab-btn[aria-selected="true"] {
+  color: var(--cc-focus);
+  font-weight: 600;
+  border-bottom-color: var(--cc-focus);
+  background: var(--cc-surface);
+}
+.cc-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1rem 0.375rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  background: var(--cc-surface-2);
+  color: var(--cc-text-muted);
+}
+.cc-tab-btn[aria-selected="true"] .cc-tab-badge {
+  background: var(--cc-focus);
+  color: #ffffff;
 }
 
 /* =============================================================================
    Medium screens (1024px - 1279px): compact rail and assess panels
    ============================================================================= */
-@media (max-width: 1279px) and (min-width: 900px) {
+@media (max-width: 1279px) and (min-width: 1024px) {
   .cc-workbench {
-    grid-template-columns: 240px minmax(0, 1fr) 340px;
+    grid-template-columns: 220px minmax(0, 1fr) 320px;
   }
 }
 
 /* =============================================================================
-   Small screens (< 900px): collapsible or single column with tab switcher
+   Compact viewports (< 1024px): mobile, tablet, or desktop with open sidebar
    ============================================================================= */
-@media (max-width: 899px) {
+@media (max-width: 1023px) {
   .cc-workbench {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 56px 44px minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
     grid-template-areas:
       "banner"
       "top"
       "tabs"
       "main";
+  }
+
+  .cc-tabs {
+    display: flex !important;
   }
 
   .cc-rail,
@@ -120,10 +194,29 @@
   .cc-drawer {
     display: none;
     grid-area: main;
+    height: 100%;
+    width: 100%;
+    border-left: none;
+    border-right: none;
+    border-top: none;
   }
 
+  /* Show panel matching active tab */
   .cc-workbench[data-tab="rail"]   .cc-rail   { display: block; }
   .cc-workbench[data-tab="viewer"] .cc-viewer { display: block; }
   .cc-workbench[data-tab="assess"] .cc-assess { display: block; }
   .cc-workbench[data-tab="drawer"] .cc-drawer { display: block; }
+
+  /* Defensive fallback if data-tab is temporarily unset: show assessment panel */
+  .cc-workbench:not([data-tab]) .cc-assess,
+  .cc-workbench[data-tab=""] .cc-assess {
+    display: block;
+  }
+}
+
+/* Short viewport heights: clamp drawer so viewer stays visible */
+@media (max-height: 700px) and (min-width: 1024px) {
+  .cc-workbench {
+    --cc-drawer-height: min(180px, 28vh);
+  }
 }

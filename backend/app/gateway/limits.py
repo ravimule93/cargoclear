@@ -118,11 +118,14 @@ _WRITE_PATHS = re.compile(
     r"^/api/v1/(bundles/?|bundles/[^/]+/documents/?|bundles/[^/]+/corrections/?|bundles/[^/]+/corrections/[^/]+/revert/?|bundles/[^/]+/audit/sign/?|demo/case-[cd]/?)$"
 )
 _RUN_PATHS = re.compile(r"^/api/v1/bundles/[^/]+/(analyze|reassess|recompute)/?$")
+_DELETE_PATHS = re.compile(r"^/api/v1/bundles/[^/]+/documents/[^/]+/?$")
 
 
 def classify_request(method: str, path: str) -> str | None:
-    """"writes" (create a bundle, upload a document, a correction or its undo, a demo bundle), "runs" (analyze / reassess /
+    """"writes" (create a bundle, upload or delete a document, a correction or its undo, a demo bundle), "runs" (analyze / reassess /
     recompute), or None (unlimited)."""
+    if method == "DELETE":
+        return "writes" if _DELETE_PATHS.match(path) else None
     if method != "POST":
         return None
     if _RUN_PATHS.match(path):

@@ -4,6 +4,35 @@ import os
 
 import pytest
 
+# Test modules whose uploads are placeholder bytes ("%PDF-1.4 invoice"): they predate the poppler-based upload checks and the rule
+# that a file poppler cannot render is never passed on raw. They were written to pass on a machine WITHOUT poppler (a placeholder is
+# not renderable), and for these modules that is what they get: pdfinfo reports "not installed", the upload checks are skipped and
+# preprocessing passes the bytes through. A module leaves this list when its placeholders become real PDFs; a single test can leave it
+# with @pytest.mark.real_poppler, or join it with @pytest.mark.placeholder_pdfs. Everything else, including tests/gating, gets the real checks.
+PLACEHOLDER_PDF_MODULES = frozenset({
+    "test_run_lifecycle", "test_path_ids", "test_run_leases", "test_run_cap", "test_audit_lifecycle", "test_data_source",
+    "test_engines", "test_stream", "test_signing", "test_run_events", "test_rate_limit", "test_orchestrator",
+    "test_live_mode_integrity", "test_internal_worker", "test_storage", "test_iterations_route", "test_demo", "test_body_limits",
+    "test_pipeline_pages", "test_documents_api",
+})
+
+
+@pytest.fixture(autouse=True)
+def placeholder_pdfs_see_no_poppler(request, monkeypatch):
+    """See ``PLACEHOLDER_PDF_MODULES``: for those tests poppler's pdfinfo is reported as not installed."""
+    wanted = request.module.__name__.rsplit(".", 1)[-1] in PLACEHOLDER_PDF_MODULES or request.node.get_closest_marker("placeholder_pdfs")
+    if not wanted or request.node.get_closest_marker("real_poppler"):
+        return
+    from pdf2image.exceptions import PDFInfoNotInstalledError
+
+    def not_installed(*_args, **_kwargs):
+        raise PDFInfoNotInstalledError("poppler is reported as not installed for tests that upload placeholder PDFs")
+
+    monkeypatch.setattr("pdf2image.pdf2image.pdfinfo_from_path", not_installed)
+    from app.services import upload_checks
+
+    monkeypatch.setattr(upload_checks, "embedded_file_count", lambda _data: None)  # pdfdetach is part of the same poppler
+
 
 @pytest.fixture(autouse=True)
 def hermetic_test_env(tmp_path, monkeypatch):
@@ -54,6 +83,9 @@ def hermetic_test_env(tmp_path, monkeypatch):
     firestore._IN_MEMORY_RUNS.clear()
     firestore._IN_MEMORY_ITERATIONS.clear()
     firestore._IN_MEMORY_EXTRACTIONS.clear()
+    firestore._IN_MEMORY_EXTRACTION_CACHE.clear()
+    firestore._IN_MEMORY_USAGE.clear()
+    firestore._IN_MEMORY_DAILY_TOKENS.clear()
     firestore._firestore_client = None
 
     # Reset Audit in-memory state

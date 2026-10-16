@@ -424,6 +424,53 @@ class AppliedCorrection(BaseModel):
     note: str | None = None
 
 
+class AttemptUsage(BaseModel):
+    """One request to the model for one document, as the API reported it."""
+
+    attempt: int
+    outcome: str = Field(description="'ok'; 'refused: <why>' (answered, not used, tokens spent); 'error: <why>' or 'cancelled' (no usage reported)")
+    finish_reason: str | None = None
+    usage_reported: bool
+    prompt_tokens: int = 0
+    output_tokens: int = 0
+    thinking_tokens: int = 0
+    total_tokens: int = 0
+
+
+class DocumentUsage(BaseModel):
+    document_id: str
+    filename: str | None = None
+    cached: bool = Field(description="True: the answer of an earlier run was read again; no request was made")
+    requests: int
+    failed_requests: int = Field(description="requests whose answer was not used, or that failed")
+    unknown_requests: int = Field(description="requests that reported no usage (error, timeout, cancelled): counted, tokens unknown")
+    prompt_tokens: int
+    output_tokens: int
+    thinking_tokens: int
+    total_tokens: int
+    saved_tokens: int = Field(default=0, description="for a cached document: what its first read cost")
+    gate_tokens: int | None = Field(default=None, description="the relevance check at upload, once; null if none was made")
+    attempts: list[AttemptUsage] = Field(default_factory=list)
+
+
+class TokenUsage(BaseModel):
+    """What the model calls of one run cost, per document (services/token_usage.py)."""
+
+    model: str | None = None
+    mode: str | None = None
+    requests: int = 0
+    failed_requests: int = 0
+    unknown_requests: int = 0
+    cached_documents: int = 0
+    prompt_tokens: int = 0
+    output_tokens: int = 0
+    thinking_tokens: int = 0
+    total_tokens: int = Field(default=0, description="the API's own total per request, summed; includes thinking")
+    saved_tokens: int = 0
+    documents: list[DocumentUsage] = Field(default_factory=list)
+    note: str | None = None
+
+
 class AssessmentIteration(BaseModel):
     """Point-in-time, immutable assessment snapshot stored in Firestore."""
 
@@ -457,6 +504,10 @@ class AssessmentIteration(BaseModel):
         default=None,
         description="How the iteration was produced: 'full', 'reassess' or 'recompute' (extraction reused, corrections applied); "
         "null on iterations stored before this field existed",
+    )
+    token_usage: TokenUsage | None = Field(
+        default=None,
+        description="What the model calls of the run that produced this iteration cost, per document; null on iterations stored before it existed",
     )
     created_at: str | None = None
 
@@ -539,6 +590,23 @@ class CreateBundleRequest(BaseModel):
         return cleaned
 
 
+class DocumentDeletedResponse(BaseModel):
+    bundle_id: str
+    document_id: str
+    filename: str
+    files_removed: int = Field(description="Files removed from storage: the raw PDF with its meta.json, processed pages and transform metadata.")
+    cached_answers_removed: int = Field(description="Kept model answers for this document removed (the extraction cache).")
+    latest_iteration: int | None = Field(
+        default=None, description="Number of the newest stored assessment of the bundle; null when it has none."
+    )
+    in_latest_assessment: bool = Field(
+        description=(
+            "True when the newest stored assessment was made with this document. It is not changed by the deletion, and Recompute is refused "
+            "until the bundle is reassessed: Reassess gives a verdict without it."
+        )
+    )
+
+
 class DocumentResponse(BaseModel):
     document_id: str
     bundle_id: str
@@ -551,6 +619,11 @@ class DocumentResponse(BaseModel):
     transform_meta_uri: str | None = Field(
         default=None,
         description="Durable location of per-page preprocessing transforms; null until preprocessing completes.",
+    )
+    declared_type: str | None = Field(
+        default=None,
+        description="The document type the uploader said the file is (one of the six readable types); null when none was given. "
+        "An assessment flags a file the model read as another type (T-001).",
     )
 
 
@@ -579,3 +652,44 @@ class RunResponse(BaseModel):
     bundle_id: str
     state: Literal["QUEUED", "RUNNING", "COMPLETE", "ERROR"]
     message: str | None = None
+
+
+class RunUsage(BaseModel):
+    """One run's usage: a completed run (it has an iteration) or a failed one (it has none, and its tokens were spent all the same)."""
+
+    run_id: str
+    iteration: int | None = None
+    mode: str | None = None
+    state: Literal["COMPLETE", "ERROR"]
+    reason: str | None = Field(default=None, description="for a failed run: cancelled, timeout, interrupted, or null")
+    created_at: str
+    token_usage: TokenUsage
+
+
+class UsageTotals(BaseModel):
+    runs: int = 0
+    failed_runs: int = 0
+    requests: int = 0
+    failed_requests: int = 0
+    unknown_requests: int = 0
+    prompt_tokens: int = 0
+    output_tokens: int = 0
+    thinking_tokens: int = 0
+    total_tokens: int = 0
+    saved_tokens: int = 0
+    upload_gate_tokens: int = Field(default=0, description="the relevance checks at upload, once per document (documents since deleted included)")
+
+
+class UsageResponse(BaseModel):
+    bundle_id: str
+    runs: list[RunUsage] = Field(default_factory=list)
+    totals: UsageTotals
+
+
+class TokenBudgetStatus(BaseModel):
+    day: str = Field(description="the UTC day the counter is kept under, YYYYMMDD")
+    limit_tokens: int = Field(description="DAILY_TOKEN_BUDGET; 0 means the budget is off")
+    enabled: bool
+    spent_tokens: int | None = Field(description="model tokens the whole service spent today; null when the counter cannot be read")
+    remaining_tokens: int | None = Field(description="null when the budget is off or the counter cannot be read")
+    resets_in_seconds: int

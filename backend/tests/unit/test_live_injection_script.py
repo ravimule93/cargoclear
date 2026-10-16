@@ -76,11 +76,13 @@ def answer(tweak=None):
 def passthrough_pages(monkeypatch: pytest.MonkeyPatch) -> None:
     """Whatever the machine has installed, pages are the raw PDF (no poppler needed, nothing rendered)."""
     import pdf2image
+    from pdf2image.exceptions import PDFInfoNotInstalledError
 
     def no_poppler(*_a, **_kw):
-        raise RuntimeError("poppler is not available")
+        raise PDFInfoNotInstalledError("poppler is not available")
 
     monkeypatch.setattr(pdf2image, "convert_from_bytes", no_poppler)
+    monkeypatch.setattr(pdf2image, "convert_from_path", no_poppler)  # the pages of a plan are rendered from a file on disk
 
 
 @pytest.fixture

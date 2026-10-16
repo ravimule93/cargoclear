@@ -65,6 +65,20 @@ SAMPLE_INVOICE = (
     "HS code 73041900, unit price USD 700.00, total USD 84000.00."
 )
 
+
+
+def _blank_png() -> bytes:
+    import io
+
+    from PIL import Image
+
+    out = io.BytesIO()
+    Image.new("L", (64, 64), 255).save(out, format="PNG")
+    return out.getvalue()
+
+
+_BLANK_PNG = _blank_png()
+
 PASS, WARN, FAIL, SKIP = "PASS", "WARN", "FAIL", "SKIP"
 CHECK_ORDER = ("credentials", "gemini", "bigquery", "firestore", "gcs")
 
@@ -160,7 +174,10 @@ async def check_gemini() -> tuple[str, str, dict[str, Any]]:
     data["plain_answer"] = (getattr(plain, "text", "") or "").strip()[:40]
 
     # 2. it accepts the REAL extraction request: same system prompt, schema, temperature and thinking config
-    parts = [types.Part.from_text(text=SAMPLE_INVOICE), types.Part.from_text(text=extraction.EXTRACT_INSTRUCTION)]
+    # The request carries an image part, as every real one does: gemini-3.x refuses a thinking budget only on a request with an image,
+    # so a text-only check would pass and the first real document would fail (docs/input-gating-audit.md section 13).
+    parts = [types.Part.from_bytes(data=_BLANK_PNG, mime_type="image/png"), types.Part.from_text(text=SAMPLE_INVOICE),
+             types.Part.from_text(text=extraction.EXTRACT_INSTRUCTION)]
     started = time.perf_counter()
     response = await asyncio.wait_for(
         client.aio.models.generate_content(model=model, contents=parts, config=extraction._request_config(types)),

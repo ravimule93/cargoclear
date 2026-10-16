@@ -16,7 +16,9 @@ Run lifecycle (audit events are written by this module, not by a pipeline stage)
   Any failure -> ANALYSIS_FAILED (best effort) -> run ERROR. ASSESSMENT_COMPLETED is only ever written
   for an iteration that was persisted.
 
-Run modes: ``full`` (analyze) and ``reassess`` read every document; ``recompute`` reuses the extraction stored with the
+Run modes: ``full`` (analyze) and ``reassess`` read every document (render every page; the model is asked only about a document this
+bundle has not already had read with the same request: agents/extraction.py::_extract_cached, the extraction answer cache, so an unchanged
+reassess costs no tokens); ``recompute`` never consults that cache and reuses the extraction stored with the
 latest assessment (no preprocessing, no model call) and re-runs the checks, which is how an agent's corrections take effect
 quickly. In EVERY mode the corrections of the authorised agent (services/corrections.py) are laid over the extraction right
 after the ``extract`` stage, so a reassessment never drops them and the iteration lists the ones it used.
@@ -45,6 +47,8 @@ import asyncio
 import functools
 import time
 import uuid
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Any
 
@@ -66,7 +70,7 @@ from app.gateway.errors import (
 )
 from app.domain.schemas import ExtractedDocument
 from app.repo import firestore, leases
-from app.services import audit, corrections, run_events, run_queue, signing, storage
+from app.services import audit, corrections, run_events, run_queue, signing, storage, token_budget, token_usage
 from app.services.engines import get_engine
 
 logger = structlog.get_logger(__name__)
@@ -286,6 +290,38 @@ async def _expire_quietly(bundle_id: str, run_id: str, fence: int) -> None:
         logger.warning("lease_expire_failed", bundle_id=bundle_id, run_id=run_id, error_type=type(exc).__name__)
 
 
+async def _live_run(bundle_id: str) -> str | None:
+    """The id of the run that is queued or running for the bundle, or None. THE definition of "busy", for ``start_run`` and ``idle_bundle``:
+    a dead run is reaped first (its lease expired, or its heartbeat stopped), so it never counts; then a QUEUED or RUNNING record, or a live
+    lease, does."""
+    await reap_stale(bundle_id)
+    latest_run = await firestore.get_run_state(bundle_id)
+    lease = await leases.read(bundle_id)
+    if latest_run.get("state") in ("RUNNING", "QUEUED") or (lease is not None and not lease.expired()):
+        return str(lease.run_id if lease is not None else latest_run.get("run_id"))
+    return None
+
+
+@asynccontextmanager
+async def idle_bundle(bundle_id: str, action: str) -> AsyncIterator[None]:
+    """Keep a bundle still while ``action`` changes what a run would read: yields only while NO run is live, and no run can start
+    until the block ends (it holds the same lock ``start_run`` takes before it reads the documents and claims the lease). Keep the block
+    short: ``start_run`` for this bundle waits for it (a removal's storage calls are what it holds that lock for).
+
+    409 ConflictError when a run is queued or running. The lock is this process's: the API is one instance by default; with
+    RUN_DISPATCH=cloudtasks and several instances a run started on another instance in the same instant is not excluded (the lease check
+    still sees any run that was claimed before it).
+    """
+    async with _lock(_START_LOCKS, bundle_id):
+        live = await _live_run(bundle_id)
+        if live is not None:
+            raise ConflictError(
+                f"An assessment run is in progress for bundle '{bundle_id}': wait for it to finish before you {action}.",
+                detail={"run_id": live},
+            )
+        yield
+
+
 async def start_run(bundle_id: str, mode: str = "full") -> str:
     """Claim the bundle and start the assessment pipeline (a background task here, or a Cloud Task for a worker).
 
@@ -303,13 +339,17 @@ async def start_run(bundle_id: str, mode: str = "full") -> str:
         if not documents:
             raise ValidationError("Cannot analyze an empty bundle. Upload trade documents first.")
 
+        # The daily model-token budget (services/token_budget.py): a run that asks the model starts only while today's budget lasts.
+        # A recompute asks nothing, so a spent budget never stops an agent's correction from taking effect.
+        if mode != "recompute":
+            await token_budget.check()
+
         # T2.4b: In-flight guard for active runs (after reaping any run whose lease expired or whose heartbeat stopped)
-        await reap_stale(bundle_id)
-        latest_run = await firestore.get_run_state(bundle_id)
-        if latest_run.get("state") == "RUNNING":  # (a live run holds the lease too; this also covers records from before leases)
+        live = await _live_run(bundle_id)  # (a live run holds the lease too; the record check also covers records from before leases)
+        if live is not None:
             raise ConflictError(
                 f"An assessment run is already in progress for bundle '{bundle_id}'.",
-                detail={"run_id": latest_run.get("run_id")},
+                detail={"run_id": live},
             )
 
         # MAX_CONCURRENT_RUNS: the runs of THIS process (RUN_DISPATCH=local). Refuse before anything is claimed. Reserve the
@@ -430,7 +470,7 @@ async def execute_queued(bundle_id: str, run_id: str) -> str:
 async def _recompute_base(
     bundle_id: str, documents: list[dict[str, Any]], prev_iteration: dict[str, Any] | None
 ) -> dict[str, Any]:
-    """The stored extraction a recompute reuses: {iteration, extractions, extraction_source, data_source}; 409 if there is none.
+    """The stored extraction a recompute reuses: {iteration, extractions, extraction_source, pages_iteration, page_plans}; 409 if none.
 
     It is only valid for the documents it was extracted from, so a bundle that gained a document since needs a reassessment.
     """
@@ -455,6 +495,7 @@ async def _recompute_base(
         "extractions": record["extractions"],
         "extraction_source": record.get("extraction_source") or _source_of(prev_iteration.get("data_source")),
         "pages_iteration": record.get("pages_iteration"),
+        "page_plans": record.get("page_plans"),
     }
 
 
@@ -480,9 +521,10 @@ async def _reuse_extraction(ctx: dict[str, Any]) -> None:
     ctx["processed_pages"] = []
     ctx["transform_meta"] = []
     ctx["pages_iteration"] = base.get("pages_iteration")  # a recompute shows the model nothing: its pages are the ones it copied
+    ctx["page_plans"] = base.get("page_plans") or {}  # nor does it read more: the pages that were left out still were
     await firestore.save_extractions(
         ctx["bundle_id"], ctx["iteration"], raw, extraction_source=source, derived_from=base["iteration"],
-        pages_iteration=base.get("pages_iteration"),
+        pages_iteration=base.get("pages_iteration"), page_plans=base.get("page_plans"),
     )
 
 
@@ -511,6 +553,7 @@ async def _preprocess_documents(ctx: dict[str, Any]) -> None:
     bundle_id = ctx["bundle_id"]
     all_processed_pages: list[dict[str, Any]] = []
     all_transform_meta: list[dict[str, Any]] = []
+    page_plans: dict[str, dict[str, Any]] = {}
 
     for doc in ctx.get("documents", []):
         doc_id = doc.get("document_id")
@@ -525,6 +568,8 @@ async def _preprocess_documents(ctx: dict[str, Any]) -> None:
             }
             sub_res = await dispatch("preprocess", sub_ctx)
             transform_meta = sub_res.get("transform_meta", [])
+            if sub_res.get("page_plan"):
+                page_plans[doc_id] = sub_res["page_plan"]
             await storage.upload_processed_artifacts(bundle_id, doc_id, sub_res.get("processed_artifacts", []))
             if settings.persist_processed_pages:
                 # what the model is about to be shown, kept: "what did it see" must be answerable afterwards
@@ -559,6 +604,35 @@ async def _preprocess_documents(ctx: dict[str, Any]) -> None:
 
     ctx["processed_pages"] = all_processed_pages
     ctx["transform_meta"] = all_transform_meta
+    ctx["page_plans"] = page_plans
+
+
+def _usage_summary(ctx: dict[str, Any]) -> dict[str, Any]:
+    """What this run's model calls cost so far, per document (services/token_usage.py), from the log the extraction stage fills."""
+    log = ctx.get("usage_log") or token_usage.UsageLog()
+    return log.summary(model=settings.gemini_live_model, documents=ctx.get("documents", []), mode=ctx.get("mode"))
+
+
+def _usage_still_unsaved(ctx: dict[str, Any]) -> dict[str, Any] | None:
+    """What a failing run should record: its usage so far, unless the run already recorded it when it completed (and then only a late step
+    failed: the COMPLETE record stays, and its tokens are not added to the day's count again)."""
+    return None if ctx.get("usage_saved") else _usage_summary(ctx)
+
+
+async def _save_usage(
+    bundle_id: str, run_id: str, *, iteration: int | None, mode: str | None, state: str, reason: str | None, usage: dict[str, Any] | None
+) -> None:
+    """Best effort: keep the run's usage record. A run that asked the model nothing and served nothing from the cache has none to keep.
+    Failing to write it must never fail, or hide the failure of, the run."""
+    totals = token_usage.totals_of(usage)
+    if totals is None:
+        return
+    await token_budget.add_spend(totals["total_tokens"])  # what the run spent counts toward today's budget, whatever became of the run
+    try:
+        await firestore.save_usage(bundle_id, run_id, {"iteration": iteration, "mode": mode, "state": state, "reason": reason,
+                                                       "token_usage": usage})
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("usage_record_write_failed", bundle_id=bundle_id, run_id=run_id, error_type=type(exc).__name__)
 
 
 async def _record_failure(
@@ -570,11 +644,13 @@ async def _record_failure(
     stage: str | None,
     exc: BaseException,
     reason: str | None = None,
+    usage: dict[str, Any] | None = None,
 ) -> None:
     """Best-effort ANALYSIS_FAILED audit event; an audit failure must never mask the original error.
 
     The payload is public: ``{run_id, mode, stage, error_type, code, message}`` (plus ``reason`` for a cancelled,
-    timed-out or interrupted run). ``message`` comes from ``public_error``, never from the raw exception text.
+    timed-out or interrupted run, and ``token_usage``: the totals of the model calls the run made before it failed).
+    ``message`` comes from ``public_error``, never from the raw exception text.
     """
     public = public_error(exc, run_id)
     payload: dict[str, Any] = {
@@ -587,6 +663,8 @@ async def _record_failure(
     }
     if reason is not None:
         payload["reason"] = reason
+    if (totals := token_usage.totals_of(usage)) is not None:
+        payload["token_usage"] = totals
     try:
         await audit.record({
             "bundle_id": bundle_id,
@@ -624,7 +702,7 @@ async def _still_owns(bundle_id: str, run_id: str, fence: int) -> bool:
 
 async def _fail_run(
     *, bundle_id: str, run_id: str, iteration: int, mode: str, stage: str | None, exc: BaseException,
-    reason: str | None = None, fence: int | None = None,
+    reason: str | None = None, fence: int | None = None, usage: dict[str, Any] | None = None,
 ) -> None:
     """Mark the run ERROR (what unblocks clients and the next /analyze) and audit the failure, bounded in time."""
 
@@ -649,8 +727,9 @@ async def _fail_run(
         except Exception as state_exc:
             logger.error("run_error_state_write_failed", bundle_id=bundle_id, run_id=run_id, error=str(state_exc))
         await _record_failure(
-            bundle_id=bundle_id, run_id=run_id, iteration=iteration, mode=mode, stage=stage, exc=exc, reason=reason
+            bundle_id=bundle_id, run_id=run_id, iteration=iteration, mode=mode, stage=stage, exc=exc, reason=reason, usage=usage
         )
+        await _save_usage(bundle_id, run_id, iteration=None, mode=mode, state="ERROR", reason=reason, usage=usage)
         await _release_quietly(bundle_id, run_id, fence)  # the bundle accepts a new run at once (a fence: only OUR lease)
 
     await _bounded(work(), _CLEANUP_TIMEOUT_SECONDS)
@@ -756,6 +835,7 @@ async def _run_stages(ctx: dict[str, Any], tracker: dict[str, Any]) -> None:
     await _ensure_claim(bundle_id, run_id, ctx.get("fence"))
     await _set_stage(bundle_id, run_id, "finalize", _STAGE_PROGRESS["finalize"])
     await _ensure_claim(bundle_id, run_id, ctx.get("fence"))  # the last look before the immutable iteration is written
+    ctx["token_usage"] = _usage_summary(ctx)  # stored with the iteration: what its model calls cost, per document
     iteration = await firestore.write_iteration(ctx)
     run_events.notify(bundle_id)
 
@@ -770,9 +850,13 @@ async def _run_stages(ctx: dict[str, Any], tracker: dict[str, Any]) -> None:
             "data_source": iteration.get("data_source"),
             "mode": ctx["mode"],
             "corrections": [c["correction_id"] for c in ctx.get("corrections", []) if c.get("status") == "applied"],
+            **({"token_usage": totals} if (totals := token_usage.totals_of(ctx["token_usage"])) is not None else {}),
         },
         "actor": "system",
     })
+    ctx["usage_saved"] = True  # from here a failure (a deadline while the head is signed) must not count this run's tokens a second time
+    await _save_usage(bundle_id, ctx["run_id"], iteration=ctx["iteration"], mode=ctx["mode"], state="COMPLETE", reason=None,
+                      usage=ctx["token_usage"])
     await signing.sign_head_quietly(bundle_id, iteration=ctx["iteration"])  # tamper-evidence beyond the hash chain; never fails a run
     tracker["final_status"] = ctx["final_status"]
 
@@ -821,7 +905,7 @@ async def _execute_pipeline(ctx: dict[str, Any]) -> None:
                 # shutting down: the lease expires and Cloud Tasks hands the run to the next worker. Failing it here would lose it.
                 logger.warning("run_abandoned_for_retry", bundle_id=bundle_id, run_id=run_id)
                 raise
-            await _fail_run(**failure, stage=tracker["stage"], exc=exc, reason="cancelled")
+            await _fail_run(**failure, stage=tracker["stage"], exc=exc, reason="cancelled", usage=_usage_still_unsaved(ctx))
             raise
 
         except Exception as exc:
@@ -830,7 +914,7 @@ async def _execute_pipeline(ctx: dict[str, Any]) -> None:
             logger.exception("pipeline_failed", bundle_id=bundle_id, run_id=run_id, error=str(exc))
             await _fail_run(
                 **failure, stage=tracker["stage"], exc=exc,
-                reason="timeout" if isinstance(exc, RunTimeoutError) else None,
+                reason="timeout" if isinstance(exc, RunTimeoutError) else None, usage=_usage_still_unsaved(ctx),
             )
     finally:
         await _stop_heartbeat(heartbeat)

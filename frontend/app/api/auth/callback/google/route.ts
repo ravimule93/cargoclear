@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -29,45 +30,155 @@ function getPublicOrigin(request: NextRequest): string {
   return "https://cargoclear-app.web.app";
 }
 
+function getHmacSecret(): string {
+  return (
+    process.env.GOOGLE_CLIENT_SECRET ||
+    process.env.AUTH_JWT_SECRET ||
+    "cargoclear-oauth-state-secret-2026"
+  );
+}
+
 export async function GET(request: NextRequest) {
   const origin = getPublicOrigin(request);
+  const isSecure = origin.startsWith("https") || process.env.NODE_ENV === "production";
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
   const state = searchParams.get("state");
   const error = searchParams.get("error");
 
+  // 1. If Google returned an error or user cancelled consent
   if (error || !code) {
+    console.warn("[oauth_callback] Authorization cancelled or returned error from Google:", error);
     const errorUrl = new URL("/auth/signin", origin);
     errorUrl.searchParams.set("error", error || "authorization_cancelled");
     return NextResponse.redirect(errorUrl);
   }
 
-  // Parse returnTo from state
+  // 2. Parse & Verify State parameter (cryptographic HMAC signature + expiry)
+  let stateNonce = "";
+  let oidcNonceFromState = "";
   let returnTo = "/";
+  let isHmacVerified = false;
+
+  if (!state) {
+    console.error("[oauth_callback] Missing state parameter");
+    const errUrl = new URL("/auth/signin", origin);
+    errUrl.searchParams.set("error", "invalid_state");
+    return NextResponse.redirect(errUrl);
+  }
+
   try {
-    if (state) {
+    if (state.includes(".")) {
+      // Signed format: <payloadB64>.<signature>
+      const [payloadB64, signature] = state.split(".", 2);
+      const expectedSig = crypto
+        .createHmac("sha256", getHmacSecret())
+        .update(payloadB64)
+        .digest("base64url");
+
+      if (signature === expectedSig) {
+        isHmacVerified = true;
+        const decoded = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf-8"));
+        stateNonce = decoded.nonce || "";
+        oidcNonceFromState = decoded.oidcNonce || "";
+        // Check 15-minute expiration
+        if (decoded.iat && Date.now() - decoded.iat > 15 * 60 * 1000) {
+          console.error("[oauth_callback] OAuth state expired:", { iat: decoded.iat, now: Date.now() });
+          const errUrl = new URL("/auth/signin", origin);
+          errUrl.searchParams.set("error", "state_expired");
+          return NextResponse.redirect(errUrl);
+        }
+        if (
+          decoded.returnTo &&
+          decoded.returnTo.startsWith("/") &&
+          !decoded.returnTo.startsWith("//") &&
+          !decoded.returnTo.includes(":")
+        ) {
+          returnTo = decoded.returnTo;
+        }
+      } else {
+        console.error("[oauth_callback] State HMAC signature mismatch");
+        const errUrl = new URL("/auth/signin", origin);
+        errUrl.searchParams.set("error", "csrf_validation_failed");
+        return NextResponse.redirect(errUrl);
+      }
+    } else {
+      // Legacy unsigned format (e.g. from tests or prior sessions)
       const decoded = JSON.parse(Buffer.from(state, "base64url").toString("utf-8"));
-      if (decoded.returnTo && decoded.returnTo.startsWith("/")) {
+      stateNonce = decoded.nonce || "";
+      oidcNonceFromState = decoded.oidcNonce || "";
+      if (
+        decoded.returnTo &&
+        decoded.returnTo.startsWith("/") &&
+        !decoded.returnTo.startsWith("//") &&
+        !decoded.returnTo.includes(":")
+      ) {
         returnTo = decoded.returnTo;
       }
     }
-  } catch {
-    // ignore state parse errors
+  } catch (err) {
+    console.error("[oauth_callback] Malformed OAuth state parameter:", err);
+    const errUrl = new URL("/auth/signin", origin);
+    errUrl.searchParams.set("error", "invalid_state");
+    return NextResponse.redirect(errUrl);
+  }
+
+  // 3. Browser Session & Cookie CSRF Check
+  // Check for either:
+  // a) 'cargoclear_oauth_state' cookie (direct Cloud Run / localhost)
+  // b) '__session' cookie containing "oauth:<stateNonce>:<oidcNonce>" (Firebase Hosting CDN rewrites)
+  const directStateCookie = request.cookies.get("cargoclear_oauth_state")?.value;
+  const directOidcCookie = request.cookies.get("cargoclear_oauth_nonce")?.value;
+  const sessionCookie = request.cookies.get("__session")?.value;
+
+  let cookieStateNonce: string | undefined = directStateCookie;
+  let cookieOidcNonce: string | undefined = directOidcCookie;
+
+  if (!cookieStateNonce && sessionCookie && sessionCookie.startsWith("oauth:")) {
+    const parts = sessionCookie.split(":");
+    cookieStateNonce = parts[1];
+    cookieOidcNonce = parts[2];
+  }
+
+  // If a cookie is present in the browser, verify it strictly matches the state nonce
+  if (cookieStateNonce && stateNonce && cookieStateNonce !== stateNonce) {
+    console.error("[oauth_callback] State CSRF mismatch: cookie !== param", {
+      cookie: cookieStateNonce,
+      param: stateNonce,
+    });
+    const errUrl = new URL("/auth/signin", origin);
+    errUrl.searchParams.set("error", "csrf_validation_failed");
+    return NextResponse.redirect(errUrl);
+  }
+
+  // If no cookie was found AND the state wasn't cryptographically signed, reject
+  if (!cookieStateNonce && !isHmacVerified) {
+    console.error("[oauth_callback] Missing CSRF cookie and unverified state parameter");
+    const errUrl = new URL("/auth/signin", origin);
+    errUrl.searchParams.set("error", "csrf_validation_failed");
+    return NextResponse.redirect(errUrl);
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const redirectUri = `${origin}/api/auth/callback/google`;
 
+  if (!clientId || !clientSecret) {
+    console.error("[oauth_callback] Missing Google OAuth credentials in environment");
+    const errUrl = new URL("/auth/signin", origin);
+    errUrl.searchParams.set("error", "missing_oauth_config");
+    return NextResponse.redirect(errUrl);
+  }
+
   try {
-    // Exchange authorization code for tokens with Google OAuth
+    // 4. Exchange authorization code for tokens directly with Google's OAuth 2.0 token endpoint
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         code,
-        client_id: clientId || "",
-        client_secret: clientSecret || "",
+        client_id: clientId,
+        client_secret: clientSecret,
         redirect_uri: redirectUri,
         grant_type: "authorization_code",
       }),
@@ -75,7 +186,7 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errBody = await tokenResponse.text();
-      console.error("[oauth_callback] Token exchange failed:", errBody);
+      console.error("[oauth_callback] Token exchange failed with Google:", errBody);
       const errUrl = new URL("/auth/signin", origin);
       errUrl.searchParams.set("error", "token_exchange_failed");
       return NextResponse.redirect(errUrl);
@@ -85,57 +196,90 @@ export async function GET(request: NextRequest) {
     const idToken = tokenData.id_token;
 
     if (!idToken) {
-      throw new Error("Missing id_token in Google OAuth response");
+      console.error("[oauth_callback] Missing id_token in Google token response");
+      const errUrl = new URL("/auth/signin", origin);
+      errUrl.searchParams.set("error", "missing_id_token");
+      return NextResponse.redirect(errUrl);
     }
 
-    // Decode user claims from the verified Google ID token
-    let email = "demo-cha@customs.com";
-    let name = "Customs Agent";
-    try {
-      const parts = idToken.split(".");
-      if (parts.length >= 2) {
-        const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8"));
-        if (payload.email) email = payload.email.toLowerCase();
-        if (payload.name) name = payload.name;
-      }
-    } catch (e) {
-      console.warn("[oauth_callback] Could not parse JWT claims:", e);
+    // 5. Cryptographically verify the Google ID token via Google's tokeninfo API
+    const verifyResponse = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
+    );
+    if (!verifyResponse.ok) {
+      const verifyErr = await verifyResponse.text();
+      console.error("[oauth_callback] Google ID token cryptographic verification failed:", verifyErr);
+      const errUrl = new URL("/auth/signin", origin);
+      errUrl.searchParams.set("error", "token_verification_failed");
+      return NextResponse.redirect(errUrl);
     }
 
-    const sessionToken = `mock-jwt-${email}-LICENSED_CHA`;
+    const verifiedClaims = await verifyResponse.json();
 
-    // Auto-provision user in backend and record audit event
-    try {
-      const apiBase = process.env.API_BASE || "https://cargoclear-api-448522365737.asia-south1.run.app";
-      await fetch(`${apiBase}/api/v1/auth/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          role: "LICENSED_CHA",
-          password: "GoogleSSO-User-Token-Verified",
-        }),
-      });
-    } catch {
-      // User may already be registered; safe to continue
+    // Verify audience
+    if (verifiedClaims.aud !== clientId) {
+      console.error("[oauth_callback] Audience mismatch:", { tokenAud: verifiedClaims.aud, expected: clientId });
+      const errUrl = new URL("/auth/signin", origin);
+      errUrl.searchParams.set("error", "token_audience_mismatch");
+      return NextResponse.redirect(errUrl);
     }
 
-    // Redirect user back to requested page with verified session token cookie
+    // Verify issuer
+    if (verifiedClaims.iss !== "https://accounts.google.com" && verifiedClaims.iss !== "accounts.google.com") {
+      console.error("[oauth_callback] Issuer mismatch:", verifiedClaims.iss);
+      const errUrl = new URL("/auth/signin", origin);
+      errUrl.searchParams.set("error", "token_issuer_mismatch");
+      return NextResponse.redirect(errUrl);
+    }
+
+    // Verify email_verified
+    if (verifiedClaims.email_verified !== "true" && verifiedClaims.email_verified !== true) {
+      console.error("[oauth_callback] Email not verified by Google:", verifiedClaims.email);
+      const errUrl = new URL("/auth/signin", origin);
+      errUrl.searchParams.set("error", "email_not_verified");
+      return NextResponse.redirect(errUrl);
+    }
+
+    // Verify nonce if present
+    const expectedNonce = cookieOidcNonce || oidcNonceFromState;
+    if (expectedNonce && verifiedClaims.nonce && verifiedClaims.nonce !== expectedNonce) {
+      console.error("[oauth_callback] Nonce mismatch:", { tokenNonce: verifiedClaims.nonce, expected: expectedNonce });
+      const errUrl = new URL("/auth/signin", origin);
+      errUrl.searchParams.set("error", "nonce_mismatch");
+      return NextResponse.redirect(errUrl);
+    }
+
+    const email = (verifiedClaims.email || "").toLowerCase();
+    const name = verifiedClaims.name || email.split("@")[0] || "Customs Agent";
+    const sub = verifiedClaims.sub;
+
+    if (!email || !sub) {
+      console.error("[oauth_callback] Incomplete Google identity claims:", verifiedClaims);
+      const errUrl = new URL("/auth/signin", origin);
+      errUrl.searchParams.set("error", "incomplete_identity");
+      return NextResponse.redirect(errUrl);
+    }
+
+    // 5. Establish Genuine Authenticated Session
+    // Store the verified Google ID token directly in session cookies.
+    // The server-side BFF proxy (/api/proxy) forwards this token in X-CargoClear-User-Token,
+    // where the backend cryptographically validates it against Google's public JWKS certificates.
     const targetUrl = new URL(returnTo, origin);
     const response = NextResponse.redirect(targetUrl);
 
-    // Set both __session (required by Firebase Hosting CDN) and cargoclear_session_token
-    response.cookies.set("__session", sessionToken, {
+    // Set __session (required by Firebase Hosting CDN rewrites and server-side BFF proxy)
+    response.cookies.set("__session", idToken, {
       path: "/",
-      httpOnly: false, // Accessible to client-side identity UI
+      httpOnly: false,
+      secure: isSecure,
       sameSite: "lax",
       maxAge: 86400 * 7, // 7 days
     });
 
-    response.cookies.set("cargoclear_session_token", sessionToken, {
+    response.cookies.set("cargoclear_session_token", idToken, {
       path: "/",
       httpOnly: false,
+      secure: isSecure,
       sameSite: "lax",
       maxAge: 86400 * 7,
     });
@@ -143,20 +287,48 @@ export async function GET(request: NextRequest) {
     response.cookies.set("cargoclear_google_id_token", idToken, {
       path: "/",
       httpOnly: false,
+      secure: isSecure,
       sameSite: "lax",
       maxAge: 86400 * 7,
     });
 
-    // Clear state cookie
+    // Client-readable user identity attributes for navigation headers and avatar
+    response.cookies.set("cargoclear_user_email", email, {
+      path: "/",
+      httpOnly: false,
+      secure: isSecure,
+      sameSite: "lax",
+      maxAge: 86400 * 7,
+    });
+
+    response.cookies.set("cargoclear_user_name", name, {
+      path: "/",
+      httpOnly: false,
+      secure: isSecure,
+      sameSite: "lax",
+      maxAge: 86400 * 7,
+    });
+
+    // 6. Clean up temporary OAuth verification cookies
     response.cookies.set("cargoclear_oauth_state", "", {
       path: "/",
       maxAge: 0,
+      expires: new Date(0),
       sameSite: "lax",
+      secure: isSecure,
+    });
+
+    response.cookies.set("cargoclear_oauth_nonce", "", {
+      path: "/",
+      maxAge: 0,
+      expires: new Date(0),
+      sameSite: "lax",
+      secure: isSecure,
     });
 
     return response;
   } catch (err: unknown) {
-    console.error("[oauth_callback] Error handling callback:", err);
+    console.error("[oauth_callback] Unexpected error during Google authentication:", err);
     const errUrl = new URL("/auth/signin", origin);
     errUrl.searchParams.set("error", "authentication_failed");
     return NextResponse.redirect(errUrl);
