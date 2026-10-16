@@ -11,7 +11,7 @@ export interface StreamRunState {
   message?: string | null;
 }
 
-export type StreamConnection = "connecting" | "open" | "reconnecting";
+export type StreamConnection = "connecting" | "open" | "reconnecting" | "polling" | "disconnected";
 
 export interface BundleStream {
   /** Latest iteration seen on the stream (full object: grounding, documents, data_source, ...). */
@@ -22,8 +22,6 @@ export interface BundleStream {
   error: string | null;
 }
 
-/** Delay before re-opening a stream the browser gave up on (readyState CLOSED). */
-const REOPEN_DELAY_MS = 3000;
 
 function parseJson(raw: unknown): unknown {
   if (typeof raw !== "string") return null;
@@ -76,6 +74,7 @@ export function useBundleStream(bundleId: string | null): BundleStream {
     let disposed = false;
     let source: EventSource | null = null;
     let reopenTimer: ReturnType<typeof setTimeout> | undefined;
+    let retryAttempt = 0;
 
     const connect = () => {
       if (disposed) return;
@@ -85,6 +84,7 @@ export function useBundleStream(bundleId: string | null): BundleStream {
       es.addEventListener("open", () => {
         if (disposed) return;
         setConnection("open");
+        retryAttempt = 0;
       });
 
       es.addEventListener("status", (event) => {
@@ -118,11 +118,19 @@ export function useBundleStream(bundleId: string | null): BundleStream {
           setError(data?.message ?? "Stream error");
           return;
         }
-        setConnection("reconnecting");
         if (es.readyState === EventSource.CLOSED) {
-          // The browser will not retry a closed stream by itself; do it ourselves.
           es.close();
-          reopenTimer = setTimeout(connect, REOPEN_DELAY_MS);
+          if (retryAttempt >= 3) {
+            // Degrade gracefully to polling if SSE disconnected/timed out
+            setConnection("polling");
+            return;
+          }
+          setConnection("reconnecting");
+          const delay = Math.min(10000, 2000 * Math.pow(1.5, retryAttempt));
+          retryAttempt++;
+          reopenTimer = setTimeout(connect, delay);
+        } else {
+          setConnection("reconnecting");
         }
       });
     };

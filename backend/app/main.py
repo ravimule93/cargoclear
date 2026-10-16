@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api import internal
-from app.api.v1 import assessment, bundles, corrections, demo, documents, meta, prefill, stream, usage
+from app.api.v1 import assessment, auth, bundles, corrections, demo, documents, meta, prefill, stream, usage
 from app.core.config import settings
 from app.gateway.ids import validate_path_ids
 from app.gateway.limits import BodySizeLimitMiddleware, RateLimitMiddleware
@@ -89,6 +89,7 @@ def create_app() -> FastAPI:
         usage.router,
         meta.router,
         demo.router,
+        auth.router,
     ):
         app.include_router(router, prefix="/api/v1")
     app.include_router(internal.router)  # Cloud Tasks only: outside /api/v1, which is all the UI's proxy forwards

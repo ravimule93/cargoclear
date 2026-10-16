@@ -42,7 +42,17 @@ const DROPPED_RESPONSE_HEADERS = [
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
 
 export function backendBase(env: NodeJS.ProcessEnv = process.env): string {
-  return env.API_BASE || "http://localhost:8080";
+  if (env.API_BASE) {
+    return env.API_BASE;
+  }
+  if (env.NODE_ENV === "production" && env.ALLOW_LOCALHOST !== "true") {
+    throw new Error(
+      "API_BASE environment variable is missing in production. " +
+      "Configure API_BASE to point to the backend service (e.g. Cloud Run API URL) " +
+      "or set ALLOW_LOCALHOST=true for local override."
+    );
+  }
+  return "http://localhost:8080";
 }
 
 export function authMode(env: NodeJS.ProcessEnv = process.env): "google-id-token" | "none" {

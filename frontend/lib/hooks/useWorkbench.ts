@@ -174,13 +174,17 @@ export function useWorkbench(bundleId: string): Workbench {
     const handled = handledIterationRef.current;
     if (handled !== null && streamIteration <= handled) return;
     handledIterationRef.current = streamIteration;
+    setPendingRunId(null);
     void refreshBundle();
     void refreshIterations();
   }, [loadState, streamIteration, refreshBundle, refreshIterations]);
 
   // A finished run supersedes any earlier run/upload error (e.g. a 409 raised while it was running).
   useEffect(() => {
-    if (streamIteration !== null) setActionError(null);
+    if (streamIteration !== null) {
+      setActionError(null);
+      setPendingRunId(null);
+    }
   }, [streamIteration]);
 
   const assessment = useMemo(() => {
@@ -289,12 +293,50 @@ export function useWorkbench(bundleId: string): Workbench {
 
   const run = stream.run;
   const streamRunning = run?.state === "RUNNING" || run?.state === "QUEUED";
+  const hasAssessment = assessment !== null && assessment.iteration >= currentIteration && currentIteration > 0;
   // After POST /analyze the SSE status can lag by up to a poll interval; stay "running" until the
-  // stream reports a terminal state for the run we started.
+  // stream reports a terminal state for the run we started or until an assessment is ready.
   const awaitingRun =
     pendingRunId !== null &&
+    !hasAssessment &&
     !(run?.run_id === pendingRunId && run.state !== "RUNNING" && run.state !== "QUEUED");
   const isRunning = streamRunning || awaitingRun || startingRun;
+
+  // Active fallback polling: while a run is pending or active, poll bundle status every 2s.
+  // This guarantees recovery even if SSE is buffered or disconnected by CDN proxies.
+  useEffect(() => {
+    if (!isRunning && pendingRunId === null) return;
+    let cancelled = false;
+
+    const pollTimer = setInterval(async () => {
+      try {
+        const b = await api.getBundle(bundleId);
+        if (cancelled) return;
+        if (b.current_iteration > 0 && b.status) {
+          setBundle(b);
+          const [ass, iters] = await Promise.all([
+            api.getAssessment(bundleId).catch(() => null),
+            api.listIterations(bundleId).catch(() => []),
+          ]);
+          if (cancelled) return;
+          if (ass) {
+            setFetchedAssessment(ass);
+            setPendingRunId(null);
+          }
+          if (iters && iters.length > 0) {
+            setFetchedIterations(iters);
+          }
+        }
+      } catch (err: unknown) {
+        console.warn("Run status poll error:", err);
+      }
+    }, 2000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(pollTimer);
+    };
+  }, [isRunning, pendingRunId, bundleId]);
 
   const runAnalysis = useCallback(async () => {
     setActionError(null);

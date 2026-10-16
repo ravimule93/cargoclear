@@ -91,6 +91,18 @@ async def event_stream(bundle_id: str) -> AsyncIterator[dict[str, str]]:
         if run_state:
             last_status_json = json.dumps(run_state, sort_keys=True)
             yield {"event": "status", "data": last_status_json}
+        else:
+            # Send initial status immediately so CDNs (Firebase Hosting) and proxies receive first byte in 0ms
+            initial_status = {
+                "kind": "status",
+                "bundle_id": bundle_id,
+                "state": "QUEUED",
+                "stage": None,
+                "progress": 0.0,
+                "message": "Connected to stream. Ready for analysis.",
+            }
+            last_status_json = json.dumps(initial_status, sort_keys=True)
+            yield {"event": "status", "data": last_status_json}
 
         # 2. Send current latest iteration immediately on connect if present
         latest = await firestore.latest_iteration(bundle_id)
@@ -144,4 +156,4 @@ async def stream(bundle_id: str = Path(..., description="Target bundle ID")) -> 
     if await firestore.get_bundle(bundle_id) is None:
         raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
 
-    return EventSourceResponse(event_stream(bundle_id), ping=15)
+    return EventSourceResponse(event_stream(bundle_id), ping=5)

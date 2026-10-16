@@ -3,6 +3,7 @@
 import { use } from "react";
 import Link from "next/link";
 import { TopBar } from "@/components/shell/TopBar";
+import { UserMenu } from "@/components/shell/UserMenu";
 import { DemoBanner } from "@/components/shell/DemoBanner";
 import { DocumentRail } from "@/components/rail/DocumentRail";
 import { DocumentViewer } from "@/components/viewer/DocumentViewer";
@@ -50,17 +51,33 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
   if (wb.loadState === "error" || wb.bundle === null) {
     return (
       <main className="cc-state">
-        <div role="alert" className="flex flex-col items-center gap-3">
+        <div role="alert" className="flex flex-col items-center gap-4 max-w-md text-center">
           <p className="text-sm font-medium text-[var(--cc-err)]">
             Could not load bundle: {wb.loadError ?? "unknown error"}
           </p>
-          <button
-            type="button"
-            onClick={wb.retry}
-            className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-90 cursor-pointer"
-          >
-            Retry
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={wb.retry}
+              className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-90 cursor-pointer"
+            >
+              Retry
+            </button>
+            <UserMenu
+              user={meta?.user ?? null}
+              onLogin={(email) => {
+                const token = `mock-jwt-${email}-LICENSED_CHA`;
+                document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
+                document.cookie = `cargoclear_session_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+                window.location.reload();
+              }}
+              onLogout={() => {
+                document.cookie = "__session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                window.location.href = "/api/auth/logout";
+              }}
+            />
+          </div>
         </div>
       </main>
     );
@@ -77,6 +94,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
       <TopBar
         bundle={bundle}
         status={assessment?.status ?? null}
+        user={meta?.user ?? null}
         isRunning={wb.isRunning}
         isUploading={wb.isUploading}
         uploadProgress={wb.uploadProgress}
@@ -85,7 +103,19 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         actionError={actionError}
         onRun={wb.runAnalysis}
         onFilesSelected={wb.uploadFiles}
+        onLogin={(email) => {
+          const token = `mock-jwt-${email}-LICENSED_CHA`;
+          document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
+          document.cookie = `cargoclear_session_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+          window.location.reload();
+        }}
+        onLogout={() => {
+          document.cookie = "__session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+          document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+          window.location.href = "/api/auth/logout";
+        }}
       />
+
 
       <aside className="cc-rail" aria-label="Documents in this bundle">
         <DocumentRail

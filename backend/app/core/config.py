@@ -167,6 +167,13 @@ class Settings(BaseSettings):
         alias="ALLOWED_ORIGINS",
     )
 
+    # Authentication & Multi-Tenancy (gateway/auth.py)
+    auth_enabled: bool = Field(default=False, alias="AUTH_ENABLED")
+    oauth_client_id: str | None = Field(default=None, alias="OAUTH_CLIENT_ID")
+    oauth_issuer: str = Field(default="https://accounts.google.com", alias="OAUTH_ISSUER")
+    allowed_email_domains: str = Field(default="*", alias="ALLOWED_EMAIL_DOMAINS")
+
+
     @model_validator(mode="after")
     def _pages_sent_fit_the_request(self) -> "Settings":
         if self.max_pages_sent > self.gemini_max_pages:
@@ -197,6 +204,11 @@ class Settings(BaseSettings):
     @property
     def allowed_origins_list(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+
+    @property
+    def allowed_domains_list(self) -> list[str]:
+        return [d.strip().lower() for d in self.allowed_email_domains.split(",") if d.strip()]
+
 
     @property
     def tariff_table_fqn(self) -> str:

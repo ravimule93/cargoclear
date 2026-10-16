@@ -30,7 +30,8 @@ gcloud services enable \
     eventarc.googleapis.com \
     cloudbuild.googleapis.com \
     cloudtasks.googleapis.com \
-    cloudkms.googleapis.com
+    cloudkms.googleapis.com \
+    secretmanager.googleapis.com
 
 echo "=== [3/7] Creating Service Account & IAM Bindings ==="
 gcloud iam service-accounts create "${SA_NAME}" \
@@ -46,13 +47,17 @@ gcloud iam service-accounts create "${UI_SA_NAME}" \
 # Bind least-privilege roles
 # datastore.user is required for the Firestore bundle/run/audit records that
 # the live API persists. bigquery.jobUser is required to START the tariff VECTOR_SEARCH query job
-# (dataViewer alone reads tables but cannot run queries). No runtime Cloud Run-to-Cloud Run call exists, so the
-# specification's conditional roles/run.invoker grant is intentionally omitted.
-for ROLE in roles/aiplatform.user roles/storage.objectAdmin roles/bigquery.dataViewer roles/bigquery.jobUser roles/datastore.user; do
+# (dataViewer alone reads tables but cannot run queries).
+for ROLE in roles/aiplatform.user roles/storage.objectAdmin roles/bigquery.dataViewer roles/bigquery.jobUser roles/datastore.user roles/secretmanager.secretAccessor; do
     gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
         --member="serviceAccount:${SA_EMAIL}" \
         --role="${ROLE}"
 done
+
+# Grant UI SA read access to Secret Manager (for OAuth client secrets)
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+    --member="serviceAccount:${UI_SA_EMAIL}" \
+    --role="roles/secretmanager.secretAccessor" || true
 
 echo "=== [4/7] Creating GCS Bucket in ${REGION} ==="
 gsutil mb -l "${REGION}" "gs://${BUCKET_NAME}" || true

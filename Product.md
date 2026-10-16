@@ -78,7 +78,20 @@ The endpoint returns `{ "document_id": "…", "transform_meta": [ … ] }` throu
 
 A straightened page records a reversible, aspect-aware `processed_to_source_affine` (composed with the rotation), and the viewer maps every evidence box through it onto the original page. Rotation and identity transforms are supported; absent/unknown metadata safely preserves the existing coordinates. The exact page image the model was shown is kept and linked from the viewer ("What the model saw").
 
+## Multi-document capacity and scaling
+
+CargoClear is not restricted to a fixed 4-document bundle. The bundle capacity is configurable via `MAX_DOCUMENTS_PER_BUNDLE` (defaulting to 20 documents). The engine dynamically checks entity alignment (`E-consignee`, `E-consignor`, `E-vessel`) across all uploaded documents, flags duplicate document types with non-blocking warnings (`D-DUP-<DOCTYPE>`), and dynamically checks all uploaded certificates (`H-003-<DOCTYPE>`).
+
+## Investigator UI features
+
+- **Document Attribution**: Every discrepancy or check highlights exactly which documents and values were compared, complete with page citations.
+- **Visual Gaps**: Missing evidence or omitted fields are tagged with explicit gap badges.
+- **Document Rail Badges**: Visual health indicators per document (`● Conflicts`, `▲ Gaps`, `✓ Clean`).
+- **Bounding Box Tooltips**: Canvas overlays feature interactive tooltips displaying field name and confidence.
+- **Drawer Controls**: Collapsible and expandable Reasoning Delta drawer.
+
 ## Demo and live modes
 
 - `APP_MODE=demo` uses local/in-memory fallbacks and exposes the Case C endpoints. No GCP credentials are required for the intended local journey.
 - `APP_MODE=live` disables demo endpoints and requires real GCS, Firestore, BigQuery, and Gemini access through a credential source or Cloud Run service identity. Live mode never falls back to synthetic extraction fixtures.
+

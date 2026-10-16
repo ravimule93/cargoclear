@@ -57,7 +57,16 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
 async function handleProxy(request: NextRequest, params: { path: string[] }) {
   const requestId = requestIdFor(request.headers);
-  const base = backendBase();
+  let base: string;
+  try {
+    base = backendBase();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Backend service configuration error.";
+    return NextResponse.json(proxyError("CONFIG_ERROR", message, requestId), {
+      status: 503,
+      headers: { "x-request-id": requestId },
+    });
+  }
 
   const target = buildTargetUrl(base, params.path ?? [], request.nextUrl.search);
   if (target === null) {
@@ -82,6 +91,16 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
       requestId,
     });
 
+    // Read active auth session from cookie if Authorization header is not explicitly present.
+    // Firebase Hosting CDN rewrites forward ONLY the '__session' cookie, so we check both.
+    const sessionToken =
+      request.cookies.get("__session")?.value ||
+      request.cookies.get("cargoclear_session_token")?.value;
+    if (sessionToken && !headers.has("authorization")) {
+      headers.set("authorization", `Bearer ${sessionToken}`);
+    }
+
+    // POST only: DELETE (document remove) must not stream a body through duplex fetch.
     const hasBody = request.method === "POST";
     const signals: AbortSignal[] = [request.signal];
     if (!isStreamPath(params.path)) signals.push(AbortSignal.timeout(REQUEST_DEADLINE_MS));
@@ -95,9 +114,18 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
       duplex: hasBody ? "half" : undefined,
     });
 
+
+    const isSse = response.headers.get("content-type")?.includes("text/event-stream");
+    const responseHeaders = downstreamResponseHeaders(response.headers);
+    if (isSse) {
+      responseHeaders.set("Cache-Control", "no-cache, no-transform");
+      responseHeaders.set("Connection", "keep-alive");
+      responseHeaders.set("X-Accel-Buffering", "no");
+    }
+
     return new NextResponse(response.body, {
       status: response.status,
-      headers: downstreamResponseHeaders(response.headers),
+      headers: responseHeaders,
     });
   } catch (err: unknown) {
     if (request.signal.aborted) {

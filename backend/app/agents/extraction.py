@@ -277,6 +277,13 @@ def _clamp_in_place(container: dict[str, Any], key: str, warning_path: str, warn
 def _clean_field_ref(node: dict[str, Any], path: str, page_count: int | None, warnings: list[dict[str, str]]) -> None:
     _clamp_in_place(node, "confidence", f"{path}.confidence", warnings)
 
+    raw_bbox = node.get("bbox")
+    if isinstance(raw_bbox, (list, tuple)):
+        if len(raw_bbox) == 4:
+            node["bbox"] = {"page": 1, "ymin": raw_bbox[0], "xmin": raw_bbox[1], "ymax": raw_bbox[2], "xmax": raw_bbox[3]}
+        elif len(raw_bbox) >= 5:
+            node["bbox"] = {"page": int(raw_bbox[0]), "ymin": raw_bbox[1], "xmin": raw_bbox[2], "ymax": raw_bbox[3], "xmax": raw_bbox[4]}
+
     problem = _bbox_problem(node.get("bbox"), page_count)
     if problem is not None:
         node["bbox"] = None

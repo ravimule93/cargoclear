@@ -92,6 +92,9 @@ test.describe("trustedProxyHops / authMode / backendBase", () => {
     expect(authMode({ API_AUTH_MODE: "anything-else" })).toBe("none");
     expect(backendBase({})).toBe("http://localhost:8080");
     expect(backendBase({ API_BASE: BASE })).toBe(BASE);
+    expect(() => backendBase({ NODE_ENV: "production" })).toThrow(/API_BASE environment variable is missing/);
+    expect(backendBase({ NODE_ENV: "production", ALLOW_LOCALHOST: "true" })).toBe("http://localhost:8080");
+    expect(backendBase({ NODE_ENV: "production", API_BASE: BASE })).toBe(BASE);
   });
 });
 

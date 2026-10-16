@@ -1,0 +1,40 @@
+{
+  "hosting": [
+    {
+      "site": "cargoclear-app",
+      "rewrites": [
+        {
+          "source": "**",
+          "run": {
+            "serviceId": "cargoclear-ui",
+            "region": "asia-south1"
+          }
+        }
+      ]
+    },
+    {
+      "site": "cargoclear-japac",
+      "rewrites": [
+        {
+          "source": "**",
+          "run": {
+            "serviceId": "cargoclear-ui",
+            "region": "asia-south1"
+          }
+        }
+      ]
+    },
+    {
+      "site": "cargoclear-hackathon",
+      "rewrites": [
+        {
+          "source": "**",
+          "run": {
+            "serviceId": "cargoclear-ui",
+            "region": "asia-south1"
+          }
+        }
+      ]
+    }
+  ]
+}

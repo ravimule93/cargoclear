@@ -72,7 +72,6 @@ Thumbs.db
 backend/data/
 *.tsbuildinfo
 frontend/next-env.d.ts
-frontend/public/pdf.worker.min.mjs
 
 # Secrets and credentials (broader net; .env.example stays tracked)
 .env.*
