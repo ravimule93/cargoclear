@@ -210,6 +210,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           activeDocumentId={wb.activeDocumentId}
           highlights={wb.highlights}
           iteration={assessment?.iteration ?? null}
+          isVisible={activeTab === "viewer"}
         />
       </main>
 

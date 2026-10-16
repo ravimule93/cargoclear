@@ -57,41 +57,63 @@ export function TopBar({
 
   return (
     <header className="cc-top">
-      {/* Brand & return breadcrumbs */}
+      {/* Brand & navigation breadcrumbs */}
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <Link
           href="/"
-          className="flex items-center gap-1.5 font-semibold hover:opacity-85 transition-opacity"
+          className="flex items-center gap-1.5 font-bold hover:opacity-85 transition-opacity"
           title="Return to Dashboard"
         >
-          <span aria-hidden="true" className="text-lg sm:text-xl">🛃</span>
-          <span className="tracking-tight text-sm sm:text-base font-bold text-[var(--cc-text)] hidden xs:inline">CargoClear</span>
+          <span aria-hidden="true" className="text-xl">🛃</span>
+          <span className="tracking-tight text-sm sm:text-base font-bold text-[var(--cc-text)]">
+            CargoClear<span className="text-[var(--cc-focus)] font-semibold">-JAPAC</span>
+          </span>
         </Link>
+        <span className="text-[var(--cc-text-muted)] opacity-30 select-none">/</span>
         <Link
           href="/"
-          className="text-[11px] text-[var(--cc-text-muted)] hover:text-[var(--cc-text)] px-1.5 sm:px-2 py-0.5 rounded border border-[var(--cc-border)] hover:bg-[var(--cc-surface-2)] transition-colors ml-0.5 sm:ml-1"
+          className="text-xs font-medium text-[var(--cc-text-muted)] hover:text-[var(--cc-text)] px-2 py-0.5 rounded border border-[var(--cc-border)] hover:bg-[var(--cc-surface-2)] transition-colors inline-flex items-center gap-1"
           title="View all bundles and assessments"
         >
           <span className="hidden sm:inline">← All Bundles</span>
           <span className="sm:hidden">← All</span>
         </Link>
+        <Link
+          href="/"
+          className="hidden md:inline-flex rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-2 py-0.5 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] transition-colors items-center gap-1"
+          title="Create a new bundle"
+        >
+          <span>+ New</span>
+        </Link>
       </div>
 
-      {/* Bundle context: ID, destination, status */}
-      <div className="text-xs text-[var(--cc-text-muted)] sm:border-l border-[var(--cc-border)] sm:pl-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
-        <span className="hidden sm:inline">Bundle</span>
-        <code className="font-mono font-medium text-[var(--cc-text)] text-[11px] sm:text-xs truncate max-w-[120px] sm:max-w-none">{bundle.id}</code>
+      {/* Bundle context: ID, destination, status, docs count */}
+      <div className="text-xs text-[var(--cc-text-muted)] flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1.5 bg-[var(--cc-surface-2)] px-2 py-0.5 rounded border border-[var(--cc-border)]">
+          <span className="text-[10px] uppercase font-bold text-[var(--cc-text-subtle)]">Bundle</span>
+          <code className="font-mono font-semibold text-[var(--cc-text)] text-xs truncate max-w-[130px] sm:max-w-none" title={bundle.id}>
+            {bundle.id}
+          </code>
+        </div>
         {bundle.reference && (
-          <span className="hidden md:inline text-[10px] sm:text-[11px] bg-[var(--cc-surface-2)] px-1.5 py-0.5 rounded border border-[var(--cc-border)] text-[var(--cc-text-subtle)] truncate max-w-[100px]">
-            {bundle.reference}
+          <span className="hidden md:inline-block text-[11px] bg-[var(--cc-surface-2)] px-2 py-0.5 rounded border border-[var(--cc-border)] text-[var(--cc-text-subtle)] font-medium truncate max-w-[120px]" title={bundle.reference}>
+            Ref: {bundle.reference}
           </span>
         )}
         <span
           data-testid="bundle-destination"
-          className="text-[10px] sm:text-[11px] bg-[var(--cc-surface-2)] px-1.5 py-0.5 rounded border border-[var(--cc-border)] text-[var(--cc-text-subtle)] font-medium"
+          className="text-[11px] bg-[var(--cc-surface-2)] px-2 py-0.5 rounded border border-[var(--cc-border)] text-[var(--cc-text)] font-medium inline-flex items-center gap-1"
         >
-          To {bundle.destination_country}
+          <span>{bundle.destination_country === "SG" ? "🇸🇬 Singapore (SG)" : bundle.destination_country === "IN" ? "🇮🇳 India (IN)" : `📍 ${bundle.destination_country}`}</span>
         </span>
+        {bundle.documents && bundle.documents.length > 0 && (
+          <span
+            className="hidden sm:inline-flex items-center gap-1 text-[11px] bg-[var(--cc-surface-2)] px-2 py-0.5 rounded border border-[var(--cc-border)] text-[var(--cc-text-subtle)] font-medium"
+            title={`${bundle.documents.length} document(s) in this bundle`}
+          >
+            <span>📁 {bundle.documents.length} {bundle.documents.length === 1 ? "doc" : "docs"}</span>
+          </span>
+        )}
         <StatusPill status={status} />
       </div>
 
@@ -127,13 +149,6 @@ export function TopBar({
         <div className="hidden sm:block">
           <DocumentTypeSelect value={declared.declaredType} onChange={declared.setDeclaredType} disabled={isUploading} className="max-w-[130px] sm:max-w-[150px]" />
         </div>
-        <Link
-          href="/"
-          className="hidden xl:flex rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-2.5 py-1 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] transition-colors cursor-pointer items-center gap-1"
-          title="Create a new bundle"
-        >
-          <span>+ New Bundle</span>
-        </Link>
         <button
           type="button"
           disabled={isUploading}

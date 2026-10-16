@@ -77,11 +77,12 @@
 
 .cc-viewer {
   grid-area: viewer;
-  overflow: auto;
-  scrollbar-gutter: stable;
+  overflow: hidden;
   background: var(--cc-surface-2);
   position: relative;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .cc-assess {
