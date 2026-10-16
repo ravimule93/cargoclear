@@ -157,4 +157,9 @@ if [ "${RUN_DISPATCH}" = "cloudtasks" ]; then
   echo "Runs are dispatched through the '${TASKS_QUEUE}' queue (up to ${MAX_INSTANCES} instances); API_URL=${API_URL}"
 fi
 
+# Automatically prune older container images from Artifact Registry, keeping only the active image
+echo "Pruning older cargoclear-api container images from Artifact Registry..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+bash "${SCRIPT_DIR}/prune_old_images.sh" cargoclear-api || echo "WARNING: Image pruning step encountered an issue; proceeding."
+
 echo "cargoclear-api deployment completed successfully."

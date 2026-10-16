@@ -52,5 +52,9 @@ GOOGLE_CLIENT_SECRET="google-client-secret:latest" \
 API_BASE="${API_URL}",\
 API_AUTH_MODE="google-id-token",\
 TRUSTED_PROXY_HOPS="1"
+# Automatically prune older container images from Artifact Registry, keeping only the active image
+echo "Pruning older cargoclear-ui container images from Artifact Registry..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+bash "${SCRIPT_DIR}/prune_old_images.sh" cargoclear-ui || echo "WARNING: Image pruning step encountered an issue; proceeding."
 
 echo "cargoclear-ui deployment completed successfully."
