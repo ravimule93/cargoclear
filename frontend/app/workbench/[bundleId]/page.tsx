@@ -20,6 +20,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
   const { bundleId } = use(params);
   const wb = useWorkbench(bundleId);
   const { meta } = useMeta();
+  const [activeTab, setActiveTab] = useState<"assess" | "viewer" | "rail" | "drawer">("assess");
 
   if (wb.loadState === "loading") {
     return (
@@ -86,8 +87,6 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
   const { bundle, assessment } = wb;
   const actionError = wb.actionError ?? wb.streamError;
   const auditRefreshKey = `${assessment?.iteration ?? 0}:${wb.run?.run_id ?? ""}:${wb.run?.state ?? ""}:${wb.documents.length}:${wb.corrections?.corrections.length ?? 0}`;
-
-  const [activeTab, setActiveTab] = useState<"assess" | "viewer" | "rail" | "drawer">("assess");
 
   const handleSelectDocument = (docId: string) => {
     wb.selectDocument(docId);
