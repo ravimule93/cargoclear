@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,14 @@ function getPublicOrigin(request: NextRequest): string {
   return "https://cargoclear-app.web.app";
 }
 
+function getHmacSecret(): string {
+  return (
+    process.env.GOOGLE_CLIENT_SECRET ||
+    process.env.AUTH_JWT_SECRET ||
+    "cargoclear-oauth-state-secret-2026"
+  );
+}
+
 export async function GET(request: NextRequest) {
   const origin = getPublicOrigin(request);
   const isSecure = origin.startsWith("https") || process.env.NODE_ENV === "production";
@@ -45,15 +54,59 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(errorUrl);
   }
 
-  // 2. Validate State and CSRF nonce against stored cookie
-  const stateCookie = request.cookies.get("cargoclear_oauth_state")?.value;
-  let returnTo = "/";
+  // 2. Parse & Verify State parameter (cryptographic HMAC signature + expiry)
   let stateNonce = "";
+  let oidcNonceFromState = "";
+  let returnTo = "/";
+  let isHmacVerified = false;
+
+  if (!state) {
+    console.error("[oauth_callback] Missing state parameter");
+    const errUrl = new URL("/auth/signin", origin);
+    errUrl.searchParams.set("error", "invalid_state");
+    return NextResponse.redirect(errUrl);
+  }
 
   try {
-    if (state) {
+    if (state.includes(".")) {
+      // Signed format: <payloadB64>.<signature>
+      const [payloadB64, signature] = state.split(".", 2);
+      const expectedSig = crypto
+        .createHmac("sha256", getHmacSecret())
+        .update(payloadB64)
+        .digest("base64url");
+
+      if (signature === expectedSig) {
+        isHmacVerified = true;
+        const decoded = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf-8"));
+        stateNonce = decoded.nonce || "";
+        oidcNonceFromState = decoded.oidcNonce || "";
+        // Check 15-minute expiration
+        if (decoded.iat && Date.now() - decoded.iat > 15 * 60 * 1000) {
+          console.error("[oauth_callback] OAuth state expired:", { iat: decoded.iat, now: Date.now() });
+          const errUrl = new URL("/auth/signin", origin);
+          errUrl.searchParams.set("error", "state_expired");
+          return NextResponse.redirect(errUrl);
+        }
+        if (
+          decoded.returnTo &&
+          decoded.returnTo.startsWith("/") &&
+          !decoded.returnTo.startsWith("//") &&
+          !decoded.returnTo.includes(":")
+        ) {
+          returnTo = decoded.returnTo;
+        }
+      } else {
+        console.error("[oauth_callback] State HMAC signature mismatch");
+        const errUrl = new URL("/auth/signin", origin);
+        errUrl.searchParams.set("error", "csrf_validation_failed");
+        return NextResponse.redirect(errUrl);
+      }
+    } else {
+      // Legacy unsigned format (e.g. from tests or prior sessions)
       const decoded = JSON.parse(Buffer.from(state, "base64url").toString("utf-8"));
       stateNonce = decoded.nonce || "";
+      oidcNonceFromState = decoded.oidcNonce || "";
       if (
         decoded.returnTo &&
         decoded.returnTo.startsWith("/") &&
@@ -70,8 +123,37 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(errUrl);
   }
 
-  if (!stateCookie || !stateNonce || stateCookie !== stateNonce) {
-    console.error("[oauth_callback] State CSRF validation failed: cookie vs param mismatch");
+  // 3. Browser Session & Cookie CSRF Check
+  // Check for either:
+  // a) 'cargoclear_oauth_state' cookie (direct Cloud Run / localhost)
+  // b) '__session' cookie containing "oauth:<stateNonce>:<oidcNonce>" (Firebase Hosting CDN rewrites)
+  const directStateCookie = request.cookies.get("cargoclear_oauth_state")?.value;
+  const directOidcCookie = request.cookies.get("cargoclear_oauth_nonce")?.value;
+  const sessionCookie = request.cookies.get("__session")?.value;
+
+  let cookieStateNonce: string | undefined = directStateCookie;
+  let cookieOidcNonce: string | undefined = directOidcCookie;
+
+  if (!cookieStateNonce && sessionCookie && sessionCookie.startsWith("oauth:")) {
+    const parts = sessionCookie.split(":");
+    cookieStateNonce = parts[1];
+    cookieOidcNonce = parts[2];
+  }
+
+  // If a cookie is present in the browser, verify it strictly matches the state nonce
+  if (cookieStateNonce && stateNonce && cookieStateNonce !== stateNonce) {
+    console.error("[oauth_callback] State CSRF mismatch: cookie !== param", {
+      cookie: cookieStateNonce,
+      param: stateNonce,
+    });
+    const errUrl = new URL("/auth/signin", origin);
+    errUrl.searchParams.set("error", "csrf_validation_failed");
+    return NextResponse.redirect(errUrl);
+  }
+
+  // If no cookie was found AND the state wasn't cryptographically signed, reject
+  if (!cookieStateNonce && !isHmacVerified) {
+    console.error("[oauth_callback] Missing CSRF cookie and unverified state parameter");
     const errUrl = new URL("/auth/signin", origin);
     errUrl.searchParams.set("error", "csrf_validation_failed");
     return NextResponse.redirect(errUrl);
@@ -89,7 +171,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // 3. Exchange authorization code for tokens directly with Google's OAuth 2.0 token endpoint
+    // 4. Exchange authorization code for tokens directly with Google's OAuth 2.0 token endpoint
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -120,7 +202,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(errUrl);
     }
 
-    // 4. Cryptographically verify the Google ID token via Google's tokeninfo API
+    // 5. Cryptographically verify the Google ID token via Google's tokeninfo API
     const verifyResponse = await fetch(
       `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
     );
@@ -159,7 +241,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify nonce if present
-    const expectedNonce = request.cookies.get("cargoclear_oauth_nonce")?.value;
+    const expectedNonce = cookieOidcNonce || oidcNonceFromState;
     if (expectedNonce && verifiedClaims.nonce && verifiedClaims.nonce !== expectedNonce) {
       console.error("[oauth_callback] Nonce mismatch:", { tokenNonce: verifiedClaims.nonce, expected: expectedNonce });
       const errUrl = new URL("/auth/signin", origin);

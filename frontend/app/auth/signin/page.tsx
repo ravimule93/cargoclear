@@ -25,6 +25,10 @@ function SignInContent() {
     switch (err) {
       case "csrf_validation_failed":
         return "Security verification failed (OAuth state mismatch). Please try signing in again.";
+      case "state_expired":
+        return "Sign-in session timed out. Please try signing in again.";
+      case "invalid_state":
+        return "Invalid sign-in request. Please try signing in again.";
       case "token_exchange_failed":
         return "Failed to exchange authorization code with Google. Please retry.";
       case "token_verification_failed":
