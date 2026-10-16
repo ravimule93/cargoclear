@@ -95,6 +95,10 @@ Say what the next file is with the type menu beside **+ Add Document** (or send 
 
 Only if you ask it to. By default the pipeline renders 200-DPI 1-bit pages and turns a sideways page by a quarter turn when the evidence is strong. `PREPROCESS_DESKEW=true` also straightens a page that is skewed by 0.3 to 10 degrees, using a reversible, aspect-aware transform: the viewer maps every evidence box back onto the original page. Whether straightening (or `PAGE_IMAGE_MODE=gray`) helps extraction on the real model has not been measured yet; both are off by default until it has (`docs/GCP_VERIFICATION.md`, section 11). Coordinate mapping safely falls back when metadata is absent or not usable.
 
+## Is there an Android app, and what does it do differently?
+
+Yes: `android/` (see `android/README.md`). It is a native client for the same API and the same journeys, not a reduced one: runs, uploads, the viewer with evidence boxes, corrections, the Reasoning Delta, the audit chain and the pre-fill pack. It differs where a phone differs: uploads go through a background queue and survive the app being closed; the pre-fill pack is shared through the share sheet instead of downloaded; a PDF can be shared into it from another app; the document viewer blocks screenshots by default; an optional notification says when a run ends. It decides nothing itself (it shows the status the API sent). It has been run on an emulator against the demo backend only, and nobody has yet used it with a screen reader, so do not describe it as accessible or as tested on phones (C-61 to C-67 in `docs/CLAIMS.md`).
+
 ## Why does the default deployment run a single API instance?
 
 With the default `RUN_DISPATCH=local` a run is a background task of the instance that accepted it, so `deploy_api.sh` configures `max-instances=1` and refuses more. `RUN_DISPATCH=cloudtasks` (Firestore lease + Cloud Tasks, `docs/SCALING_AND_INTEGRITY.md`) lifts that, but it has been exercised only on a fake Firestore, not on Google Cloud, so it is not the default. The SSE wake-up and the per-bundle upload count stay per instance by design.

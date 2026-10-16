@@ -1,0 +1,10 @@
+{
+  "code": "NOT_FOUND",
+  "detail": {
+    "bundle_id": "bnd-a525e5ae1f37",
+    "document_id": "doc-aef9640294a9299e"
+  },
+  "message": "Transform metadata for document 'doc-aef9640294a9299e' not found.",
+  "request_id": "9a690bb8-0478-4f31-a74b-ffa9ee686a38",
+  "status": 404
+}

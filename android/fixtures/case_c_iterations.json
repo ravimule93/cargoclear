@@ -1,0 +1,1821 @@
+[
+  {
+    "bundle_id": "bnd-e39886342936",
+    "checks": [
+      {
+        "assumptions": [],
+        "check_id": "W-001",
+        "delta": 0.0,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 800.0,
+              "xmin": 600.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "total_net_weight_kg",
+            "page": 1,
+            "raw_value": 14000,
+            "unit": "KGS"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 800.0,
+              "xmin": 600.0,
+              "ymax": 610.0,
+              "ymin": 580.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "tare_weight_kg",
+            "page": 1,
+            "raw_value": 280,
+            "unit": "KGS"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 800.0,
+              "xmin": 600.0,
+              "ymax": 430.0,
+              "ymin": 400.0
+            },
+            "doc": "doc-d6ead78ba3e172aa",
+            "field": "total_gross_weight_kg",
+            "page": 1,
+            "raw_value": 14280,
+            "unit": "KGS"
+          }
+        ],
+        "focus_document": "doc-776b2c1896990e63",
+        "message": "Net+tare (14280.0 kg) matches BoL gross (14280.0 kg) within tolerance (\u00b171.4 kg).",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": 71.4
+      },
+      {
+        "assumptions": [],
+        "check_id": "W-002",
+        "delta": 0.0,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 800.0,
+              "xmin": 600.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "total_net_weight_kg",
+            "page": 1,
+            "raw_value": 14000,
+            "unit": "KGS"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 800.0,
+              "xmin": 600.0,
+              "ymax": 610.0,
+              "ymin": 580.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "tare_weight_kg",
+            "page": 1,
+            "raw_value": 280,
+            "unit": "KGS"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 800.0,
+              "xmin": 600.0,
+              "ymax": 570.0,
+              "ymin": 540.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "total_gross_weight_kg",
+            "page": 1,
+            "raw_value": 14280,
+            "unit": "KGS"
+          }
+        ],
+        "focus_document": "doc-776b2c1896990e63",
+        "message": "Packing list net+tare (14280.0 kg) matches its declared gross (14280.0 kg) within tolerance (\u00b171.4 kg).",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": 71.4
+      },
+      {
+        "assumptions": [],
+        "check_id": "H-002",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 950.0,
+              "xmin": 850.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "hs_code_declared",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "73041900"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 950.0,
+              "xmin": 850.0,
+              "ymax": 680.0,
+              "ymin": 650.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "hs_code_declared",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "73041900"
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "Declared HS codes are consistent: ['73041900'].",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "E-consignee",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 500.0,
+              "xmin": 100.0,
+              "ymax": 220.0,
+              "ymin": 180.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "consignee",
+            "page": 1,
+            "raw_value": "SINGAPORE PRECISION PIPING PTE LTD"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 500.0,
+              "xmin": 100.0,
+              "ymax": 240.0,
+              "ymin": 200.0
+            },
+            "doc": "doc-d6ead78ba3e172aa",
+            "field": "consignee",
+            "page": 1,
+            "raw_value": "SINGAPORE PRECISION PIPING PTE LTD"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 500.0,
+              "xmin": 100.0,
+              "ymax": 220.0,
+              "ymin": 180.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "consignee",
+            "page": 1,
+            "raw_value": "SINGAPORE PRECISION PIPING PTE LTD"
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "consignee is consistent across 3 documents: ['SINGAPORE PRECISION PIPING PTE LTD']",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "E-consignor",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 480.0,
+              "xmin": 100.0,
+              "ymax": 280.0,
+              "ymin": 240.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "consignor",
+            "page": 1,
+            "raw_value": "BHARAT SEAMLESS PIPES LTD"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 480.0,
+              "xmin": 100.0,
+              "ymax": 300.0,
+              "ymin": 260.0
+            },
+            "doc": "doc-d6ead78ba3e172aa",
+            "field": "consignor",
+            "page": 1,
+            "raw_value": "BHARAT SEAMLESS PIPES LTD"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 480.0,
+              "xmin": 100.0,
+              "ymax": 280.0,
+              "ymin": 240.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "consignor",
+            "page": 1,
+            "raw_value": "BHARAT SEAMLESS PIPES LTD"
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "consignor is consistent across 3 documents: ['BHARAT SEAMLESS PIPES LTD']",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "I-001",
+        "delta": 0.0,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 600.0,
+              "xmin": 520.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "quantity",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "120 LENGTHS"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 400.0,
+              "xmin": 300.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "unit_price",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": 700
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 510.0,
+              "xmin": 410.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "total_value",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": 84000
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "Quantity x unit price equals the line total on 1 line(s) (within 1 or 0.1%).",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "I-002",
+        "delta": 0.0,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 800.0,
+              "xmin": 600.0,
+              "ymax": 330.0,
+              "ymin": 300.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "invoice_value",
+            "page": 1,
+            "raw_value": 84000
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 510.0,
+              "xmin": 410.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "total_value",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": 84000
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "Invoice total 84,000.00 equals the sum of its 1 line total(s) (delta 0.00, tolerance 84.00).",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": 84.0
+      },
+      {
+        "assumptions": [],
+        "check_id": "I-003",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 590.0,
+              "xmin": 550.0,
+              "ymax": 330.0,
+              "ymin": 300.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "invoice_currency",
+            "page": 1,
+            "raw_value": "USD"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 290.0,
+              "xmin": 260.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "currency",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "USD"
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "Every stated currency is USD (2 value(s) checked).",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "E-origin",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 400.0,
+              "xmin": 100.0,
+              "ymax": 640.0,
+              "ymin": 610.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "country_of_origin",
+            "page": 1,
+            "raw_value": "INDIA"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 400.0,
+              "xmin": 100.0,
+              "ymax": 810.0,
+              "ymin": 780.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "country_of_origin",
+            "page": 1,
+            "raw_value": "INDIA"
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "The country of origin is IN on all 2 documents that state it.",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "G-001",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 950.0,
+              "xmin": 850.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "hs_code_declared",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "73041900"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 950.0,
+              "xmin": 850.0,
+              "ymax": 680.0,
+              "ymin": 650.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "hs_code_declared",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "73041900"
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "HS classification confirmed: declared code(s) 73041900 match the demo-curated tariff at 8 digits (distance 0.08, ambiguity threshold 0.35).",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      }
+    ],
+    "confidence": {
+      "action": "AUTO_ACCEPT",
+      "low_confidence_fields": [],
+      "min_doc_type_confidence": 0.99,
+      "min_field_confidence": 0.96,
+      "min_overall_confidence": 0.96,
+      "reason": "Every field used by a check and every document classification is >= 0.95."
+    },
+    "corrections": [],
+    "created_at": "2026-10-14T12:02:48.435844+00:00",
+    "data_source": "fixture",
+    "documents": [
+      "doc-aef9640294a9299e",
+      "doc-d6ead78ba3e172aa",
+      "doc-776b2c1896990e63"
+    ],
+    "grounding": [
+      {
+        "ambiguous": false,
+        "better_match_hs": null,
+        "declared_hs": "73041900",
+        "distance": 0.08,
+        "document_id": "doc-aef9640294a9299e",
+        "governing_hs": "73041900",
+        "hs_match_level": "exact8",
+        "hs_mismatch": false,
+        "regulation_ref": "Demo rule set (prototype); not an official AHTN requirement",
+        "required_documents": [
+          "MILL_TEST_CERTIFICATE"
+        ],
+        "rule_set": "demo-curated",
+        "top_candidate_description": "Line pipe of a kind used for oil or gas pipelines, seamless, of iron or steel",
+        "top_candidate_hs": "73041900"
+      },
+      {
+        "ambiguous": false,
+        "better_match_hs": null,
+        "declared_hs": "73041900",
+        "distance": 0.08,
+        "document_id": "doc-776b2c1896990e63",
+        "governing_hs": "73041900",
+        "hs_match_level": "exact8",
+        "hs_mismatch": false,
+        "regulation_ref": "Demo rule set (prototype); not an official AHTN requirement",
+        "required_documents": [
+          "MILL_TEST_CERTIFICATE"
+        ],
+        "rule_set": "demo-curated",
+        "top_candidate_description": "Line pipe of a kind used for oil or gas pipelines, seamless, of iron or steel",
+        "top_candidate_hs": "73041900"
+      }
+    ],
+    "iteration": 1,
+    "missing_evidence": [
+      {
+        "document_label": "Mill Test Certificate",
+        "hs_code": "73041900",
+        "id": "ME-MILL_TEST_CERTIFICATE",
+        "reason": "Required by the demo-curated rule set for HS 73041900 (Line pipe of a kind used for oil or gas pipelines, seamless,); no Mill Test Certificate is in the bundle.",
+        "regulation_ref": "Demo rule set (prototype); not an official AHTN requirement",
+        "rule_set": "demo-curated"
+      }
+    ],
+    "reasoning_delta": {
+      "changes": [],
+      "kind": "INITIAL",
+      "narrative": "Initial baseline assessment completed. Evaluated 3 trade documents. Status: MISSING_EVIDENCE."
+    },
+    "reference_data": {
+      "anti_dumping.json": "96092da325b24f25",
+      "declaration_inputs.json": "d1aa6ce7f99d4352",
+      "duty_rates.json": "a09b9185e5ead2b1",
+      "exchange_rates.json": "ba26fd605a4bf5a9",
+      "hs_rules.json": "8b4426926f68f5f5",
+      "specs.json": "4071f90f7a998f69",
+      "valuation_defaults.json": "509dc8a079a98240"
+    },
+    "run_mode": "full",
+    "status": "MISSING_EVIDENCE",
+    "valuation": {
+      "assessable_value": 109200.0,
+      "assumptions": [
+        "exchange rate USD to SGD = 1.3 (ILLUSTRATIVE rate, not a customs notification)",
+        "duty rates: demo-curated data, not verified",
+        "exchange rates: demo-curated data, not verified"
+      ],
+      "destination_country": "SG",
+      "destination_currency": "SGD",
+      "disclaimer": "Indicative estimate for the authorised Custom House Agent. Not a customs determination and not an amount payable; rates and rules come from the reference data named above.",
+      "duties": [
+        {
+          "amount": 0.0,
+          "base": 109200.0,
+          "name": "Customs duty",
+          "note": null,
+          "rate_pct": 0.0
+        },
+        {
+          "amount": 9828.0,
+          "base": 109200.0,
+          "name": "GST",
+          "note": "on the CIF value + duty",
+          "rate_pct": 9.0
+        }
+      ],
+      "exchange_rate": 1.3,
+      "exchange_rate_note": "ILLUSTRATIVE rate, not a customs notification",
+      "freight": null,
+      "hs_code": "73041900",
+      "implied_hs_code": null,
+      "implied_total_duty": null,
+      "incoterm": "CIF",
+      "insurance": null,
+      "invoice_currency": "USD",
+      "reason": null,
+      "regulation_ref": "Customs duty structure of the destination as encoded for this prototype; the rates are placeholders for a reviewer to confirm against the current customs tariff, not an official source",
+      "rule_set": "demo-curated",
+      "status": "ESTIMATED",
+      "total_duty": 9828.0,
+      "transaction_value": 84000.0
+    }
+  },
+  {
+    "bundle_id": "bnd-e39886342936",
+    "checks": [
+      {
+        "assumptions": [],
+        "check_id": "W-001",
+        "delta": 0.0,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 800.0,
+              "xmin": 600.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "total_net_weight_kg",
+            "page": 1,
+            "raw_value": 14000,
+            "unit": "KGS"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 800.0,
+              "xmin": 600.0,
+              "ymax": 610.0,
+              "ymin": 580.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "tare_weight_kg",
+            "page": 1,
+            "raw_value": 280,
+            "unit": "KGS"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 800.0,
+              "xmin": 600.0,
+              "ymax": 430.0,
+              "ymin": 400.0
+            },
+            "doc": "doc-d6ead78ba3e172aa",
+            "field": "total_gross_weight_kg",
+            "page": 1,
+            "raw_value": 14280,
+            "unit": "KGS"
+          }
+        ],
+        "focus_document": "doc-776b2c1896990e63",
+        "message": "Net+tare (14280.0 kg) matches BoL gross (14280.0 kg) within tolerance (\u00b171.4 kg).",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": 71.4
+      },
+      {
+        "assumptions": [],
+        "check_id": "W-002",
+        "delta": 0.0,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 800.0,
+              "xmin": 600.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "total_net_weight_kg",
+            "page": 1,
+            "raw_value": 14000,
+            "unit": "KGS"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 800.0,
+              "xmin": 600.0,
+              "ymax": 610.0,
+              "ymin": 580.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "tare_weight_kg",
+            "page": 1,
+            "raw_value": 280,
+            "unit": "KGS"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 800.0,
+              "xmin": 600.0,
+              "ymax": 570.0,
+              "ymin": 540.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "total_gross_weight_kg",
+            "page": 1,
+            "raw_value": 14280,
+            "unit": "KGS"
+          }
+        ],
+        "focus_document": "doc-776b2c1896990e63",
+        "message": "Packing list net+tare (14280.0 kg) matches its declared gross (14280.0 kg) within tolerance (\u00b171.4 kg).",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": 71.4
+      },
+      {
+        "assumptions": [],
+        "check_id": "H-002",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 950.0,
+              "xmin": 850.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "hs_code_declared",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "73041900"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 950.0,
+              "xmin": 850.0,
+              "ymax": 680.0,
+              "ymin": 650.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "hs_code_declared",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "73041900"
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "Declared HS codes are consistent: ['73041900'].",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "H-003-MILL_TEST_CERTIFICATE",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 950.0,
+              "xmin": 850.0,
+              "ymax": 430.0,
+              "ymin": 400.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "hs_code_declared",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "73041900"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 300.0,
+              "xmin": 100.0,
+              "ymax": 330.0,
+              "ymin": 300.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "hs_code_header",
+            "page": 1,
+            "raw_value": "73041900"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 950.0,
+              "xmin": 850.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "hs_code_declared",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "73041900"
+          }
+        ],
+        "focus_document": "doc-84b80e4e1d7110e3",
+        "message": "Mill Test Certificate vs Invoice: Declared HS codes are consistent: ['73041900'].",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "E-consignee",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 500.0,
+              "xmin": 100.0,
+              "ymax": 220.0,
+              "ymin": 180.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "consignee",
+            "page": 1,
+            "raw_value": "SINGAPORE PRECISION PIPING PTE LTD"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 500.0,
+              "xmin": 100.0,
+              "ymax": 240.0,
+              "ymin": 200.0
+            },
+            "doc": "doc-d6ead78ba3e172aa",
+            "field": "consignee",
+            "page": 1,
+            "raw_value": "SINGAPORE PRECISION PIPING PTE LTD"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 500.0,
+              "xmin": 100.0,
+              "ymax": 220.0,
+              "ymin": 180.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "consignee",
+            "page": 1,
+            "raw_value": "SINGAPORE PRECISION PIPING PTE LTD"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 500.0,
+              "xmin": 100.0,
+              "ymax": 220.0,
+              "ymin": 180.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "consignee",
+            "page": 1,
+            "raw_value": "SINGAPORE PRECISION PIPING PTE LTD"
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "consignee is consistent across 4 documents: ['SINGAPORE PRECISION PIPING PTE LTD']",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "E-consignor",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 480.0,
+              "xmin": 100.0,
+              "ymax": 280.0,
+              "ymin": 240.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "consignor",
+            "page": 1,
+            "raw_value": "BHARAT SEAMLESS PIPES LTD"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 480.0,
+              "xmin": 100.0,
+              "ymax": 300.0,
+              "ymin": 260.0
+            },
+            "doc": "doc-d6ead78ba3e172aa",
+            "field": "consignor",
+            "page": 1,
+            "raw_value": "BHARAT SEAMLESS PIPES LTD"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 480.0,
+              "xmin": 100.0,
+              "ymax": 280.0,
+              "ymin": 240.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "consignor",
+            "page": 1,
+            "raw_value": "BHARAT SEAMLESS PIPES LTD"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 480.0,
+              "xmin": 100.0,
+              "ymax": 280.0,
+              "ymin": 240.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "consignor",
+            "page": 1,
+            "raw_value": "BHARAT SEAMLESS PIPES LTD"
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "consignor is consistent across 4 documents: ['BHARAT SEAMLESS PIPES LTD']",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "I-001",
+        "delta": 0.0,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 600.0,
+              "xmin": 520.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "quantity",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "120 LENGTHS"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 400.0,
+              "xmin": 300.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "unit_price",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": 700
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 510.0,
+              "xmin": 410.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "total_value",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": 84000
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "Quantity x unit price equals the line total on 1 line(s) (within 1 or 0.1%).",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "I-002",
+        "delta": 0.0,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 800.0,
+              "xmin": 600.0,
+              "ymax": 330.0,
+              "ymin": 300.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "invoice_value",
+            "page": 1,
+            "raw_value": 84000
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 510.0,
+              "xmin": 410.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "total_value",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": 84000
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "Invoice total 84,000.00 equals the sum of its 1 line total(s) (delta 0.00, tolerance 84.00).",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": 84.0
+      },
+      {
+        "assumptions": [],
+        "check_id": "I-003",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 590.0,
+              "xmin": 550.0,
+              "ymax": 330.0,
+              "ymin": 300.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "invoice_currency",
+            "page": 1,
+            "raw_value": "USD"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 290.0,
+              "xmin": 260.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "currency",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "USD"
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "Every stated currency is USD (2 value(s) checked).",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "M-001",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 950.0,
+              "xmin": 850.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "hs_code_declared",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "73041900"
+          }
+        ],
+        "focus_document": "doc-84b80e4e1d7110e3",
+        "message": "Certified chemistry reads as non-alloy under HS Note 1(f) (2 heat(s) checked); 7304.19.00 covers non-alloy and alloy steel alike, so the alloy status does not decide it. Elements the certificate does not report (taken as certified, not tested): Al, B, Co, Pb, W, Zr.",
+        "regulation_ref": "HS Chapter 72 Note 1 (definitions of non-alloy, stainless and other alloy steel) and the HS 6-digit subheading structure of heading 7304, as encoded for this prototype; not an official source",
+        "rule_set": "demo-curated",
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "M-002",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 197.0,
+              "xmin": 145.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0881: C 0.18%",
+            "row": 0,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 252.0,
+              "xmin": 200.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0881: Mn 0.95%",
+            "row": 1,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 472.0,
+              "xmin": 420.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0881: Cr 0.08%",
+            "row": 5,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 582.0,
+              "xmin": 530.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0881: Mo 0.02%",
+            "row": 7,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 692.0,
+              "xmin": 640.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0881: V 0.01%",
+            "row": 9,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 527.0,
+              "xmin": 475.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0881: Ni 0.05%",
+            "row": 6,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 637.0,
+              "xmin": 585.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0881: Cu 0.10%",
+            "row": 8,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 197.0,
+              "xmin": 145.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0882: C 0.19%",
+            "row": 15,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 252.0,
+              "xmin": 200.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0882: Mn 0.98%",
+            "row": 16,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 472.0,
+              "xmin": 420.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0882: Cr 0.09%",
+            "row": 20,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 582.0,
+              "xmin": 530.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0882: Mo 0.02%",
+            "row": 22,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 692.0,
+              "xmin": 640.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0882: V 0.01%",
+            "row": 24,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 527.0,
+              "xmin": 475.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0882: Ni 0.06%",
+            "row": 21,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 637.0,
+              "xmin": 585.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0882: Cu 0.11%",
+            "row": 23,
+            "unit": "%"
+          }
+        ],
+        "focus_document": "doc-84b80e4e1d7110e3",
+        "message": "Carbon equivalent within the limit: heat H-24-0881 CE(IIW) 0.37; heat H-24-0882 CE(IIW) 0.39 (limit of API 5L PSL2 Grade B (seamless) (limit 0.43)).",
+        "regulation_ref": "Chemical and mechanical limits of the named product standards as encoded for this prototype (heat analysis, seamless pipe); the standards are paywalled and the values are a reviewer's checklist, not an official source",
+        "rule_set": "demo-curated",
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "M-003",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 197.0,
+              "xmin": 145.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0881: C 0.18%",
+            "row": 0,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 252.0,
+              "xmin": 200.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0881: Mn 0.95%",
+            "row": 1,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 362.0,
+              "xmin": 310.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0881: P 0.015%",
+            "row": 3,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 417.0,
+              "xmin": 365.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0881: S 0.005%",
+            "row": 4,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 307.0,
+              "xmin": 255.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0881: Si 0.25%",
+            "row": 2,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 857.0,
+              "xmin": 805.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0881: YS 310 MPa",
+            "row": 12,
+            "unit": "MPa"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 912.0,
+              "xmin": 860.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0881: UTS 450 MPa",
+            "row": 13,
+            "unit": "MPa"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 197.0,
+              "xmin": 145.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0882: C 0.19%",
+            "row": 15,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 252.0,
+              "xmin": 200.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0882: Mn 0.98%",
+            "row": 16,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 362.0,
+              "xmin": 310.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0882: P 0.014%",
+            "row": 18,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 417.0,
+              "xmin": 365.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0882: S 0.004%",
+            "row": 19,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 307.0,
+              "xmin": 255.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0882: Si 0.26%",
+            "row": 17,
+            "unit": "%"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 857.0,
+              "xmin": 805.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0882: YS 318 MPa",
+            "row": 27,
+            "unit": "MPa"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 912.0,
+              "xmin": 860.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "test_results",
+            "page": 1,
+            "raw_value": "H-24-0882: UTS 455 MPa",
+            "row": 28,
+            "unit": "MPa"
+          }
+        ],
+        "focus_document": "doc-84b80e4e1d7110e3",
+        "message": "All 14 reported chemistry and strength values are within the limits of API 5L PSL2 Grade B (seamless).",
+        "regulation_ref": "Chemical and mechanical limits of the named product standards as encoded for this prototype (heat analysis, seamless pipe); the standards are paywalled and the values are a reviewer's checklist, not an official source",
+        "rule_set": "demo-curated",
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "M-004",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 280.0,
+              "xmin": 100.0,
+              "ymax": 750.0,
+              "ymin": 720.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "heat_numbers",
+            "page": 1,
+            "raw_value": "H-24-0881",
+            "row": 0
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 500.0,
+              "xmin": 320.0,
+              "ymax": 750.0,
+              "ymin": 720.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "heat_numbers",
+            "page": 1,
+            "raw_value": "H-24-0882",
+            "row": 1
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 140.0,
+              "xmin": 20.0,
+              "ymax": 550.0,
+              "ymin": 520.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "heat_numbers",
+            "page": 1,
+            "raw_value": "H-24-0881",
+            "row": 0
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 140.0,
+              "xmin": 20.0,
+              "ymax": 600.0,
+              "ymin": 570.0
+            },
+            "doc": "doc-84b80e4e1d7110e3",
+            "field": "heat_numbers",
+            "page": 1,
+            "raw_value": "H-24-0882",
+            "row": 1
+          }
+        ],
+        "focus_document": "doc-776b2c1896990e63",
+        "message": "Every heat on the packing list (H-24-0881, H-24-0882) is covered by a certificate.",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "E-origin",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 400.0,
+              "xmin": 100.0,
+              "ymax": 640.0,
+              "ymin": 610.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "country_of_origin",
+            "page": 1,
+            "raw_value": "INDIA"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 400.0,
+              "xmin": 100.0,
+              "ymax": 810.0,
+              "ymin": 780.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "country_of_origin",
+            "page": 1,
+            "raw_value": "INDIA"
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "The country of origin is IN on all 2 documents that state it.",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      },
+      {
+        "assumptions": [],
+        "check_id": "G-001",
+        "delta": null,
+        "evidence": [
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 950.0,
+              "xmin": 850.0,
+              "ymax": 530.0,
+              "ymin": 500.0
+            },
+            "doc": "doc-aef9640294a9299e",
+            "field": "hs_code_declared",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "73041900"
+          },
+          {
+            "bbox": {
+              "page": 1,
+              "xmax": 950.0,
+              "xmin": 850.0,
+              "ymax": 680.0,
+              "ymin": 650.0
+            },
+            "doc": "doc-776b2c1896990e63",
+            "field": "hs_code_declared",
+            "line_item": 0,
+            "page": 1,
+            "raw_value": "73041900"
+          }
+        ],
+        "focus_document": "doc-aef9640294a9299e",
+        "message": "HS classification confirmed: declared code(s) 73041900 match the demo-curated tariff at 8 digits (distance 0.08, ambiguity threshold 0.35).",
+        "regulation_ref": null,
+        "rule_set": null,
+        "severity": "PASS",
+        "tolerance": null
+      }
+    ],
+    "confidence": {
+      "action": "AUTO_ACCEPT",
+      "low_confidence_fields": [],
+      "min_doc_type_confidence": 0.99,
+      "min_field_confidence": 0.96,
+      "min_overall_confidence": 0.95,
+      "reason": "Every field used by a check and every document classification is >= 0.95."
+    },
+    "corrections": [],
+    "created_at": "2026-10-14T12:02:50.597567+00:00",
+    "data_source": "fixture",
+    "documents": [
+      "doc-aef9640294a9299e",
+      "doc-d6ead78ba3e172aa",
+      "doc-776b2c1896990e63",
+      "doc-84b80e4e1d7110e3"
+    ],
+    "grounding": [
+      {
+        "ambiguous": false,
+        "better_match_hs": null,
+        "declared_hs": "73041900",
+        "distance": 0.08,
+        "document_id": "doc-aef9640294a9299e",
+        "governing_hs": "73041900",
+        "hs_match_level": "exact8",
+        "hs_mismatch": false,
+        "regulation_ref": "Demo rule set (prototype); not an official AHTN requirement",
+        "required_documents": [
+          "MILL_TEST_CERTIFICATE"
+        ],
+        "rule_set": "demo-curated",
+        "top_candidate_description": "Line pipe of a kind used for oil or gas pipelines, seamless, of iron or steel",
+        "top_candidate_hs": "73041900"
+      },
+      {
+        "ambiguous": false,
+        "better_match_hs": null,
+        "declared_hs": "73041900",
+        "distance": 0.08,
+        "document_id": "doc-776b2c1896990e63",
+        "governing_hs": "73041900",
+        "hs_match_level": "exact8",
+        "hs_mismatch": false,
+        "regulation_ref": "Demo rule set (prototype); not an official AHTN requirement",
+        "required_documents": [
+          "MILL_TEST_CERTIFICATE"
+        ],
+        "rule_set": "demo-curated",
+        "top_candidate_description": "Line pipe of a kind used for oil or gas pipelines, seamless, of iron or steel",
+        "top_candidate_hs": "73041900"
+      }
+    ],
+    "iteration": 2,
+    "missing_evidence": [],
+    "reasoning_delta": {
+      "changes": [
+        {
+          "because": "Uploaded mtc_pipe_test_cert.pdf (MILL_TEST_CERTIFICATE) satisfies requirement 'Mill Test Certificate' for HS 73041900.",
+          "field": "missing_evidence.ME-MILL_TEST_CERTIFICATE",
+          "from": "REQUIRED",
+          "to": "SATISFIED"
+        },
+        {
+          "because": "Uploaded new document(s) mtc_pipe_test_cert.pdf (MILL_TEST_CERTIFICATE) resolved pending compliance issues.",
+          "field": "status",
+          "from": "MISSING_EVIDENCE",
+          "to": "COMPLIANT_FOR_SUBMISSION"
+        }
+      ],
+      "kind": "REASSESSMENT",
+      "narrative": "Evidence requirement ME-MILL_TEST_CERTIFICATE: Uploaded mtc_pipe_test_cert.pdf (MILL_TEST_CERTIFICATE) satisfies requirement 'Mill Test Certificate' for HS 73041900. Compliance status updated from Missing Evidence to Compliant For Submission (Uploaded new document(s) mtc_pipe_test_cert.pdf (MILL_TEST_CERTIFICATE) resolved pending compliance issues)."
+    },
+    "reference_data": {
+      "anti_dumping.json": "96092da325b24f25",
+      "declaration_inputs.json": "d1aa6ce7f99d4352",
+      "duty_rates.json": "a09b9185e5ead2b1",
+      "exchange_rates.json": "ba26fd605a4bf5a9",
+      "hs_rules.json": "8b4426926f68f5f5",
+      "specs.json": "4071f90f7a998f69",
+      "valuation_defaults.json": "509dc8a079a98240"
+    },
+    "run_mode": "reassess",
+    "status": "COMPLIANT_FOR_SUBMISSION",
+    "valuation": {
+      "assessable_value": 109200.0,
+      "assumptions": [
+        "exchange rate USD to SGD = 1.3 (ILLUSTRATIVE rate, not a customs notification)",
+        "duty rates: demo-curated data, not verified",
+        "exchange rates: demo-curated data, not verified"
+      ],
+      "destination_country": "SG",
+      "destination_currency": "SGD",
+      "disclaimer": "Indicative estimate for the authorised Custom House Agent. Not a customs determination and not an amount payable; rates and rules come from the reference data named above.",
+      "duties": [
+        {
+          "amount": 0.0,
+          "base": 109200.0,
+          "name": "Customs duty",
+          "note": null,
+          "rate_pct": 0.0
+        },
+        {
+          "amount": 9828.0,
+          "base": 109200.0,
+          "name": "GST",
+          "note": "on the CIF value + duty",
+          "rate_pct": 9.0
+        }
+      ],
+      "exchange_rate": 1.3,
+      "exchange_rate_note": "ILLUSTRATIVE rate, not a customs notification",
+      "freight": null,
+      "hs_code": "73041900",
+      "implied_hs_code": null,
+      "implied_total_duty": null,
+      "incoterm": "CIF",
+      "insurance": null,
+      "invoice_currency": "USD",
+      "reason": null,
+      "regulation_ref": "Customs duty structure of the destination as encoded for this prototype; the rates are placeholders for a reviewer to confirm against the current customs tariff, not an official source",
+      "rule_set": "demo-curated",
+      "status": "ESTIMATED",
+      "total_duty": 9828.0,
+      "transaction_value": 84000.0
+    }
+  }
+]

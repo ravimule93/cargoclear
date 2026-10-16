@@ -13,6 +13,7 @@ CargoClear is a pre-submission, evidence-oriented customs assessment workbench f
 - **Scales past one instance, safely.** Who may analyse a bundle is a Firestore lease with a fence (two instances cannot both run it; a paused executor cannot write); with `RUN_DISPATCH=cloudtasks` each run is a Cloud Task executed inside a worker request, so scale-in cannot kill it and a dead executor's run is taken over. Rate limits can be shared by all instances. Default unchanged: one always-on instance. Design: `docs/SCALING_AND_INTEGRITY.md`.
 - **A signed audit trail.** After each completed assessment the head of the hash-chained audit trail is signed (Cloud KMS; a labelled throwaway key in demo mode). With a KMS key, a history rewritten consistently still fails verification (the demo key proves less and is refused where KMS is configured). Tamper-evident under the operator's key; not legal non-repudiation.
 - **Better page preparation.** A sideways scan is turned (even a crooked one), an optional reversible deskew straightens skewed pages while evidence boxes still land on the original page, the model's input can be 1-bit or grayscale (an A/B is tooled), and the page image the model was shown is kept and linked ("What the model saw").
+- **A native Android client** (`android/`, Kotlin and Jetpack Compose) with the same journeys: run and reassess, upload through a background queue, a PDF viewer with the evidence boxes carried onto the original page, corrections and Recompute, the Reasoning Delta, the audit chain, the pre-fill pack; and, as optional extras, scanning a paper document, sharing a PDF into it, a notification when a run ends, and a two-pane layout on tablets. It was run on an emulator against the local demo backend only; the hosted flavor waits for the UI to be deployed. Build and run: [`android/README.md`](android/README.md); what is and is not claimed about it: section 8 of [`docs/CLAIMS.md`](docs/CLAIMS.md).
 - Demo extraction is deliberately synthetic and filename-keyed. It does **not** read the sample PDFs. Live mode uses GCS, Firestore, BigQuery, and Gemini instead.
 
 ## What may be claimed, and the numbers
@@ -87,6 +88,8 @@ npm run lint
 npm run test:unit   # pure unit specs (the server-side proxy); no browser or servers
 npm run build
 ```
+
+The Android client has its own checks (JVM tests, tests on an emulator or device, a release build); the commands are in [`android/README.md`](android/README.md), and the part that keeps its copies of the API shapes honest runs with the backend suite (`backend/tests/unit/test_android_contract.py`).
 
 `npm test` runs the current Playwright Case C and accessibility journeys. It starts local backend and frontend servers. In restricted sandboxes that prohibit local port binding or lack a browser runtime, report that limitation rather than treating it as a product failure.
 

@@ -37,6 +37,10 @@ def outward_files() -> list[Path]:
     files = [REPO_ROOT / name for name in OUTWARD]
     for pattern in ("frontend/app/**/*.tsx", "frontend/components/**/*.tsx"):
         files += sorted(REPO_ROOT.glob(pattern))
+    # the Android app's own words: its strings, the wording in its Kotlin (messages, notices, labels) and its README
+    files += [REPO_ROOT / "android" / "README.md", REPO_ROOT / "android" / "app" / "src" / "main" / "res" / "values" / "strings.xml"]
+    for pattern in ("android/app/src/main/**/*.kt", "android/core/*/src/main/**/*.kt"):
+        files += sorted(REPO_ROOT.glob(pattern))
     return files
 
 
@@ -241,6 +245,13 @@ def test_the_readme_keeps_saying_nothing_was_verified_live_until_a_live_run_is_r
         assert "Nothing in this repository has been verified against a real project" in readme, (
             "no live measurement is recorded, so the README may not stop saying that nothing was verified on Google Cloud"
         )
+
+
+def test_the_android_files_are_among_the_ones_that_are_scanned() -> None:
+    scanned = {str(p.relative_to(REPO_ROOT)) for p in outward_files()}
+    assert "android/README.md" in scanned
+    assert "android/app/src/main/res/values/strings.xml" in scanned
+    assert any(name.endswith("Audit.kt") for name in scanned) and any(name.endswith("ValuationCard.kt") for name in scanned)
 
 
 def test_the_documents_that_quote_numbers_point_at_the_page_that_owns_them() -> None:

@@ -1,0 +1,9 @@
+{
+  "code": "CONFLICT",
+  "detail": {
+    "bundle_id": "bnd-4d07f1f17a0e"
+  },
+  "message": "Run the analysis before correcting: there is nothing extracted to correct yet.",
+  "request_id": "5465aa2b-8f79-452b-97b9-6953a35ba737",
+  "status": 409
+}

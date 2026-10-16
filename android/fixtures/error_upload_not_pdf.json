@@ -1,0 +1,10 @@
+{
+  "code": "VALIDATION_ERROR",
+  "detail": {
+    "content_type": "text/plain",
+    "filename": "notes.txt"
+  },
+  "message": "Only PDF files are accepted. Received: text/plain",
+  "request_id": "08b9a56e-0058-49d3-a37c-3240046f1755",
+  "status": 422
+}

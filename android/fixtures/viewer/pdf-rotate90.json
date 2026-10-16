@@ -1,0 +1,62 @@
+{
+  "case": "pdf-rotate90",
+  "description": "an upright page stored in a PDF whose page says /Rotate 90, so every viewer shows it sideways",
+  "displayed_pixels_at_72dpi": [
+    842,
+    596
+  ],
+  "original_marker": {
+    "xmax": 950.119,
+    "xmin": 928.741,
+    "ymax": 481.544,
+    "ymin": 80.537
+  },
+  "processed_marker": {
+    "xmax": 480.653,
+    "xmin": 79.202,
+    "ymax": 70.115,
+    "ymin": 50.021
+  },
+  "transform_metadata": {
+    "document_id": "doc-1",
+    "transform_meta": [
+      {
+        "artifact_id": null,
+        "artifact_index": 0,
+        "artifact_page": 1,
+        "crop": null,
+        "deskew_applied": false,
+        "deskew_deg": 0.0,
+        "deskew_detected_deg": 0.0,
+        "deskew_skipped": "below_threshold",
+        "document_id": "doc-1",
+        "height": 2339,
+        "image_mode": "bw",
+        "page": 1,
+        "processed_page": 1,
+        "processed_to_source_affine": [
+          [
+            0,
+            -1,
+            1000
+          ],
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1
+          ]
+        ],
+        "rotation": 270,
+        "rotation_applied": true,
+        "source_page": 1,
+        "split_offset": 0,
+        "width": 1654
+      }
+    ]
+  }
+}

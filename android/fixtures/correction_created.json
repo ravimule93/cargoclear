@@ -1,0 +1,19 @@
+{
+  "actor": "user",
+  "anchor": "TH77121|Cr",
+  "correction_id": "cor-9",
+  "created_at": "2026-10-14T18:04:36.710096+00:00",
+  "document_id": "doc-f74c9c3e83f32ccc",
+  "iteration": 1,
+  "kind": "correction",
+  "original_unit": "%",
+  "original_value": "0.35",
+  "path": "test_results[20]",
+  "previous_unit": "%",
+  "previous_value": "0.35",
+  "reason": "the certificate prints 0.28",
+  "reverts": null,
+  "seq": 9,
+  "unit": "%",
+  "value": "0.28"
+}

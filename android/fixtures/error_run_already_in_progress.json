@@ -1,0 +1,9 @@
+{
+  "code": "CONFLICT",
+  "detail": {
+    "run_id": "run-e9ca952dba90"
+  },
+  "message": "An assessment run is already in progress for bundle 'bnd-0e64b4bf3b32'.",
+  "request_id": "db56f478-9cc9-40a0-807a-f4494411c025",
+  "status": 409
+}

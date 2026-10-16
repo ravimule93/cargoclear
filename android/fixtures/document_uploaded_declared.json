@@ -1,0 +1,12 @@
+{
+  "bundle_id": "bnd-8877b2ac68b5",
+  "bytes": 10902,
+  "declared_type": "MILL_TEST_CERTIFICATE",
+  "doc_type": "UNKNOWN",
+  "document_id": "doc-84b80e4e1d7110e3",
+  "filename": "mtc_pipe_test_cert.pdf",
+  "gcs_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-8877b2ac68b5/raw/doc-84b80e4e1d7110e3/original.pdf",
+  "sha256": "84b80e4e1d7110e358ef9174263563be0c703e535f71f6cfb6d665b5b8d92f83",
+  "transform_meta_uri": null,
+  "uploaded_at": "2026-10-16T03:56:49.495573+00:00"
+}

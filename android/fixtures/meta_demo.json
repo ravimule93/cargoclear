@@ -1,0 +1,5 @@
+{
+  "app_mode": "demo",
+  "data_source_policy": "fixture_with_offline_fallbacks",
+  "pipeline_engine": "native"
+}

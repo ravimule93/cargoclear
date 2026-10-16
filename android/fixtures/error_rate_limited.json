@@ -1,0 +1,9 @@
+{
+  "code": "RATE_LIMITED",
+  "detail": {
+    "retry_after_seconds": 31
+  },
+  "message": "Too many requests. Try again in 31 seconds.",
+  "request_id": "6fe230b8-1e2f-4fac-b666-1fe47ab1be0f",
+  "status": 429
+}

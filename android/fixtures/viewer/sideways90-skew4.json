@@ -1,0 +1,62 @@
+{
+  "case": "sideways90-skew4",
+  "description": "fed sideways (90 clockwise) and tilted 4 degrees",
+  "displayed_pixels_at_72dpi": [
+    842,
+    596
+  ],
+  "original_marker": {
+    "xmax": 970.309,
+    "xmin": 929.929,
+    "ymax": 525.168,
+    "ymin": 124.161
+  },
+  "processed_marker": {
+    "xmax": 481.258,
+    "xmin": 79.202,
+    "ymax": 70.543,
+    "ymin": 50.021
+  },
+  "transform_metadata": {
+    "document_id": "doc-1",
+    "transform_meta": [
+      {
+        "artifact_id": null,
+        "artifact_index": 0,
+        "artifact_page": 1,
+        "crop": null,
+        "deskew_applied": true,
+        "deskew_deg": 4.0,
+        "deskew_detected_deg": 4.0,
+        "deskew_skipped": null,
+        "document_id": "doc-1",
+        "height": 2339,
+        "image_mode": "bw",
+        "page": 1,
+        "processed_page": 1,
+        "processed_to_source_affine": [
+          [
+            -0.049327579,
+            -0.99756405,
+            1023.445814692
+          ],
+          [
+            0.99756405,
+            -0.098645944,
+            50.540947085
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "rotation": 270,
+        "rotation_applied": true,
+        "source_page": 1,
+        "split_offset": 0,
+        "width": 1654
+      }
+    ]
+  }
+}

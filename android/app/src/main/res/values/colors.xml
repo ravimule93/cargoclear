@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window background before Compose draws: the cc-bg token of frontend/app/globals.css. -->
+    <color name="cc_bg">#F4F6F9</color>
+    <color name="ic_launcher_background">#1A56DB</color>
+</resources>

@@ -1,0 +1,9 @@
+{
+  "code": "NOT_FOUND",
+  "detail": {
+    "bundle_id": "bnd-2b3f167f2781"
+  },
+  "message": "No assessment iteration found for bundle 'bnd-2b3f167f2781'. Run /analyze first.",
+  "request_id": "49008343-e358-481c-a7db-2b1e332bcce7",
+  "status": 404
+}

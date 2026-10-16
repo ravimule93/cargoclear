@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- app_name comes from the build flavor (build.gradle.kts). Copy that states what the product is or is not is taken from the web UI
+         (frontend/app/page.tsx) unchanged: docs/CLAIMS.md and its test govern it. -->
+    <string name="home_title">CargoClear-JAPAC</string>
+    <string name="home_tagline">Pre-submission customs document assessment. Create a bundle, add trade documents and run the analysis. Decision support only: the authorised CHA decides.</string>
+
+    <string name="mode_connecting">Connecting...</string>
+    <string name="mode_offline">Offline</string>
+    <string name="mode_not_configured">Not configured</string>
+    <string name="mode_live">Live GCP</string>
+    <string name="mode_demo">Demo Mode</string>
+    <string name="mode_connecting_description">Backend mode: connecting</string>
+    <string name="mode_offline_description">Backend mode: offline. %1$s</string>
+    <string name="mode_not_configured_description">Backend mode: this build has no backend address</string>
+    <string name="mode_live_description">Backend mode: live. Documents are read by the live extraction service.</string>
+    <string name="mode_demo_description">Backend mode: demo. Synthetic fixtures are evaluated without contacting Google Cloud.</string>
+
+    <string name="home_backend_error">Could not reach the backend: %1$s</string>
+    <string name="home_not_configured">%1$s Set cargoclear.localApiBase or cargoclear.hostedApiBase for this build.</string>
+    <string name="action_retry">Retry</string>
+
+    <string name="demo_note_case_c">Demo mode: the Case C demo loads an invoice, bill of lading and packing list for a seamless-pipe shipment (HS 7304) from India to Singapore; add the mill test certificate to reach a compliant verdict. Extraction uses synthetic fixtures keyed on filename, not a real document reading.</string>
+    <string name="demo_note_case_d">Case D is an import into India: all four documents are loaded and the certificate\'s chemistry contradicts the declared HS code. It also shows an anti-dumping warning and an indicative duty estimate. Every name, number and rate in the demo is invented or illustrative.</string>
+
+    <string name="home_destination_label">Destination</string>
+    <string name="home_new_empty">New empty bundle</string>
+    <string name="home_new_empty_busy">Creating bundle...</string>
+    <string name="home_demo_c">Start Case C demo</string>
+    <string name="home_demo_d">Start Case D demo (India import)</string>
+    <string name="home_demo_busy">Starting demo...</string>
+    <string name="home_open_title">Open a bundle</string>
+    <string name="home_open_label">Bundle id or link</string>
+    <string name="home_open_action">Open</string>
+    <string name="home_open_invalid">That is not a bundle id or a CargoClear bundle link.</string>
+    <string name="home_recents_title">Recent bundles</string>
+    <string name="home_recents_empty">Bundles you create or open on this phone are listed here. The server keeps no list of bundles, so this list is the way back to one.</string>
+    <string name="home_recent_opened">Opened %1$s</string>
+    <string name="home_recent_to">To %1$s</string>
+    <plurals name="home_recent_documents">
+        <item quantity="one">%1$d document</item>
+        <item quantity="other">%1$d documents</item>
+    </plurals>
+    <string name="home_forget">Remove</string>
+    <string name="home_forget_description">Remove %1$s from this list</string>
+    <string name="home_forget_title">Remove from this phone?</string>
+    <string name="home_forget_body">This removes the bundle from the list on this phone only. It stays on the server, but without its id you will not be able to open it again from here.</string>
+    <string name="home_forget_confirm">Remove</string>
+    <string name="time_just_now">just now</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_back">Back</string>
+
+    <string name="bundle_loading">Loading bundle...</string>
+    <string name="bundle_not_found_title">Bundle not found</string>
+    <string name="bundle_not_found_body">No bundle with id %1$s exists.</string>
+    <string name="bundle_back_to_start">Back to start</string>
+    <string name="bundle_load_failed">Could not load bundle: %1$s</string>
+    <string name="bundle_saved_copy">Showing the copy saved on this phone (%1$s). The server could not be reached, so this may be out of date.</string>
+    <string name="bundle_live_connecting">Live updates: connecting…</string>
+    <string name="bundle_live_reconnecting">Live updates: reconnecting…</string>
+    <string name="bundle_destination">To %1$s</string>
+    <string name="tab_assessment">Assessment</string>
+    <string name="tab_documents">Documents</string>
+
+    <string name="status_compliant">Compliant For Submission</string>
+    <string name="status_missing_evidence">Missing Evidence</string>
+    <string name="status_material_contradiction">Material Contradiction</string>
+    <string name="status_specialist_review">Specialist Review Required</string>
+    <string name="status_not_assessed">Not assessed yet</string>
+    <string name="status_unrecognised">Unrecognised status</string>
+    <string name="status_description">Assessment status: %1$s</string>
+
+    <string name="assessment_title">Compliance Assessment</string>
+    <string name="assessment_iteration">Iteration %1$d</string>
+    <string name="assessment_recomputed">recomputed</string>
+    <string name="assessment_confidence">Lowest reported confidence: %1$s</string>
+    <string name="assessment_confidence_na">N/A</string>
+    <string name="assessment_confidence_note">The lowest confidence the extraction model reported for the values these checks rest on. A self-reported score, not a measured accuracy.</string>
+    <string name="assessment_none_title">No assessment yet</string>
+    <string name="assessment_none_body">Run analysis to adjudicate this bundle.</string>
+    <string name="assessment_error_title">Analysis Issue Detected</string>
+    <string name="run_stage">Stage: %1$s</string>
+    <string name="run_stage_starting">starting</string>
+    <string name="run_progress_percent">%1$d%%</string>
+    <string name="announce_material">Assessment alert: Material contradiction detected. %1$s</string>
+    <string name="announce_compliant">Assessment complete: Trade bundle is fully compliant for submission.</string>
+    <string name="announce_missing">Assessment updated: Missing evidence required. %1$s</string>
+
+    <string name="checks_title">Mathematical &amp; Semantic Parity Checks</string>
+    <string name="checks_none">No validation checks executed yet.</string>
+    <string name="checks_issues">Discrepancies &amp; Warnings (%1$d)</string>
+    <string name="checks_verified">Verified Rules (%1$d)</string>
+    <string name="checks_verified_show">Show (%1$d passed)</string>
+    <string name="checks_verified_hide">Hide verified</string>
+    <string name="severity_pass">PASS</string>
+    <string name="severity_warn">WARN</string>
+    <string name="severity_material">MATERIAL</string>
+    <string name="check_assumed">Assumed:</string>
+    <string name="check_rule_set">Rule set: %1$s (not an official source unless stated)</string>
+    <string name="check_evidence_title">Compared Documents &amp; Stated Evidence:</string>
+    <string name="check_evidence_gap">Field Omitted / Absent (Gap)</string>
+    <string name="check_evidence_unknown_document">Unknown Document</string>
+    <string name="check_evidence_page">p.%1$d</string>
+    <string name="check_evidence_show_all">Show all %1$d (%2$d more)</string>
+    <string name="check_evidence_show_fewer">Show fewer</string>
+    <string name="check_evidence_open">Show %1$s</string>
+
+    <string name="valuation_title">Indicative duty exposure (%1$s%2$s)</string>
+    <string name="valuation_title_hs">, HS %1$s</string>
+    <string name="valuation_estimate">Estimate</string>
+    <string name="valuation_partial">Partial estimate</string>
+    <string name="valuation_not_available">Not available</string>
+    <string name="valuation_no_estimate">No estimate: %1$s</string>
+    <string name="valuation_incomplete">Incomplete: %1$s</string>
+    <string name="valuation_transaction_value">Transaction value%1$s</string>
+    <string name="valuation_incoterm">" (%1$s)"</string>
+    <string name="valuation_freight">+ Freight</string>
+    <string name="valuation_insurance">+ Insurance</string>
+    <string name="valuation_assessable">Assessable value (CIF) at %1$s %2$s/%3$s</string>
+    <string name="valuation_duty_lines">Duty lines in %1$s</string>
+    <string name="valuation_rate_na">rate n/a</string>
+    <string name="valuation_rate_pct">%1$s%%</string>
+    <string name="valuation_of_base">" of %1$s"</string>
+    <string name="valuation_total">Indicative total</string>
+    <string name="valuation_implied_unchanged">If the goods are classified under the subheading the certificate\'s chemistry points to (%1$s), the estimate is unchanged: the reference data gives both subheadings the same rates.</string>
+    <string name="valuation_implied_changed">If the goods are classified under the subheading the certificate\'s chemistry points to (%1$s), the estimate becomes %2$s.</string>
+    <string name="valuation_assumptions">What this estimate assumed (%1$d)</string>
+    <string name="valuation_rule_set">Rule set: %1$s</string>
+    <string name="valuation_regulation">" — %1$s"</string>
+
+    <string name="missing_title">Mandatory Trade Documents Required</string>
+    <string name="missing_card_title">Missing: %1$s</string>
+    <string name="missing_card_body">Required for HS %1$s — %2$s</string>
+    <string name="missing_card_ref">Ref: %1$s</string>
+
+    <string name="documents_title">Trade Bundle Files (%1$d)</string>
+    <string name="documents_none">No documents in this bundle yet.</string>
+    <plurals name="health_conflicts">
+        <item quantity="one">● %1$d Conflict</item>
+        <item quantity="other">● %1$d Conflicts</item>
+    </plurals>
+    <string name="health_gap">▲ %1$d Gap</string>
+    <string name="health_clean">✓ Clean</string>
+    <string name="document_size_kb">%1$d KB</string>
+    <string name="document_selected">%1$s, selected</string>
+
+    <string name="action_run_analysis">Run analysis</string>
+    <string name="action_reassess">Reassess</string>
+    <string name="action_running">Analysis running…</string>
+    <string name="action_add_document">Add document</string>
+    <string name="action_dismiss">Dismiss</string>
+    <string name="action_cancel_upload">Cancel upload</string>
+    <string name="action_read_only_note">Read-only: the server could not be reached, so nothing can be sent from this copy.</string>
+    <string name="error_request_id">Request id: %1$s</string>
+    <string name="upload_progress">Uploading %1$d/%2$d: %3$s</string>
+    <string name="upload_progress_unnamed">Uploading %1$d/%2$d</string>
+    <plurals name="upload_waiting">
+        <item quantity="one">Waiting to upload %1$d file…</item>
+        <item quantity="other">Waiting to upload %1$d files…</item>
+    </plurals>
+    <string name="upload_failed_partial">Uploaded %1$d of %2$d files.</string>
+    <string name="upload_failed_none">Nothing was uploaded.</string>
+    <string name="upload_picker_hint">Choose PDFs from this phone</string>
+    <string name="sample_mtc_action">Use sample MTC (demo)</string>
+    <string name="sample_mtc_busy">Uploading sample MTC…</string>
+    <string name="missing_upload_action">Upload Missing Certificate (PDF)</string>
+    <string name="documents_none_hint">Add the trade PDFs for this shipment, then run the analysis.</string>
+
+    <string name="viewer_page_of">Page %1$d of %2$d</string>
+    <string name="viewer_page_unknown">Page - of -</string>
+    <string name="viewer_previous">Previous</string>
+    <string name="viewer_next">Next</string>
+    <string name="viewer_zoom_in">Zoom in</string>
+    <string name="viewer_zoom_out">Zoom out</string>
+    <string name="viewer_fit">Fit</string>
+    <string name="viewer_loading">Loading document...</string>
+    <string name="viewer_error">Could not display %1$s: %2$s</string>
+    <string name="viewer_not_found_title">Document not found</string>
+    <string name="viewer_not_found_body">This bundle has no document with id %1$s.</string>
+    <string name="viewer_load_failed">Could not open the document: %1$s</string>
+    <string name="viewer_canvas_description">Page %1$d of %2$d: %3$s</string>
+    <plurals name="viewer_highlights_on_page">
+        <item quantity="one">%1$d evidence highlight on this page</item>
+        <item quantity="other">%1$d evidence highlights on this page</item>
+    </plurals>
+    <string name="viewer_original">Original</string>
+    <string name="viewer_model_view">What the model saw</string>
+    <string name="viewer_model_view_note">The page image exactly as the extraction saw it (after orientation, straightening and the image mode). The boxes are where the model cited the values on it.</string>
+    <string name="viewer_model_view_loading">Loading the page image…</string>
+    <string name="viewer_model_view_failed">Could not load the page image the model saw: %1$s</string>
+    <string name="viewer_deskew_note">The page was straightened before the model read it; evidence boxes are mapped back onto this original page.</string>
+    <string name="viewer_boxes_hidden">Evidence boxes are hidden: how this page was prepared for the model could not be loaded, and a box could point at the wrong place without it.</string>
+    <string name="viewer_evidence_button">Evidence (%1$d)</string>
+    <string name="viewer_evidence_title">Evidence on this page (%1$d)</string>
+    <string name="viewer_evidence_none">No evidence is cited on this page.</string>
+    <string name="viewer_selected_title">Cited evidence</string>
+    <string name="viewer_saved_copy">Read from the copy saved on this phone: the server could not be reached.</string>
+    <string name="viewer_open_document">Open %1$s</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_open">Settings</string>
+    <string name="settings_secure_title">Block screenshots in the document viewer</string>
+    <string name="settings_secure_body">Customs documents can be commercially sensitive. When this is on, the document viewer cannot be captured in screenshots or screen recordings, and it is blank in the recent-apps view.</string>
+    <string name="settings_cache_title">Downloaded documents</string>
+    <string name="settings_cache_body">Documents you open, and pre-fill packs you share, are kept on this phone so documents open again without a connection. Clearing them deletes nothing on the server. Using %1$s now.</string>
+    <string name="settings_cache_clear">Clear downloaded documents</string>
+
+    <!-- Corrections by the authorised agent: wording of components/assess/CorrectionsCard.tsx, CorrectionEditor.tsx and CheckList.tsx -->
+    <string name="corrections_title">Corrections (%1$d)</string>
+    <string name="corrections_description">Corrections by the authorised agent</string>
+    <string name="corrections_pending_chip">%1$d not in this assessment yet</string>
+    <string name="correction_status_in">In this assessment</string>
+    <string name="correction_status_not_used">Not used: %1$s</string>
+    <string name="correction_status_not_used_default">could not be placed</string>
+    <string name="correction_status_pending">Pending recompute</string>
+    <string name="correction_confirmed">Confirmed: %1$s</string>
+    <string name="correction_undo">Undo</string>
+    <string name="correction_undo_description">Undo the %1$s of %2$s in %3$s</string>
+    <string name="correction_kind_correction">correction</string>
+    <string name="correction_kind_confirmation">confirmation</string>
+    <string name="recompute_action">Recompute with corrections</string>
+    <string name="recompute_busy">Recomputing...</string>
+    <string name="recompute_note">Re-runs every check on the stored extraction. No document is read again and no model is called.</string>
+    <string name="correct_edit">Edit</string>
+    <string name="correct_edit_description">Correct %1$s in %2$s</string>
+    <string name="correct_state_used">Corrected by the agent (model read %1$s)</string>
+    <string name="correct_state_nothing">nothing</string>
+    <string name="correct_state_pending">Correction pending: %1$s. Recompute to apply it.</string>
+    <string name="correct_state_cleared">(cleared)</string>
+    <string name="correct_state_undone">Correction undone. Recompute to restore the model\'s reading.</string>
+    <string name="editor_heading">%1$s · %2$s</string>
+    <string name="editor_loading">Loading the extracted value...</string>
+    <string name="editor_model_read">Model read: %1$s. State what the document actually says.</string>
+    <string name="editor_not_stated">(not stated)</string>
+    <string name="editor_value_label">Value as printed</string>
+    <string name="editor_unit_label">Unit</string>
+    <string name="editor_unit_placeholder" formatted="false">KGS, MT, %</string>
+    <string name="editor_reason_label">Reason (optional, kept in the audit trail)</string>
+    <string name="editor_clear_label">The document does not state this value</string>
+    <string name="editor_save">Save correction</string>
+    <string name="editor_confirm">Confirm value</string>
+    <string name="editor_saving">Saving...</string>
+
+    <!-- Declaration pre-fill: components/assess/PrefillCard.tsx -->
+    <string name="prefill_title">Declaration pre-fill</string>
+    <string name="prefill_body">The values read from your documents (with your corrections), where each came from, what the other documents say, and what you must still supply. Not a filed declaration.</string>
+    <string name="prefill_caveat_not_cleared">Not cleared: the pack leads with what blocks it, and flags every value an open finding cites.</string>
+    <string name="prefill_caveat_pending">%1$d correction change(s) are not in this assessment yet: recompute first.</string>
+    <string name="prefill_caveat_cleared">Cleared, and it includes every correction made so far.</string>
+    <string name="prefill_share_json">Share JSON</string>
+    <string name="prefill_share_pdf">Share PDF summary</string>
+    <string name="prefill_busy">Preparing…</string>
+    <string name="prefill_note">The file is prepared on this phone and handed to the share sheet; nothing is saved to shared storage.</string>
+    <string name="prefill_chooser">Share the pre-fill pack</string>
+
+    <!-- History: components/delta/DeltaDrawer.tsx, ReasoningDelta.tsx and audit/AuditTimeline.tsx -->
+    <string name="tab_history">History</string>
+    <string name="history_expand">▲ Expand</string>
+    <string name="history_collapse">▼ Collapse</string>
+    <string name="history_delta">Reasoning Delta</string>
+    <string name="history_audit">Audit Chain Timeline</string>
+    <string name="delta_none">No assessment iterations available for comparison.</string>
+    <string name="delta_baseline">Baseline Assessment</string>
+    <string name="delta_attribute">Attribute</string>
+    <string name="delta_previous">Previous State</string>
+    <string name="delta_current">Current State</string>
+    <string name="delta_reasoning">Reasoning Delta</string>
+    <string name="delta_change_description">%1$s: %2$s became %3$s. %4$s</string>
+    <string name="audit_loading">Loading audit chain...</string>
+    <string name="audit_load_failed">Could not load audit chain: %1$s</string>
+    <string name="audit_none">No audit events recorded yet.</string>
+    <plurals name="audit_signing_failures">
+        <item quantity="one">%1$d signing failure recorded in the trail.</item>
+        <item quantity="other">%1$d signing failures recorded in the trail.</item>
+    </plurals>
+    <string name="audit_sign_now">Sign now</string>
+    <string name="audit_signing">Signing...</string>
+    <string name="audit_meaning_title">What a signature means here</string>
+    <string name="audit_key">Key: %1$s</string>
+    <string name="audit_event_title">#%1$d %2$s</string>
+    <string name="audit_actor">Actor: %1$s</string>
+    <string name="audit_prev">Prev: %1$s</string>
+    <string name="audit_hash">Hash: %1$s</string>
+
+    <!-- Files shared to the app from another app -->
+    <string name="intake_title">Add to a bundle</string>
+    <plurals name="intake_files">
+        <item quantity="one">%1$d PDF shared</item>
+        <item quantity="other">%1$d PDFs shared</item>
+    </plurals>
+    <plurals name="intake_unreadable">
+        <item quantity="one">%1$d shared file could not be read and was left out.</item>
+        <item quantity="other">%1$d shared files could not be read and were left out.</item>
+    </plurals>
+    <string name="intake_none_readable">None of the shared files could be read.</string>
+    <string name="intake_new_title">New bundle</string>
+    <string name="intake_new_action">Create a bundle with these files</string>
+    <string name="intake_new_busy">Creating bundle...</string>
+    <string name="intake_recent_title">Or add to a recent bundle</string>
+    <string name="intake_recent_none">No recent bundles on this phone yet.</string>
+    <string name="intake_add_to">Add the files to %1$s</string>
+    <string name="intake_note">The files go up in the background once you choose, and the bundle opens so you can follow along.</string>
+
+    <!-- Notifications -->
+    <string name="notify_channel_result_name">Analysis results</string>
+    <string name="notify_channel_result_description">Tells you when an analysis you started has finished.</string>
+    <string name="notify_channel_watch_name">Waiting for an analysis</string>
+    <string name="notify_channel_watch_description">Shown briefly while the app waits in the background for a running analysis to finish.</string>
+    <string name="notify_watch_title">Waiting for the analysis to finish</string>
+    <string name="notify_finished_title">Analysis finished</string>
+    <string name="notify_finished_text">%1$s: %2$s</string>
+    <string name="notify_finished_public">Analysis finished</string>
+    <string name="notify_failed_title">Analysis failed</string>
+    <string name="notify_failed_public">Analysis failed</string>
+    <string name="settings_notify_title">Tell me when an analysis finishes</string>
+    <string name="settings_notify_body">While the app is in the background, a notification says when an analysis you started has finished. The lock screen only says that one did, not which bundle. Needs permission to show notifications.</string>
+    <string name="settings_notify_denied">Notifications are switched off for this app in the system settings, so none can be shown.</string>
+    <string name="run_notify_me">Notify me when it finishes</string>
+
+    <!-- Adding a document, and sharing a bundle -->
+    <string name="add_sheet_title">Add a document</string>
+    <string name="add_sheet_files">Choose PDFs</string>
+    <string name="add_sheet_files_hint">From this phone, Drive or another app</string>
+    <string name="add_sheet_scan">Scan a document</string>
+    <string name="add_sheet_scan_hint">Use the camera: the page is straightened and cleaned, and goes up as a PDF</string>
+    <string name="more_options">More options</string>
+    <string name="share_link_action">Share link</string>
+    <string name="share_link_title">Share a link to this bundle?</string>
+    <string name="share_link_body">Anyone who has this link can open the bundle and see its documents: there is no sign-in. Share it only with people who should see them.</string>
+    <string name="share_link_confirm">Share</string>
+    <string name="share_link_chooser">Share a link to this bundle</string>
+
+    <!-- About: wording about what the product is and is not comes from docs/CLAIMS.md and is not to be paraphrased -->
+    <string name="about_title">About CargoClear</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_what_title">What this app is</string>
+    <string name="about_what_body">Pre-submission customs document assessment. Decision support only: the authorised CHA decides. Nothing is submitted to a government system, nothing is a legal determination, and no duty is collected or paid.</string>
+    <string name="about_rules_title">Rules and rates</string>
+    <string name="about_rules_body">The rule tables (alloy thresholds, standards\' limits, duty rates, exchange rates, the anti-dumping entry, declaration inputs) are demo-curated, unverified, and partly placeholders. The model only reads documents: every status, check and estimate comes from the service\'s deterministic rules, and this app shows what the service returns.</string>
+    <string name="about_reading_title">Reading documents</string>
+    <string name="about_reading_body">In demo mode the extraction is synthetic and keyed by file name; it does not read the documents. When a model reads them, the percentage shown is the lowest confidence it reported for the values the checks rest on: a self-reported score, not a measured accuracy.</string>
+    <string name="about_access_title">Access</string>
+    <string name="about_access_body">There is no sign-in. Anyone who has a bundle\'s id or link can open it and see its documents. This app keeps the ids of the bundles you open on this phone only and puts nothing in a cloud backup. Its own code writes no logs.</string>
+    <string name="about_audit_title">The audit chain</string>
+    <string name="about_audit_body">The audit chain is tamper-evident: editing an event breaks it. Where a signature exists it is checked against the operator\'s key (a demo key proves less than a Cloud KMS key, and says so). It is not legal non-repudiation: there is no user authentication, so the signer is the service, not a person.</string>
+    <string name="about_phone_title">On this phone</string>
+    <string name="about_phone_body">Bundles you open are listed on the start screen so you can get back to them (the service keeps no list). Documents you view and pre-fill packs you share are kept in a private cache that Settings can clear. Nothing of this app is included in a cloud backup or a device transfer. Notifications and the scanner are off unless you use them.</string>
+    <string name="about_scanner_title">The optional scanner</string>
+    <string name="about_scanner_body">Scanning a paper document is provided by Google Play services and ML Kit, which are governed by Google\'s own terms. It is offered only where they are present.</string>
+    <string name="about_licences_title">Open-source components</string>
+    <string name="settings_about">About CargoClear</string>
+    <string name="settings_about_hint">What this app is and is not, how it treats your data, and its open-source components</string>
+
+    <string name="dev_backend_line">Backend: %1$s</string>
+    <string name="dev_phase_line">Development build.</string>
+</resources>

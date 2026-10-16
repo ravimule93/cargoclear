@@ -1,0 +1,10 @@
+{
+  "code": "NOT_FOUND",
+  "detail": {
+    "bundle_id": "bnd-4d07f1f17a0e",
+    "document_id": "doc-does-not-exist"
+  },
+  "message": "Document 'doc-does-not-exist' is not part of the latest assessment.",
+  "request_id": "27923042-6f76-40db-bbba-b24393acae62",
+  "status": 404
+}

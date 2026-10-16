@@ -1,0 +1,10 @@
+{
+  "code": "NOT_FOUND",
+  "detail": {
+    "bundle_id": "bnd-bd5977cef562",
+    "document_id": "doc-0000000000000000"
+  },
+  "message": "Document 'doc-0000000000000000' not found in bundle 'bnd-bd5977cef562'.",
+  "request_id": "5ffc8753-704b-420e-b241-8359e024897d",
+  "status": 404
+}

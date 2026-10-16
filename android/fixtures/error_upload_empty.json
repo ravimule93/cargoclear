@@ -1,0 +1,7 @@
+{
+  "code": "VALIDATION_ERROR",
+  "detail": null,
+  "message": "Uploaded file is empty (0 bytes).",
+  "request_id": "e8a4c4e5-29ef-45fb-8b0a-dbb49c27f03e",
+  "status": 422
+}

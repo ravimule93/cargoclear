@@ -1,0 +1,10 @@
+{
+  "code": "NOT_FOUND",
+  "detail": {
+    "bundle_id": "bnd-4d07f1f17a0e",
+    "correction_id": "cor-999"
+  },
+  "message": "'cor-999' is not a correction in force for this bundle.",
+  "request_id": "20940857-e8a4-44e0-b529-0444660f402c",
+  "status": 404
+}

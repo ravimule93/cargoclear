@@ -144,6 +144,24 @@ the fallback ladder and what not to say are in [DEMO_SCRIPT.md](DEMO_SCRIPT.md);
 
 Demo mode uses synthetic extraction fixtures keyed by filename. The sample documents are illustrative and the UI displays a demo banner. This journey demonstrates the interaction and assessment flow, not live document reading.
 
+## 4g. The Android app (against the local demo backend)
+
+The Android client in `android/` runs the same journeys on a phone or an emulator. It needs the demo backend from section 3 (listening on `127.0.0.1:8080`: an emulator reaches it as `10.0.2.2`), JDK 17 and the Android SDK; the details, the build flavors and the checks are in [`android/README.md`](../android/README.md).
+
+```bash
+cd android
+./gradlew :app:installLocalDebug
+adb shell am start -n com.cargoclear.japac.local/com.cargoclear.japac.MainActivity
+```
+
+1. **Case D:** on the start screen choose *Start Case D demo (India import)*, then *Run analysis*. The status is `MATERIAL_CONTRADICTION`.
+2. Tap the certificate's chromium evidence row: the viewer opens that page with the box on the 0.35 cell. *What the model saw* shows the page image the model was shown.
+3. Back on the assessment, *Edit* under that row, state 0.28, save, then *Recompute with corrections*: the status becomes `SPECIALIST_REVIEW_REQUIRED`. *Undo* the correction and recompute again to return.
+4. *History* shows the Reasoning Delta and the audit chain; after an undo, *Sign now* signs the new head (a demo key in demo mode, and it says so).
+5. *Share PDF summary* hands the pre-fill pack to the system share sheet.
+
+The demo banner applies on the phone too: the extraction is synthetic. Two things to know when testing on an emulator: its network must pass Android's connectivity check, or queued uploads wait forever (the fix is in the Android README); and screenshots of the viewer are black until the screenshot block is turned off in Settings (it is on by default, because customs documents can be commercially sensitive).
+
 ## 5. Local verification
 
 ```bash

@@ -1,0 +1,34 @@
+{
+  "configured": true,
+  "failures": 0,
+  "key": "local-demo",
+  "meaning": "Tamper-evident under the operator's key, here a throwaway demo key that only this process holds: it shows the chain was not edited after it was signed, in this session, and says nothing about who signed it. Not legal non-repudiation: there is no user authentication, so the signer is the service, not a person.",
+  "signatures": [
+    {
+      "algorithm": "ECDSA_P256_SHA256",
+      "event_seq": 8,
+      "key": "local-demo",
+      "reason": null,
+      "signed_at": "2026-10-14T18:04:36.262478+00:00",
+      "signed_hash": "fd18f1b2d0bc31a2a076dfe3e532d6125d9dfaf5a1d53dd08b96c0276ad089a9",
+      "signed_seq": 7,
+      "signer": "local-demo",
+      "valid": true
+    },
+    {
+      "algorithm": "ECDSA_P256_SHA256",
+      "event_seq": 11,
+      "key": "local-demo",
+      "reason": null,
+      "signed_at": "2026-10-14T18:04:36.718373+00:00",
+      "signed_hash": "ea236e012788ef15e113322a2db1f0fe8a8dd0d82136cca3c5f8bba24d05a87f",
+      "signed_seq": 10,
+      "signer": "local-demo",
+      "valid": true
+    }
+  ],
+  "signed_seq": 10,
+  "signer": "local-demo",
+  "status": "SIGNED",
+  "unsigned_events": 0
+}

@@ -1,0 +1,17 @@
+{
+  "code": "VALIDATION_ERROR",
+  "detail": {
+    "allowed": [
+      "COMMERCIAL_INVOICE",
+      "BILL_OF_LADING",
+      "PACKING_LIST",
+      "CERTIFICATE_OF_ORIGIN",
+      "PHYTOSANITARY",
+      "MILL_TEST_CERTIFICATE"
+    ],
+    "declared_type": "NOT A TYPE"
+  },
+  "message": "declared_type must be one of COMMERCIAL_INVOICE, BILL_OF_LADING, PACKING_LIST, CERTIFICATE_OF_ORIGIN, PHYTOSANITARY, MILL_TEST_CERTIFICATE.",
+  "request_id": "cbf7735d-7809-4fea-aaab-cc70b31f4ec9",
+  "status": 422
+}

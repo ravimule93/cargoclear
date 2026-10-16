@@ -1,0 +1,9 @@
+{
+  "code": "CONFLICT",
+  "detail": {
+    "run_id": "run-976cb6de70fb"
+  },
+  "message": "An assessment run is in progress for bundle 'bnd-bd5977cef562': wait for it to finish before you delete a document.",
+  "request_id": "c2b6f034-b4e8-43e7-bdb0-d2f58e575463",
+  "status": 409
+}

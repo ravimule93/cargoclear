@@ -1,0 +1,29 @@
+Open-source components in this app, by licence.
+Generated from the libraries the release build ships (android/tools/list_licenses.py); each licence is the one the library's own POM names.
+
+Apache License 2.0 (174 libraries)
+  androidx (139)
+  com.google.android.datatransport (3)
+  com.google.code.findbugs (1)
+  com.google.dagger (4)
+  com.google.firebase (4)
+  com.google.guava (1)
+  com.squareup.okhttp3 (3)
+  com.squareup.okio (2)
+  com.squareup.retrofit2 (2)
+  jakarta.inject (1)
+  javax.inject (1)
+  org.jetbrains (1)
+  org.jetbrains.kotlin (2)
+  org.jetbrains.kotlinx (9)
+  org.jspecify (1)
+
+Android Software Development Kit License (3 libraries)
+  com.google.android.gms (3)
+
+BSD licence (1 library)
+  androidx (1)
+
+ML Kit Terms of Service (2 libraries)
+  com.google.android.gms (1)
+  com.google.mlkit (1)

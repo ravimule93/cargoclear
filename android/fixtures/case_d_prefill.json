@@ -1,0 +1,889 @@
+{
+  "assessment": {
+    "blocking": [],
+    "created_at": "2026-10-14T18:04:36.727750+00:00",
+    "data_source": "fixture",
+    "iteration": 2,
+    "missing_documents": [],
+    "pending_corrections": 1,
+    "review": [
+      {
+        "check_id": "SEC-001",
+        "message": "Heat TH-77121 reports Cr 0.28%, within 20 % below the 0.3 % at which HS Note 1(f) makes steel alloy, while the goods are declared non-alloy. A steel kept just under a threshold is a known way of staying in another tariff code: have the certificate verified.",
+        "severity": "WARN"
+      },
+      {
+        "check_id": "SEC-002",
+        "message": "Anti-dumping duty may apply: HS 7304.31.00 (declared) from CHINA: Seamless tubes, pipes and hollow profiles of iron or steel (ILLUSTRATIVE scope), 12 % of the assessable value (entry ADD-IN-7304-CN-ILLUSTRATIVE; notification not supplied). The rate is producer-specific: a specialist must confirm the producer and the notification. It is included in the indicative duty estimate.",
+        "severity": "WARN"
+      }
+    ],
+    "run_mode": "recompute",
+    "status": "SPECIALIST_REVIEW_REQUIRED"
+  },
+  "banner": "NOT CLEARED. The assessment is specialist review required: 0 contradiction(s), 0 missing document(s), 2 item(s) for specialist review. Resolve them before these values are used. 1 correction change(s) made after this assessment are NOT included in these values. Recompute first.",
+  "bundle_id": "bnd-4d07f1f17a0e",
+  "commercial": {
+    "freight_amount": {
+      "alternatives": [],
+      "confidence": 0.97,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 800.0,
+          "xmin": 600.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "doc_type": "BILL_OF_LADING",
+        "document_id": "doc-6805cc2e9907590c",
+        "filename": "case_d_bill_of_lading.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "1850"
+    },
+    "freight_currency": {
+      "alternatives": [],
+      "confidence": 0.98,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 580.0,
+          "xmin": 500.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "doc_type": "BILL_OF_LADING",
+        "document_id": "doc-6805cc2e9907590c",
+        "filename": "case_d_bill_of_lading.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "USD"
+    },
+    "insurance_amount": {
+      "alternatives": [],
+      "confidence": null,
+      "conflict": false,
+      "corrected": false,
+      "review": [
+        "not stated on any document"
+      ],
+      "source": null,
+      "unit": null,
+      "value": null
+    },
+    "insurance_currency": {
+      "alternatives": [],
+      "confidence": null,
+      "conflict": false,
+      "corrected": false,
+      "review": [
+        "not stated on any document"
+      ],
+      "source": null,
+      "unit": null,
+      "value": null
+    },
+    "invoice_currency": {
+      "alternatives": [],
+      "confidence": 0.99,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 590.0,
+          "xmin": 550.0,
+          "ymax": 330.0,
+          "ymin": 300.0
+        },
+        "doc_type": "COMMERCIAL_INVOICE",
+        "document_id": "doc-e430309aeeb6e3df",
+        "filename": "case_d_commercial_invoice.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "USD"
+    },
+    "invoice_value": {
+      "alternatives": [],
+      "confidence": 0.99,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 800.0,
+          "xmin": 600.0,
+          "ymax": 330.0,
+          "ymin": 300.0
+        },
+        "doc_type": "COMMERCIAL_INVOICE",
+        "document_id": "doc-e430309aeeb6e3df",
+        "filename": "case_d_commercial_invoice.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "61500"
+    }
+  },
+  "corrections": [
+    {
+      "anchor": "TH77121|Cr",
+      "correction_id": "cor-9",
+      "created_at": "2026-10-14T18:04:36.710096+00:00",
+      "document_id": "doc-f74c9c3e83f32ccc",
+      "note": null,
+      "original_unit": "%",
+      "original_value": "0.35",
+      "path": "test_results[20]",
+      "reason": "the certificate prints 0.28",
+      "seq": 9,
+      "status": "applied",
+      "unit": "%",
+      "value": "0.28"
+    },
+    {
+      "anchor": null,
+      "correction_id": "cor-10",
+      "created_at": "2026-10-14T18:04:36.712218+00:00",
+      "document_id": "doc-e430309aeeb6e3df",
+      "note": null,
+      "original_unit": null,
+      "original_value": "MUMBAI INFRA PIPING PVT LTD",
+      "path": "consignee",
+      "reason": null,
+      "seq": 10,
+      "status": "applied",
+      "unit": null,
+      "value": "MUMBAI INFRA PIPING PVT LTD"
+    }
+  ],
+  "declaration": {
+    "declaration": "Import declaration (Bill of Entry)",
+    "destination_country": "IN",
+    "regulation_ref": "What a customs declaration typically needs that trade documents do not carry, as encoded for this prototype; the reviewer is to confirm each entry against the current declaration form; not an official source",
+    "rule_set": "demo-curated"
+  },
+  "disclaimer": "Pre-fill for the authorised declarant. These are values READ from the trade documents by CargoClear (and corrected by the agent where stated), not a filed declaration and not a customs determination. Check every value against the source document before it is used; fields marked for review need a person's eyes. The duty figures are an indicative estimate, never an amount payable.",
+  "documents": [
+    {
+      "bytes": 5874,
+      "doc_type": "COMMERCIAL_INVOICE",
+      "document_id": "doc-e430309aeeb6e3df",
+      "filename": "case_d_commercial_invoice.pdf",
+      "sha256": "e430309aeeb6e3df252578c9ff0ab5503ed4fdc3e88a99efa82fb42a9d45d4f5"
+    },
+    {
+      "bytes": 3873,
+      "doc_type": "BILL_OF_LADING",
+      "document_id": "doc-6805cc2e9907590c",
+      "filename": "case_d_bill_of_lading.pdf",
+      "sha256": "6805cc2e9907590cf8a1a04b3cf6e628f26e2c997a1b81d2463975d8f66465cf"
+    },
+    {
+      "bytes": 4986,
+      "doc_type": "PACKING_LIST",
+      "document_id": "doc-c9a9529cb1853d8d",
+      "filename": "case_d_packing_list.pdf",
+      "sha256": "c9a9529cb1853d8d77392babf7c89b4c7b725b60c56812450541a5a8f62c8312"
+    },
+    {
+      "bytes": 10910,
+      "doc_type": "MILL_TEST_CERTIFICATE",
+      "document_id": "doc-f74c9c3e83f32ccc",
+      "filename": "case_d_mtc_test_cert.pdf",
+      "sha256": "f74c9c3e83f32ccc5c45ad9d4920e23be5155cb06e593da1b0537e8c8c61a63e"
+    }
+  ],
+  "generated_at": "2026-10-14T18:04:37.252007+00:00",
+  "integrity": {
+    "content_sha256": "a13820d706a41a2039a2b22a4c30978c7494d1dbb63f3c54b9ca01cb88b658d9"
+  },
+  "lines": [
+    {
+      "currency": {
+        "alternatives": [],
+        "confidence": 0.99,
+        "conflict": false,
+        "corrected": false,
+        "review": [],
+        "source": {
+          "bbox": {
+            "page": 1,
+            "xmax": 290.0,
+            "xmin": 260.0,
+            "ymax": 530.0,
+            "ymin": 500.0
+          },
+          "doc_type": "COMMERCIAL_INVOICE",
+          "document_id": "doc-e430309aeeb6e3df",
+          "filename": "case_d_commercial_invoice.pdf",
+          "page": 1
+        },
+        "unit": null,
+        "value": "USD"
+      },
+      "description": {
+        "alternatives": [],
+        "confidence": 0.98,
+        "conflict": false,
+        "corrected": false,
+        "review": [],
+        "source": {
+          "bbox": {
+            "page": 1,
+            "xmax": 500.0,
+            "xmin": 100.0,
+            "ymax": 480.0,
+            "ymin": 450.0
+          },
+          "doc_type": "COMMERCIAL_INVOICE",
+          "document_id": "doc-e430309aeeb6e3df",
+          "filename": "case_d_commercial_invoice.pdf",
+          "page": 1
+        },
+        "unit": null,
+        "value": "Seamless cold-drawn steel tubes"
+      },
+      "document_id": "doc-e430309aeeb6e3df",
+      "gross_weight": {
+        "alternatives": [],
+        "confidence": 0.98,
+        "conflict": false,
+        "corrected": false,
+        "review": [],
+        "source": {
+          "bbox": {
+            "page": 1,
+            "xmax": 840.0,
+            "xmin": 730.0,
+            "ymax": 530.0,
+            "ymin": 500.0
+          },
+          "doc_type": "COMMERCIAL_INVOICE",
+          "document_id": "doc-e430309aeeb6e3df",
+          "filename": "case_d_commercial_invoice.pdf",
+          "page": 1
+        },
+        "unit": "KGS",
+        "value": "25400"
+      },
+      "hs_code": {
+        "alternatives": [],
+        "confidence": 0.99,
+        "conflict": false,
+        "corrected": false,
+        "review": [
+          "SEC-002 (warn) cites this value"
+        ],
+        "source": {
+          "bbox": {
+            "page": 1,
+            "xmax": 950.0,
+            "xmin": 850.0,
+            "ymax": 530.0,
+            "ymin": 500.0
+          },
+          "doc_type": "COMMERCIAL_INVOICE",
+          "document_id": "doc-e430309aeeb6e3df",
+          "filename": "case_d_commercial_invoice.pdf",
+          "page": 1
+        },
+        "unit": null,
+        "value": "73043100"
+      },
+      "line_no": 1,
+      "line_value": {
+        "alternatives": [],
+        "confidence": 0.99,
+        "conflict": false,
+        "corrected": false,
+        "review": [],
+        "source": {
+          "bbox": {
+            "page": 1,
+            "xmax": 510.0,
+            "xmin": 410.0,
+            "ymax": 530.0,
+            "ymin": 500.0
+          },
+          "doc_type": "COMMERCIAL_INVOICE",
+          "document_id": "doc-e430309aeeb6e3df",
+          "filename": "case_d_commercial_invoice.pdf",
+          "page": 1
+        },
+        "unit": null,
+        "value": "61500"
+      },
+      "net_weight": {
+        "alternatives": [],
+        "confidence": 0.99,
+        "conflict": false,
+        "corrected": false,
+        "review": [],
+        "source": {
+          "bbox": {
+            "page": 1,
+            "xmax": 720.0,
+            "xmin": 610.0,
+            "ymax": 530.0,
+            "ymin": 500.0
+          },
+          "doc_type": "COMMERCIAL_INVOICE",
+          "document_id": "doc-e430309aeeb6e3df",
+          "filename": "case_d_commercial_invoice.pdf",
+          "page": 1
+        },
+        "unit": "KGS",
+        "value": "25000"
+      },
+      "quantity": {
+        "alternatives": [],
+        "confidence": 0.96,
+        "conflict": false,
+        "corrected": false,
+        "review": [],
+        "source": {
+          "bbox": {
+            "page": 1,
+            "xmax": 600.0,
+            "xmin": 520.0,
+            "ymax": 530.0,
+            "ymin": 500.0
+          },
+          "doc_type": "COMMERCIAL_INVOICE",
+          "document_id": "doc-e430309aeeb6e3df",
+          "filename": "case_d_commercial_invoice.pdf",
+          "page": 1
+        },
+        "unit": null,
+        "value": "25 MT"
+      },
+      "unit_price": {
+        "alternatives": [],
+        "confidence": 0.97,
+        "conflict": false,
+        "corrected": false,
+        "review": [],
+        "source": {
+          "bbox": {
+            "page": 1,
+            "xmax": 400.0,
+            "xmin": 300.0,
+            "ymax": 530.0,
+            "ymin": 500.0
+          },
+          "doc_type": "COMMERCIAL_INVOICE",
+          "document_id": "doc-e430309aeeb6e3df",
+          "filename": "case_d_commercial_invoice.pdf",
+          "page": 1
+        },
+        "unit": null,
+        "value": "2460"
+      },
+      "unit_price_basis": {
+        "alternatives": [],
+        "confidence": 0.96,
+        "conflict": false,
+        "corrected": false,
+        "review": [],
+        "source": {
+          "bbox": {
+            "page": 1,
+            "xmax": 400.0,
+            "xmin": 300.0,
+            "ymax": 575.0,
+            "ymin": 545.0
+          },
+          "doc_type": "COMMERCIAL_INVOICE",
+          "document_id": "doc-e430309aeeb6e3df",
+          "filename": "case_d_commercial_invoice.pdf",
+          "page": 1
+        },
+        "unit": null,
+        "value": "PER MT"
+      }
+    }
+  ],
+  "material": {
+    "certificate_document_id": "doc-f74c9c3e83f32ccc",
+    "heat_numbers": [
+      "TH-77120",
+      "TH-77121"
+    ],
+    "specification": {
+      "alternatives": [],
+      "confidence": 0.98,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 500.0,
+          "xmin": 100.0,
+          "ymax": 370.0,
+          "ymin": 340.0
+        },
+        "doc_type": "MILL_TEST_CERTIFICATE",
+        "document_id": "doc-f74c9c3e83f32ccc",
+        "filename": "case_d_mtc_test_cert.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "ASTM A106 GR B"
+    }
+  },
+  "parties": {
+    "consignee": {
+      "alternatives": [
+        {
+          "doc_type": "BILL_OF_LADING",
+          "document_id": "doc-6805cc2e9907590c",
+          "unit": null,
+          "value": "MUMBAI INFRA PIPING PVT LTD"
+        },
+        {
+          "doc_type": "PACKING_LIST",
+          "document_id": "doc-c9a9529cb1853d8d",
+          "unit": null,
+          "value": "MUMBAI INFRA PIPING PVT LTD"
+        }
+      ],
+      "confidence": 1.0,
+      "conflict": false,
+      "corrected": true,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 500.0,
+          "xmin": 100.0,
+          "ymax": 220.0,
+          "ymin": 180.0
+        },
+        "doc_type": "COMMERCIAL_INVOICE",
+        "document_id": "doc-e430309aeeb6e3df",
+        "filename": "case_d_commercial_invoice.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "MUMBAI INFRA PIPING PVT LTD"
+    },
+    "consignor": {
+      "alternatives": [
+        {
+          "doc_type": "BILL_OF_LADING",
+          "document_id": "doc-6805cc2e9907590c",
+          "unit": null,
+          "value": "TIANJIN HUAXING STEEL TUBE CO LTD"
+        },
+        {
+          "doc_type": "PACKING_LIST",
+          "document_id": "doc-c9a9529cb1853d8d",
+          "unit": null,
+          "value": "TIANJIN HUAXING STEEL TUBE CO LTD"
+        }
+      ],
+      "confidence": 0.98,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 480.0,
+          "xmin": 100.0,
+          "ymax": 280.0,
+          "ymin": 240.0
+        },
+        "doc_type": "COMMERCIAL_INVOICE",
+        "document_id": "doc-e430309aeeb6e3df",
+        "filename": "case_d_commercial_invoice.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "TIANJIN HUAXING STEEL TUBE CO LTD"
+    }
+  },
+  "provenance": {
+    "audit_chain_verified": true,
+    "audit_events": 15,
+    "audit_head_hash": "c0db0123acd2dfe03e741a268e28d82ac7c12818ba7427fb80f3ee569bbb4176",
+    "reference_data": {
+      "anti_dumping.json": "96092da325b24f25",
+      "declaration_inputs.json": "d1aa6ce7f99d4352",
+      "duty_rates.json": "a09b9185e5ead2b1",
+      "exchange_rates.json": "ba26fd605a4bf5a9",
+      "hs_rules.json": "8b4426926f68f5f5",
+      "specs.json": "4071f90f7a998f69",
+      "valuation_defaults.json": "509dc8a079a98240"
+    }
+  },
+  "reference": "CASE-D-7304-IN-DEMO",
+  "schema_id": "cargoclear.declaration-prefill",
+  "schema_version": "1.0",
+  "shipment": {
+    "bill_of_lading_number": {
+      "alternatives": [],
+      "confidence": 0.99,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 350.0,
+          "xmin": 100.0,
+          "ymax": 130.0,
+          "ymin": 100.0
+        },
+        "doc_type": "BILL_OF_LADING",
+        "document_id": "doc-6805cc2e9907590c",
+        "filename": "case_d_bill_of_lading.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "BL-TXG-2026-3311"
+    },
+    "country_of_origin": {
+      "alternatives": [
+        {
+          "doc_type": "PACKING_LIST",
+          "document_id": "doc-c9a9529cb1853d8d",
+          "unit": null,
+          "value": "CHINA"
+        }
+      ],
+      "confidence": 0.98,
+      "conflict": false,
+      "corrected": false,
+      "review": [
+        "SEC-002 (warn) cites this value"
+      ],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 400.0,
+          "xmin": 100.0,
+          "ymax": 690.0,
+          "ymin": 660.0
+        },
+        "doc_type": "COMMERCIAL_INVOICE",
+        "document_id": "doc-e430309aeeb6e3df",
+        "filename": "case_d_commercial_invoice.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "CHINA"
+    },
+    "incoterm": {
+      "alternatives": [],
+      "confidence": 0.97,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 400.0,
+          "xmin": 100.0,
+          "ymax": 640.0,
+          "ymin": 610.0
+        },
+        "doc_type": "COMMERCIAL_INVOICE",
+        "document_id": "doc-e430309aeeb6e3df",
+        "filename": "case_d_commercial_invoice.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "FOB TIANJIN"
+    },
+    "invoice_number": {
+      "alternatives": [],
+      "confidence": 0.99,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 350.0,
+          "xmin": 100.0,
+          "ymax": 130.0,
+          "ymin": 100.0
+        },
+        "doc_type": "COMMERCIAL_INVOICE",
+        "document_id": "doc-e430309aeeb6e3df",
+        "filename": "case_d_commercial_invoice.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "HX-INV-2026-0457"
+    },
+    "package_count": {
+      "alternatives": [],
+      "confidence": null,
+      "conflict": false,
+      "corrected": false,
+      "review": [
+        "not stated on any document"
+      ],
+      "source": null,
+      "unit": null,
+      "value": null
+    },
+    "packing_list_number": {
+      "alternatives": [],
+      "confidence": 0.99,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 350.0,
+          "xmin": 100.0,
+          "ymax": 130.0,
+          "ymin": 100.0
+        },
+        "doc_type": "PACKING_LIST",
+        "document_id": "doc-c9a9529cb1853d8d",
+        "filename": "case_d_packing_list.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "HX-PL-2026-0457"
+    },
+    "port_of_discharge": {
+      "alternatives": [],
+      "confidence": 0.97,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 750.0,
+          "xmin": 500.0,
+          "ymax": 480.0,
+          "ymin": 450.0
+        },
+        "doc_type": "BILL_OF_LADING",
+        "document_id": "doc-6805cc2e9907590c",
+        "filename": "case_d_bill_of_lading.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "INNSA - NHAVA SHEVA"
+    },
+    "port_of_loading": {
+      "alternatives": [],
+      "confidence": 0.97,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 350.0,
+          "xmin": 100.0,
+          "ymax": 480.0,
+          "ymin": 450.0
+        },
+        "doc_type": "BILL_OF_LADING",
+        "document_id": "doc-6805cc2e9907590c",
+        "filename": "case_d_bill_of_lading.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "CNTSN - TIANJIN"
+    },
+    "shipment_date": {
+      "alternatives": [],
+      "confidence": null,
+      "conflict": false,
+      "corrected": false,
+      "review": [
+        "not stated on any document"
+      ],
+      "source": null,
+      "unit": null,
+      "value": null
+    },
+    "total_gross_weight": {
+      "alternatives": [
+        {
+          "doc_type": "PACKING_LIST",
+          "document_id": "doc-c9a9529cb1853d8d",
+          "unit": "KGS",
+          "value": "25400"
+        }
+      ],
+      "confidence": 0.99,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 800.0,
+          "xmin": 600.0,
+          "ymax": 430.0,
+          "ymin": 400.0
+        },
+        "doc_type": "BILL_OF_LADING",
+        "document_id": "doc-6805cc2e9907590c",
+        "filename": "case_d_bill_of_lading.pdf",
+        "page": 1
+      },
+      "unit": "KGS",
+      "value": "25400"
+    },
+    "total_net_weight": {
+      "alternatives": [],
+      "confidence": 0.99,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 800.0,
+          "xmin": 600.0,
+          "ymax": 530.0,
+          "ymin": 500.0
+        },
+        "doc_type": "PACKING_LIST",
+        "document_id": "doc-c9a9529cb1853d8d",
+        "filename": "case_d_packing_list.pdf",
+        "page": 1
+      },
+      "unit": "KGS",
+      "value": "25000"
+    },
+    "vessel_or_flight": {
+      "alternatives": [],
+      "confidence": 0.96,
+      "conflict": false,
+      "corrected": false,
+      "review": [],
+      "source": {
+        "bbox": {
+          "page": 1,
+          "xmax": 380.0,
+          "xmin": 100.0,
+          "ymax": 350.0,
+          "ymin": 320.0
+        },
+        "doc_type": "BILL_OF_LADING",
+        "document_id": "doc-6805cc2e9907590c",
+        "filename": "case_d_bill_of_lading.pdf",
+        "page": 1
+      },
+      "unit": null,
+      "value": "MV PACIFIC HARMONY V-221E"
+    }
+  },
+  "to_be_supplied": [
+    {
+      "id": "IEC",
+      "label": "Importer-Exporter Code (IEC) of the importer"
+    },
+    {
+      "id": "GSTIN",
+      "label": "GSTIN of the importer"
+    },
+    {
+      "id": "CHA",
+      "label": "Customs House Agent licence / broker code of the declarant"
+    },
+    {
+      "id": "PORT",
+      "label": "Customs port (station) of import"
+    },
+    {
+      "id": "VALUATION_METHOD",
+      "label": "Valuation method and related-party (relationship) declaration"
+    },
+    {
+      "id": "EXEMPTION",
+      "label": "Exemption notification or preferential-origin claim, if one is made"
+    },
+    {
+      "id": "BOE_NUMBER",
+      "label": "Bill of Entry number and date (assigned when the declaration is filed)"
+    }
+  ],
+  "valuation": {
+    "assessable_value": 5443559.38,
+    "assumptions": [
+      "insurance is not stated: the default 1.125 % of the FOB value is applied",
+      "exchange rate USD to INR = 85 (ILLUSTRATIVE rate, not a customs notification; for India the applicable rate is the one in force when the Bill of Entry is presented (no date is applied here))",
+      "the anti-dumping rate is an illustrative reference entry (no notification, producer-specific in practice)",
+      "duty rates: demo-curated data, not verified",
+      "exchange rates: demo-curated data, not verified",
+      "valuation defaults: demo-curated data, not verified",
+      "anti dumping: demo-curated data, not verified"
+    ],
+    "destination_country": "IN",
+    "destination_currency": "INR",
+    "disclaimer": "Indicative estimate for the authorised Custom House Agent. Not a customs determination and not an amount payable; rates and rules come from the reference data named above.",
+    "duties": [
+      {
+        "amount": 408266.95,
+        "base": 5443559.38,
+        "name": "BCD",
+        "note": "basic customs duty",
+        "rate_pct": 7.5
+      },
+      {
+        "amount": 40826.7,
+        "base": 408266.95,
+        "name": "SWS",
+        "note": "social welfare surcharge, on the BCD",
+        "rate_pct": 10.0
+      },
+      {
+        "amount": 653227.13,
+        "base": 5443559.38,
+        "name": "ADD",
+        "note": "anti-dumping duty: ILLUSTRATIVE entry, producer-specific in practice",
+        "rate_pct": 12.0
+      },
+      {
+        "amount": 1178258.43,
+        "base": 6545880.15,
+        "name": "IGST",
+        "note": "on value + BCD + SWS + anti-dumping duty",
+        "rate_pct": 18.0
+      }
+    ],
+    "exchange_rate": 85.0,
+    "exchange_rate_note": "ILLUSTRATIVE rate, not a customs notification; for India the applicable rate is the one in force when the Bill of Entry is presented (no date is applied here)",
+    "freight": 1850.0,
+    "hs_code": "73043100",
+    "implied_hs_code": null,
+    "implied_total_duty": null,
+    "incoterm": "FOB",
+    "insurance": 691.88,
+    "invoice_currency": "USD",
+    "reason": null,
+    "regulation_ref": "Customs duty structure of the destination as encoded for this prototype; the rates are placeholders for a reviewer to confirm against the current customs tariff, not an official source",
+    "rule_set": "demo-curated",
+    "status": "ESTIMATED",
+    "total_duty": 2280579.21,
+    "transaction_value": 61500.0
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "created_at": "2026-10-14T12:02:45.185347+00:00",
+  "current_iteration": 2,
+  "destination_country": "SG",
+  "documents": [
+    {
+      "bundle_id": "bnd-e39886342936",
+      "bytes": 5666,
+      "doc_type": "COMMERCIAL_INVOICE",
+      "document_id": "doc-aef9640294a9299e",
+      "filename": "commercial_invoice.pdf",
+      "gcs_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-e39886342936/raw/doc-aef9640294a9299e/original.pdf",
+      "sha256": "aef9640294a9299e488f54b47807bdef90b3cfa1020ed185550121a970fea7d3",
+      "transform_meta_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-e39886342936/processed/doc-aef9640294a9299e/transform.json",
+      "uploaded_at": "2026-10-14T12:02:45.185749+00:00"
+    },
+    {
+      "bundle_id": "bnd-e39886342936",
+      "bytes": 3433,
+      "doc_type": "BILL_OF_LADING",
+      "document_id": "doc-d6ead78ba3e172aa",
+      "filename": "bill_of_lading.pdf",
+      "gcs_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-e39886342936/raw/doc-d6ead78ba3e172aa/original.pdf",
+      "sha256": "d6ead78ba3e172aa056fd25c2ef4c518d780c4ae7510831542c8227e83316983",
+      "transform_meta_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-e39886342936/processed/doc-d6ead78ba3e172aa/transform.json",
+      "uploaded_at": "2026-10-14T12:02:45.186755+00:00"
+    },
+    {
+      "bundle_id": "bnd-e39886342936",
+      "bytes": 5000,
+      "doc_type": "PACKING_LIST",
+      "document_id": "doc-776b2c1896990e63",
+      "filename": "packing_list.pdf",
+      "gcs_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-e39886342936/raw/doc-776b2c1896990e63/original.pdf",
+      "sha256": "776b2c1896990e63e46799a67834eb27afb92f35a5abac31a909154a039184b9",
+      "transform_meta_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-e39886342936/processed/doc-776b2c1896990e63/transform.json",
+      "uploaded_at": "2026-10-14T12:02:45.187070+00:00"
+    },
+    {
+      "bundle_id": "bnd-e39886342936",
+      "bytes": 10902,
+      "doc_type": "MILL_TEST_CERTIFICATE",
+      "document_id": "doc-84b80e4e1d7110e3",
+      "filename": "mtc_pipe_test_cert.pdf",
+      "gcs_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-e39886342936/raw/doc-84b80e4e1d7110e3/original.pdf",
+      "sha256": "84b80e4e1d7110e358ef9174263563be0c703e535f71f6cfb6d665b5b8d92f83",
+      "transform_meta_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-e39886342936/processed/doc-84b80e4e1d7110e3/transform.json",
+      "uploaded_at": "2026-10-14T12:02:48.963309+00:00"
+    }
+  ],
+  "id": "bnd-e39886342936",
+  "reference": "CASE-C-7304-DEMO",
+  "status": "COMPLIANT_FOR_SUBMISSION"
+}

@@ -1,0 +1,62 @@
+{
+  "case": "skew-8",
+  "description": "scanned with the text tilted 8 degrees the other way",
+  "displayed_pixels_at_72dpi": [
+    596,
+    842
+  ],
+  "original_marker": {
+    "xmax": 395.973,
+    "xmin": 0.0,
+    "ymax": 115.202,
+    "ymin": 57.007
+  },
+  "processed_marker": {
+    "xmax": 481.258,
+    "xmin": 80.411,
+    "ymax": 70.543,
+    "ymin": 49.594
+  },
+  "transform_metadata": {
+    "document_id": "doc-1",
+    "transform_meta": [
+      {
+        "artifact_id": null,
+        "artifact_index": 0,
+        "artifact_page": 1,
+        "crop": null,
+        "deskew_applied": true,
+        "deskew_deg": -8.0,
+        "deskew_detected_deg": -8.0,
+        "deskew_skipped": null,
+        "document_id": "doc-1",
+        "height": 2339,
+        "image_mode": "bw",
+        "page": 1,
+        "processed_page": 1,
+        "processed_to_source_affine": [
+          [
+            0.990268069,
+            0.196811296,
+            -93.539682238
+          ],
+          [
+            -0.098414839,
+            0.990268069,
+            54.07338525
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "rotation": 0,
+        "rotation_applied": false,
+        "source_page": 1,
+        "split_offset": 0,
+        "width": 1654
+      }
+    ]
+  }
+}

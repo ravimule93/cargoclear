@@ -1,0 +1,54 @@
+{
+  "created_at": "2026-10-14T12:02:50.999405+00:00",
+  "current_iteration": 0,
+  "destination_country": "IN",
+  "documents": [
+    {
+      "bundle_id": "bnd-2128f80a07f8",
+      "bytes": 5874,
+      "doc_type": "UNKNOWN",
+      "document_id": "doc-e430309aeeb6e3df",
+      "filename": "case_d_commercial_invoice.pdf",
+      "gcs_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-2128f80a07f8/raw/doc-e430309aeeb6e3df/original.pdf",
+      "sha256": "e430309aeeb6e3df252578c9ff0ab5503ed4fdc3e88a99efa82fb42a9d45d4f5",
+      "transform_meta_uri": null,
+      "uploaded_at": "2026-10-14T12:02:50.999806+00:00"
+    },
+    {
+      "bundle_id": "bnd-2128f80a07f8",
+      "bytes": 3873,
+      "doc_type": "UNKNOWN",
+      "document_id": "doc-6805cc2e9907590c",
+      "filename": "case_d_bill_of_lading.pdf",
+      "gcs_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-2128f80a07f8/raw/doc-6805cc2e9907590c/original.pdf",
+      "sha256": "6805cc2e9907590cf8a1a04b3cf6e628f26e2c997a1b81d2463975d8f66465cf",
+      "transform_meta_uri": null,
+      "uploaded_at": "2026-10-14T12:02:51.001136+00:00"
+    },
+    {
+      "bundle_id": "bnd-2128f80a07f8",
+      "bytes": 4986,
+      "doc_type": "UNKNOWN",
+      "document_id": "doc-c9a9529cb1853d8d",
+      "filename": "case_d_packing_list.pdf",
+      "gcs_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-2128f80a07f8/raw/doc-c9a9529cb1853d8d/original.pdf",
+      "sha256": "c9a9529cb1853d8d77392babf7c89b4c7b725b60c56812450541a5a8f62c8312",
+      "transform_meta_uri": null,
+      "uploaded_at": "2026-10-14T12:02:51.001670+00:00"
+    },
+    {
+      "bundle_id": "bnd-2128f80a07f8",
+      "bytes": 10910,
+      "doc_type": "UNKNOWN",
+      "document_id": "doc-f74c9c3e83f32ccc",
+      "filename": "case_d_mtc_test_cert.pdf",
+      "gcs_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-2128f80a07f8/raw/doc-f74c9c3e83f32ccc/original.pdf",
+      "sha256": "f74c9c3e83f32ccc5c45ad9d4920e23be5155cb06e593da1b0537e8c8c61a63e",
+      "transform_meta_uri": null,
+      "uploaded_at": "2026-10-14T12:02:51.002244+00:00"
+    }
+  ],
+  "id": "bnd-2128f80a07f8",
+  "reference": "CASE-D-7304-IN-DEMO",
+  "status": "PENDING"
+}

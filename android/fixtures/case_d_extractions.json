@@ -1,0 +1,1123 @@
+[
+  {
+    "consignee": {
+      "bbox": {
+        "page": 1,
+        "xmax": 500.0,
+        "xmin": 100.0,
+        "ymax": 220.0,
+        "ymin": 180.0
+      },
+      "confidence": 0.98,
+      "value": "MUMBAI INFRA PIPING PVT LTD"
+    },
+    "consignor": {
+      "bbox": {
+        "page": 1,
+        "xmax": 480.0,
+        "xmin": 100.0,
+        "ymax": 280.0,
+        "ymin": 240.0
+      },
+      "confidence": 0.98,
+      "value": "TIANJIN HUAXING STEEL TUBE CO LTD"
+    },
+    "country_of_origin": {
+      "bbox": {
+        "page": 1,
+        "xmax": 400.0,
+        "xmin": 100.0,
+        "ymax": 690.0,
+        "ymin": 660.0
+      },
+      "confidence": 0.98,
+      "value": "CHINA"
+    },
+    "doc_type": "COMMERCIAL_INVOICE",
+    "doc_type_confidence": 0.99,
+    "document_id": "doc-e430309aeeb6e3df",
+    "document_number": {
+      "bbox": {
+        "page": 1,
+        "xmax": 350.0,
+        "xmin": 100.0,
+        "ymax": 130.0,
+        "ymin": 100.0
+      },
+      "confidence": 0.99,
+      "value": "HX-INV-2026-0457"
+    },
+    "freight_amount": null,
+    "freight_currency": null,
+    "heat_numbers": [],
+    "hs_code_header": null,
+    "incoterm": {
+      "bbox": {
+        "page": 1,
+        "xmax": 400.0,
+        "xmin": 100.0,
+        "ymax": 640.0,
+        "ymin": 610.0
+      },
+      "confidence": 0.97,
+      "value": "FOB TIANJIN"
+    },
+    "insurance_amount": null,
+    "insurance_currency": null,
+    "invoice_currency": {
+      "bbox": {
+        "page": 1,
+        "xmax": 590.0,
+        "xmin": 550.0,
+        "ymax": 330.0,
+        "ymin": 300.0
+      },
+      "confidence": 0.99,
+      "value": "USD"
+    },
+    "invoice_value": {
+      "bbox": {
+        "page": 1,
+        "xmax": 800.0,
+        "xmin": 600.0,
+        "ymax": 330.0,
+        "ymin": 300.0
+      },
+      "confidence": 0.99,
+      "value": 61500.0
+    },
+    "line_items": [
+      {
+        "currency": {
+          "bbox": {
+            "page": 1,
+            "xmax": 290.0,
+            "xmin": 260.0,
+            "ymax": 530.0,
+            "ymin": 500.0
+          },
+          "confidence": 0.99,
+          "value": "USD"
+        },
+        "description": {
+          "bbox": {
+            "page": 1,
+            "xmax": 500.0,
+            "xmin": 100.0,
+            "ymax": 480.0,
+            "ymin": 450.0
+          },
+          "confidence": 0.98,
+          "value": "Seamless cold-drawn steel tubes"
+        },
+        "gross_weight_kg": {
+          "bbox": {
+            "page": 1,
+            "xmax": 840.0,
+            "xmin": 730.0,
+            "ymax": 530.0,
+            "ymin": 500.0
+          },
+          "confidence": 0.98,
+          "unit": "KGS",
+          "value": 25400.0
+        },
+        "hs_code_declared": {
+          "bbox": {
+            "page": 1,
+            "xmax": 950.0,
+            "xmin": 850.0,
+            "ymax": 530.0,
+            "ymin": 500.0
+          },
+          "confidence": 0.99,
+          "value": "73043100"
+        },
+        "net_weight_kg": {
+          "bbox": {
+            "page": 1,
+            "xmax": 720.0,
+            "xmin": 610.0,
+            "ymax": 530.0,
+            "ymin": 500.0
+          },
+          "confidence": 0.99,
+          "unit": "KGS",
+          "value": 25000.0
+        },
+        "quantity": {
+          "bbox": {
+            "page": 1,
+            "xmax": 600.0,
+            "xmin": 520.0,
+            "ymax": 530.0,
+            "ymin": 500.0
+          },
+          "confidence": 0.96,
+          "value": "25 MT"
+        },
+        "total_value": {
+          "bbox": {
+            "page": 1,
+            "xmax": 510.0,
+            "xmin": 410.0,
+            "ymax": 530.0,
+            "ymin": 500.0
+          },
+          "confidence": 0.99,
+          "value": 61500.0
+        },
+        "unit_price": {
+          "bbox": {
+            "page": 1,
+            "xmax": 400.0,
+            "xmin": 300.0,
+            "ymax": 530.0,
+            "ymin": 500.0
+          },
+          "confidence": 0.97,
+          "value": 2460.0
+        },
+        "unit_price_basis": {
+          "bbox": {
+            "page": 1,
+            "xmax": 400.0,
+            "xmin": 300.0,
+            "ymax": 575.0,
+            "ymin": 545.0
+          },
+          "confidence": 0.96,
+          "value": "PER MT"
+        }
+      }
+    ],
+    "package_count": null,
+    "port_of_discharge": null,
+    "port_of_loading": null,
+    "shipment_date": null,
+    "specification": null,
+    "tare_weight_kg": null,
+    "test_results": [],
+    "total_gross_weight_kg": {
+      "bbox": {
+        "page": 1,
+        "xmax": 800.0,
+        "xmin": 600.0,
+        "ymax": 420.0,
+        "ymin": 390.0
+      },
+      "confidence": 0.98,
+      "unit": "KGS",
+      "value": 25400.0
+    },
+    "total_net_weight_kg": {
+      "bbox": {
+        "page": 1,
+        "xmax": 800.0,
+        "xmin": 600.0,
+        "ymax": 380.0,
+        "ymin": 350.0
+      },
+      "confidence": 0.98,
+      "unit": "KGS",
+      "value": 25000.0
+    },
+    "vessel_or_flight": null
+  },
+  {
+    "consignee": {
+      "bbox": {
+        "page": 1,
+        "xmax": 500.0,
+        "xmin": 100.0,
+        "ymax": 240.0,
+        "ymin": 200.0
+      },
+      "confidence": 0.98,
+      "value": "MUMBAI INFRA PIPING PVT LTD"
+    },
+    "consignor": {
+      "bbox": {
+        "page": 1,
+        "xmax": 480.0,
+        "xmin": 100.0,
+        "ymax": 300.0,
+        "ymin": 260.0
+      },
+      "confidence": 0.98,
+      "value": "TIANJIN HUAXING STEEL TUBE CO LTD"
+    },
+    "country_of_origin": null,
+    "doc_type": "BILL_OF_LADING",
+    "doc_type_confidence": 0.99,
+    "document_id": "doc-6805cc2e9907590c",
+    "document_number": {
+      "bbox": {
+        "page": 1,
+        "xmax": 350.0,
+        "xmin": 100.0,
+        "ymax": 130.0,
+        "ymin": 100.0
+      },
+      "confidence": 0.99,
+      "value": "BL-TXG-2026-3311"
+    },
+    "freight_amount": {
+      "bbox": {
+        "page": 1,
+        "xmax": 800.0,
+        "xmin": 600.0,
+        "ymax": 550.0,
+        "ymin": 520.0
+      },
+      "confidence": 0.97,
+      "value": 1850.0
+    },
+    "freight_currency": {
+      "bbox": {
+        "page": 1,
+        "xmax": 580.0,
+        "xmin": 500.0,
+        "ymax": 550.0,
+        "ymin": 520.0
+      },
+      "confidence": 0.98,
+      "value": "USD"
+    },
+    "heat_numbers": [],
+    "hs_code_header": null,
+    "incoterm": null,
+    "insurance_amount": null,
+    "insurance_currency": null,
+    "invoice_currency": null,
+    "invoice_value": null,
+    "line_items": [],
+    "package_count": null,
+    "port_of_discharge": {
+      "bbox": {
+        "page": 1,
+        "xmax": 750.0,
+        "xmin": 500.0,
+        "ymax": 480.0,
+        "ymin": 450.0
+      },
+      "confidence": 0.97,
+      "value": "INNSA - NHAVA SHEVA"
+    },
+    "port_of_loading": {
+      "bbox": {
+        "page": 1,
+        "xmax": 350.0,
+        "xmin": 100.0,
+        "ymax": 480.0,
+        "ymin": 450.0
+      },
+      "confidence": 0.97,
+      "value": "CNTSN - TIANJIN"
+    },
+    "shipment_date": null,
+    "specification": null,
+    "tare_weight_kg": null,
+    "test_results": [],
+    "total_gross_weight_kg": {
+      "bbox": {
+        "page": 1,
+        "xmax": 800.0,
+        "xmin": 600.0,
+        "ymax": 430.0,
+        "ymin": 400.0
+      },
+      "confidence": 0.99,
+      "unit": "KGS",
+      "value": 25400.0
+    },
+    "total_net_weight_kg": null,
+    "vessel_or_flight": {
+      "bbox": {
+        "page": 1,
+        "xmax": 380.0,
+        "xmin": 100.0,
+        "ymax": 350.0,
+        "ymin": 320.0
+      },
+      "confidence": 0.96,
+      "value": "MV PACIFIC HARMONY V-221E"
+    }
+  },
+  {
+    "consignee": {
+      "bbox": {
+        "page": 1,
+        "xmax": 500.0,
+        "xmin": 100.0,
+        "ymax": 220.0,
+        "ymin": 180.0
+      },
+      "confidence": 0.98,
+      "value": "MUMBAI INFRA PIPING PVT LTD"
+    },
+    "consignor": {
+      "bbox": {
+        "page": 1,
+        "xmax": 480.0,
+        "xmin": 100.0,
+        "ymax": 280.0,
+        "ymin": 240.0
+      },
+      "confidence": 0.98,
+      "value": "TIANJIN HUAXING STEEL TUBE CO LTD"
+    },
+    "country_of_origin": {
+      "bbox": {
+        "page": 1,
+        "xmax": 400.0,
+        "xmin": 100.0,
+        "ymax": 810.0,
+        "ymin": 780.0
+      },
+      "confidence": 0.98,
+      "value": "CHINA"
+    },
+    "doc_type": "PACKING_LIST",
+    "doc_type_confidence": 0.99,
+    "document_id": "doc-c9a9529cb1853d8d",
+    "document_number": {
+      "bbox": {
+        "page": 1,
+        "xmax": 350.0,
+        "xmin": 100.0,
+        "ymax": 130.0,
+        "ymin": 100.0
+      },
+      "confidence": 0.99,
+      "value": "HX-PL-2026-0457"
+    },
+    "freight_amount": null,
+    "freight_currency": null,
+    "heat_numbers": [
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 280.0,
+          "xmin": 100.0,
+          "ymax": 750.0,
+          "ymin": 720.0
+        },
+        "confidence": 0.98,
+        "value": "TH-77120"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 500.0,
+          "xmin": 320.0,
+          "ymax": 750.0,
+          "ymin": 720.0
+        },
+        "confidence": 0.98,
+        "value": "TH-77121"
+      }
+    ],
+    "hs_code_header": null,
+    "incoterm": null,
+    "insurance_amount": null,
+    "insurance_currency": null,
+    "invoice_currency": null,
+    "invoice_value": null,
+    "line_items": [
+      {
+        "currency": null,
+        "description": {
+          "bbox": {
+            "page": 1,
+            "xmax": 500.0,
+            "xmin": 100.0,
+            "ymax": 680.0,
+            "ymin": 650.0
+          },
+          "confidence": 0.98,
+          "value": "Seamless cold-drawn steel tubes"
+        },
+        "gross_weight_kg": {
+          "bbox": {
+            "page": 1,
+            "xmax": 840.0,
+            "xmin": 730.0,
+            "ymax": 680.0,
+            "ymin": 650.0
+          },
+          "confidence": 0.98,
+          "unit": "KGS",
+          "value": 25400.0
+        },
+        "hs_code_declared": {
+          "bbox": {
+            "page": 1,
+            "xmax": 950.0,
+            "xmin": 850.0,
+            "ymax": 680.0,
+            "ymin": 650.0
+          },
+          "confidence": 0.99,
+          "value": "73043100"
+        },
+        "net_weight_kg": {
+          "bbox": {
+            "page": 1,
+            "xmax": 720.0,
+            "xmin": 610.0,
+            "ymax": 680.0,
+            "ymin": 650.0
+          },
+          "confidence": 0.99,
+          "unit": "KGS",
+          "value": 25000.0
+        },
+        "quantity": {
+          "bbox": {
+            "page": 1,
+            "xmax": 600.0,
+            "xmin": 520.0,
+            "ymax": 680.0,
+            "ymin": 650.0
+          },
+          "confidence": 0.96,
+          "value": "25 MT"
+        },
+        "total_value": null,
+        "unit_price": null,
+        "unit_price_basis": null
+      }
+    ],
+    "package_count": null,
+    "port_of_discharge": null,
+    "port_of_loading": null,
+    "shipment_date": null,
+    "specification": null,
+    "tare_weight_kg": {
+      "bbox": {
+        "page": 1,
+        "xmax": 800.0,
+        "xmin": 600.0,
+        "ymax": 610.0,
+        "ymin": 580.0
+      },
+      "confidence": 0.97,
+      "unit": "KGS",
+      "value": 400.0
+    },
+    "test_results": [],
+    "total_gross_weight_kg": {
+      "bbox": {
+        "page": 1,
+        "xmax": 800.0,
+        "xmin": 600.0,
+        "ymax": 570.0,
+        "ymin": 540.0
+      },
+      "confidence": 0.98,
+      "unit": "KGS",
+      "value": 25400.0
+    },
+    "total_net_weight_kg": {
+      "bbox": {
+        "page": 1,
+        "xmax": 800.0,
+        "xmin": 600.0,
+        "ymax": 530.0,
+        "ymin": 500.0
+      },
+      "confidence": 0.99,
+      "unit": "KGS",
+      "value": 25000.0
+    },
+    "vessel_or_flight": null
+  },
+  {
+    "consignee": {
+      "bbox": {
+        "page": 1,
+        "xmax": 500.0,
+        "xmin": 100.0,
+        "ymax": 220.0,
+        "ymin": 180.0
+      },
+      "confidence": 0.98,
+      "value": "MUMBAI INFRA PIPING PVT LTD"
+    },
+    "consignor": {
+      "bbox": {
+        "page": 1,
+        "xmax": 480.0,
+        "xmin": 100.0,
+        "ymax": 280.0,
+        "ymin": 240.0
+      },
+      "confidence": 0.98,
+      "value": "TIANJIN HUAXING STEEL TUBE CO LTD"
+    },
+    "country_of_origin": null,
+    "doc_type": "MILL_TEST_CERTIFICATE",
+    "doc_type_confidence": 0.99,
+    "document_id": "doc-f74c9c3e83f32ccc",
+    "document_number": {
+      "bbox": {
+        "page": 1,
+        "xmax": 350.0,
+        "xmin": 100.0,
+        "ymax": 130.0,
+        "ymin": 100.0
+      },
+      "confidence": 0.99,
+      "value": "HX-MTC-2026-0457"
+    },
+    "freight_amount": null,
+    "freight_currency": null,
+    "heat_numbers": [
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 140.0,
+          "xmin": 20.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.99,
+        "value": "TH-77120"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 140.0,
+          "xmin": 20.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.99,
+        "value": "TH-77121"
+      }
+    ],
+    "hs_code_header": {
+      "bbox": {
+        "page": 1,
+        "xmax": 300.0,
+        "xmin": 100.0,
+        "ymax": 330.0,
+        "ymin": 300.0
+      },
+      "confidence": 0.97,
+      "value": "73043100"
+    },
+    "incoterm": null,
+    "insurance_amount": null,
+    "insurance_currency": null,
+    "invoice_currency": null,
+    "invoice_value": null,
+    "line_items": [
+      {
+        "currency": null,
+        "description": {
+          "bbox": {
+            "page": 1,
+            "xmax": 500.0,
+            "xmin": 100.0,
+            "ymax": 430.0,
+            "ymin": 400.0
+          },
+          "confidence": 0.97,
+          "value": "Chemical & mechanical test report, seamless steel tubes"
+        },
+        "gross_weight_kg": {
+          "bbox": {
+            "page": 1,
+            "xmax": 840.0,
+            "xmin": 730.0,
+            "ymax": 430.0,
+            "ymin": 400.0
+          },
+          "confidence": 0.97,
+          "unit": "KGS",
+          "value": 25400.0
+        },
+        "hs_code_declared": {
+          "bbox": {
+            "page": 1,
+            "xmax": 950.0,
+            "xmin": 850.0,
+            "ymax": 430.0,
+            "ymin": 400.0
+          },
+          "confidence": 0.99,
+          "value": "73043100"
+        },
+        "net_weight_kg": {
+          "bbox": {
+            "page": 1,
+            "xmax": 720.0,
+            "xmin": 610.0,
+            "ymax": 430.0,
+            "ymin": 400.0
+          },
+          "confidence": 0.98,
+          "unit": "KGS",
+          "value": 25000.0
+        },
+        "quantity": {
+          "bbox": {
+            "page": 1,
+            "xmax": 600.0,
+            "xmin": 520.0,
+            "ymax": 430.0,
+            "ymin": 400.0
+          },
+          "confidence": 0.95,
+          "value": "25 MT"
+        },
+        "total_value": null,
+        "unit_price": null,
+        "unit_price_basis": null
+      }
+    ],
+    "package_count": null,
+    "port_of_discharge": null,
+    "port_of_loading": null,
+    "shipment_date": null,
+    "specification": {
+      "bbox": {
+        "page": 1,
+        "xmax": 500.0,
+        "xmin": 100.0,
+        "ymax": 370.0,
+        "ymin": 340.0
+      },
+      "confidence": 0.98,
+      "value": "ASTM A106 GR B"
+    },
+    "tare_weight_kg": null,
+    "test_results": [
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 197.0,
+          "xmin": 145.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "C",
+        "unit": "%",
+        "value": "0.21"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 252.0,
+          "xmin": 200.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "Mn",
+        "unit": "%",
+        "value": "0.78"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 307.0,
+          "xmin": 255.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "Si",
+        "unit": "%",
+        "value": "0.24"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 362.0,
+          "xmin": 310.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "P",
+        "unit": "%",
+        "value": "0.016"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 417.0,
+          "xmin": 365.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "S",
+        "unit": "%",
+        "value": "0.007"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 472.0,
+          "xmin": 420.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "Cr",
+        "unit": "%",
+        "value": "0.12"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 527.0,
+          "xmin": 475.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "Ni",
+        "unit": "%",
+        "value": "0.08"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 582.0,
+          "xmin": 530.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "Mo",
+        "unit": "%",
+        "value": "0.03"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 637.0,
+          "xmin": 585.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "Cu",
+        "unit": "%",
+        "value": "0.15"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 692.0,
+          "xmin": 640.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "V",
+        "unit": "%",
+        "value": "0.01"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 747.0,
+          "xmin": 695.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "Nb",
+        "unit": "%",
+        "value": "0.01"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 802.0,
+          "xmin": 750.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "Ti",
+        "unit": "%",
+        "value": "0.01"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 857.0,
+          "xmin": 805.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "YS",
+        "unit": "MPa",
+        "value": "285"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 912.0,
+          "xmin": 860.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "UTS",
+        "unit": "MPa",
+        "value": "485"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 967.0,
+          "xmin": 915.0,
+          "ymax": 550.0,
+          "ymin": 520.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77120",
+        "parameter": "EL",
+        "unit": "%",
+        "value": "26"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 197.0,
+          "xmin": 145.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "C",
+        "unit": "%",
+        "value": "0.22"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 252.0,
+          "xmin": 200.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "Mn",
+        "unit": "%",
+        "value": "0.80"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 307.0,
+          "xmin": 255.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "Si",
+        "unit": "%",
+        "value": "0.25"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 362.0,
+          "xmin": 310.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "P",
+        "unit": "%",
+        "value": "0.015"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 417.0,
+          "xmin": 365.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "S",
+        "unit": "%",
+        "value": "0.006"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 472.0,
+          "xmin": 420.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "Cr",
+        "unit": "%",
+        "value": "0.35"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 527.0,
+          "xmin": 475.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "Ni",
+        "unit": "%",
+        "value": "0.09"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 582.0,
+          "xmin": 530.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "Mo",
+        "unit": "%",
+        "value": "0.05"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 637.0,
+          "xmin": 585.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "Cu",
+        "unit": "%",
+        "value": "0.14"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 692.0,
+          "xmin": 640.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "V",
+        "unit": "%",
+        "value": "0.01"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 747.0,
+          "xmin": 695.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "Nb",
+        "unit": "%",
+        "value": "0.01"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 802.0,
+          "xmin": 750.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "Ti",
+        "unit": "%",
+        "value": "0.01"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 857.0,
+          "xmin": 805.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "YS",
+        "unit": "MPa",
+        "value": "290"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 912.0,
+          "xmin": 860.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "UTS",
+        "unit": "MPa",
+        "value": "490"
+      },
+      {
+        "bbox": {
+          "page": 1,
+          "xmax": 967.0,
+          "xmin": 915.0,
+          "ymax": 600.0,
+          "ymin": 570.0
+        },
+        "confidence": 0.97,
+        "heat_number": "TH-77121",
+        "parameter": "EL",
+        "unit": "%",
+        "value": "25"
+      }
+    ],
+    "total_gross_weight_kg": null,
+    "total_net_weight_kg": null,
+    "vessel_or_flight": null
+  }
+]

@@ -1,0 +1,364 @@
+{
+  "error": null,
+  "events": [
+    {
+      "actor": "user",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:0:1",
+      "event_type": "BUNDLE_CREATED",
+      "hash": "b9f8a40bcb1af41e2949283bfdfce072589bc909b30e613ac7b3a417a25b31a8",
+      "iteration": 0,
+      "payload": {
+        "destination_country": "IN",
+        "reference": "CASE-D-7304-IN-DEMO"
+      },
+      "prev_hash": "GENESIS",
+      "seq": 1,
+      "ts": "2026-10-14T18:04:34.672113+00:00"
+    },
+    {
+      "actor": "user",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:0:2",
+      "event_type": "DOCUMENT_UPLOADED",
+      "hash": "5e1369d397f6750758dad415d81a962340b917f1f39fccf84642bbec5f80a340",
+      "iteration": 0,
+      "payload": {
+        "bytes": 5874,
+        "document_id": "doc-e430309aeeb6e3df",
+        "filename": "case_d_commercial_invoice.pdf",
+        "sha256": "e430309aeeb6e3df252578c9ff0ab5503ed4fdc3e88a99efa82fb42a9d45d4f5"
+      },
+      "prev_hash": "b9f8a40bcb1af41e2949283bfdfce072589bc909b30e613ac7b3a417a25b31a8",
+      "seq": 2,
+      "ts": "2026-10-14T18:04:34.672559+00:00"
+    },
+    {
+      "actor": "user",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:0:3",
+      "event_type": "DOCUMENT_UPLOADED",
+      "hash": "c0c3f334f8b00f31d98f0af204b0540f52a3a4daec52fb6b8682a72c3f8ed72e",
+      "iteration": 0,
+      "payload": {
+        "bytes": 3873,
+        "document_id": "doc-6805cc2e9907590c",
+        "filename": "case_d_bill_of_lading.pdf",
+        "sha256": "6805cc2e9907590cf8a1a04b3cf6e628f26e2c997a1b81d2463975d8f66465cf"
+      },
+      "prev_hash": "5e1369d397f6750758dad415d81a962340b917f1f39fccf84642bbec5f80a340",
+      "seq": 3,
+      "ts": "2026-10-14T18:04:34.672802+00:00"
+    },
+    {
+      "actor": "user",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:0:4",
+      "event_type": "DOCUMENT_UPLOADED",
+      "hash": "2e34f87eda4b7880b013230165b6c16e3746ba03bcce643a3d4676436dbc9bd1",
+      "iteration": 0,
+      "payload": {
+        "bytes": 4986,
+        "document_id": "doc-c9a9529cb1853d8d",
+        "filename": "case_d_packing_list.pdf",
+        "sha256": "c9a9529cb1853d8d77392babf7c89b4c7b725b60c56812450541a5a8f62c8312"
+      },
+      "prev_hash": "c0c3f334f8b00f31d98f0af204b0540f52a3a4daec52fb6b8682a72c3f8ed72e",
+      "seq": 4,
+      "ts": "2026-10-14T18:04:34.673036+00:00"
+    },
+    {
+      "actor": "user",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:0:5",
+      "event_type": "DOCUMENT_UPLOADED",
+      "hash": "024adc4e8c4a13d81bb3953849b170c4f794618870b250844c48d1266c8d4ee3",
+      "iteration": 0,
+      "payload": {
+        "bytes": 10910,
+        "document_id": "doc-f74c9c3e83f32ccc",
+        "filename": "case_d_mtc_test_cert.pdf",
+        "sha256": "f74c9c3e83f32ccc5c45ad9d4920e23be5155cb06e593da1b0537e8c8c61a63e"
+      },
+      "prev_hash": "2e34f87eda4b7880b013230165b6c16e3746ba03bcce643a3d4676436dbc9bd1",
+      "seq": 5,
+      "ts": "2026-10-14T18:04:34.673309+00:00"
+    },
+    {
+      "actor": "system",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:1:6",
+      "event_type": "ANALYSIS_STARTED",
+      "hash": "03a9733838abccccd9bd3085f75bb6e7fc07b50031297df2ae9ba040f752754e",
+      "iteration": 1,
+      "payload": {
+        "attempt": 1,
+        "document_ids": [
+          "doc-e430309aeeb6e3df",
+          "doc-6805cc2e9907590c",
+          "doc-c9a9529cb1853d8d",
+          "doc-f74c9c3e83f32ccc"
+        ],
+        "mode": "full",
+        "run_id": "run-863382176836"
+      },
+      "prev_hash": "024adc4e8c4a13d81bb3953849b170c4f794618870b250844c48d1266c8d4ee3",
+      "seq": 6,
+      "ts": "2026-10-14T18:04:34.675026+00:00"
+    },
+    {
+      "actor": "system",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:1:7",
+      "event_type": "ASSESSMENT_COMPLETED",
+      "hash": "fd18f1b2d0bc31a2a076dfe3e532d6125d9dfaf5a1d53dd08b96c0276ad089a9",
+      "iteration": 1,
+      "payload": {
+        "corrections": [],
+        "data_source": "fixture",
+        "document_ids": [
+          "doc-e430309aeeb6e3df",
+          "doc-6805cc2e9907590c",
+          "doc-c9a9529cb1853d8d",
+          "doc-f74c9c3e83f32ccc"
+        ],
+        "iteration": 1,
+        "mode": "full",
+        "status": "MATERIAL_CONTRADICTION"
+      },
+      "prev_hash": "03a9733838abccccd9bd3085f75bb6e7fc07b50031297df2ae9ba040f752754e",
+      "seq": 7,
+      "ts": "2026-10-14T18:04:36.262343+00:00"
+    },
+    {
+      "actor": "system",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:1:8",
+      "event_type": "AUDIT_HEAD_SIGNED",
+      "hash": "2cb255bc9fbf1467674ae9d60fd66163708ca622f49c47b72f903c5f85f1e05a",
+      "iteration": 1,
+      "payload": {
+        "algorithm": "ECDSA_P256_SHA256",
+        "key": "local-demo",
+        "public_key": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE1eVxTKMADmLoVly0YXJmO4WALibC\nhZ56UWx2uERcgOc649L4rarKmfM6tJJXZIRXCRUWtWNYfHe3nFmvAMLeKA==\n-----END PUBLIC KEY-----\n",
+        "signature": "MEUCIBNxmisZtcIAFcfMeHCXLMF8HcDbWKMhDKjbKFPXfpcvAiEAmQZDpMHMPaTHv3u2QHlGo/YLeuDwSaR9i8NKvy1czDw=",
+        "signed_at": "2026-10-14T18:04:36.262478+00:00",
+        "signed_hash": "fd18f1b2d0bc31a2a076dfe3e532d6125d9dfaf5a1d53dd08b96c0276ad089a9",
+        "signed_seq": 7,
+        "signer": "local-demo"
+      },
+      "prev_hash": "fd18f1b2d0bc31a2a076dfe3e532d6125d9dfaf5a1d53dd08b96c0276ad089a9",
+      "seq": 8,
+      "ts": "2026-10-14T18:04:36.262506+00:00"
+    },
+    {
+      "actor": "user",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:1:9",
+      "event_type": "FIELD_CORRECTED",
+      "hash": "366a25da3718b92a1497a3bf09a652eb01f738659572d9c4bf082b8f1eed8028",
+      "iteration": 1,
+      "payload": {
+        "anchor": "TH77121|Cr",
+        "document_id": "doc-f74c9c3e83f32ccc",
+        "original_unit": "%",
+        "original_value": "0.35",
+        "path": "test_results[20]",
+        "previous_unit": "%",
+        "previous_value": "0.35",
+        "reason": "the certificate prints 0.28",
+        "reverts": null,
+        "unit": "%",
+        "value": "0.28"
+      },
+      "prev_hash": "2cb255bc9fbf1467674ae9d60fd66163708ca622f49c47b72f903c5f85f1e05a",
+      "seq": 9,
+      "ts": "2026-10-14T18:04:36.710096+00:00"
+    },
+    {
+      "actor": "user",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:1:10",
+      "event_type": "FIELD_CONFIRMED",
+      "hash": "ea236e012788ef15e113322a2db1f0fe8a8dd0d82136cca3c5f8bba24d05a87f",
+      "iteration": 1,
+      "payload": {
+        "anchor": null,
+        "document_id": "doc-e430309aeeb6e3df",
+        "original_unit": null,
+        "original_value": "MUMBAI INFRA PIPING PVT LTD",
+        "path": "consignee",
+        "previous_unit": null,
+        "previous_value": "MUMBAI INFRA PIPING PVT LTD",
+        "reason": null,
+        "reverts": null,
+        "unit": null,
+        "value": "MUMBAI INFRA PIPING PVT LTD"
+      },
+      "prev_hash": "366a25da3718b92a1497a3bf09a652eb01f738659572d9c4bf082b8f1eed8028",
+      "seq": 10,
+      "ts": "2026-10-14T18:04:36.712218+00:00"
+    },
+    {
+      "actor": "system",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:1:11",
+      "event_type": "AUDIT_HEAD_SIGNED",
+      "hash": "efb863a1ac8a6ec00f826ce4a13a39729246f399d0e7308fe87d5e6c8a9de085",
+      "iteration": 1,
+      "payload": {
+        "algorithm": "ECDSA_P256_SHA256",
+        "key": "local-demo",
+        "public_key": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE1eVxTKMADmLoVly0YXJmO4WALibC\nhZ56UWx2uERcgOc649L4rarKmfM6tJJXZIRXCRUWtWNYfHe3nFmvAMLeKA==\n-----END PUBLIC KEY-----\n",
+        "signature": "MEYCIQDYqu2ygpZT31i2ynCpMGcWEYHIeOEiMft5zlv+074jJwIhANdGpF/NC5ON/HlEtiBQfM2lVUvwnKHohnCPmRdTs6q1",
+        "signed_at": "2026-10-14T18:04:36.718373+00:00",
+        "signed_hash": "ea236e012788ef15e113322a2db1f0fe8a8dd0d82136cca3c5f8bba24d05a87f",
+        "signed_seq": 10,
+        "signer": "local-demo"
+      },
+      "prev_hash": "ea236e012788ef15e113322a2db1f0fe8a8dd0d82136cca3c5f8bba24d05a87f",
+      "seq": 11,
+      "ts": "2026-10-14T18:04:36.718414+00:00"
+    },
+    {
+      "actor": "system",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:2:12",
+      "event_type": "ANALYSIS_STARTED",
+      "hash": "49ce63dac17a7992ba1c406c3fdb69444ca222da572a99ed52ea431d0b34dd1a",
+      "iteration": 2,
+      "payload": {
+        "attempt": 1,
+        "document_ids": [
+          "doc-e430309aeeb6e3df",
+          "doc-6805cc2e9907590c",
+          "doc-c9a9529cb1853d8d",
+          "doc-f74c9c3e83f32ccc"
+        ],
+        "mode": "recompute",
+        "run_id": "run-54cc93bd7296"
+      },
+      "prev_hash": "efb863a1ac8a6ec00f826ce4a13a39729246f399d0e7308fe87d5e6c8a9de085",
+      "seq": 12,
+      "ts": "2026-10-14T18:04:36.721147+00:00"
+    },
+    {
+      "actor": "system",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:2:13",
+      "event_type": "ASSESSMENT_COMPLETED",
+      "hash": "fe891758b50877317eb920b789d48955b686266d9d6e7f8f9aed6bc7b750cc1e",
+      "iteration": 2,
+      "payload": {
+        "corrections": [
+          "cor-9",
+          "cor-10"
+        ],
+        "data_source": "fixture",
+        "document_ids": [
+          "doc-e430309aeeb6e3df",
+          "doc-6805cc2e9907590c",
+          "doc-c9a9529cb1853d8d",
+          "doc-f74c9c3e83f32ccc"
+        ],
+        "iteration": 2,
+        "mode": "recompute",
+        "status": "SPECIALIST_REVIEW_REQUIRED"
+      },
+      "prev_hash": "49ce63dac17a7992ba1c406c3fdb69444ca222da572a99ed52ea431d0b34dd1a",
+      "seq": 13,
+      "ts": "2026-10-14T18:04:36.727821+00:00"
+    },
+    {
+      "actor": "system",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:2:14",
+      "event_type": "AUDIT_HEAD_SIGNED",
+      "hash": "7d44957042da0ca3c6a5bd433764d6a3a3ad13576911cb017f7f05afd43fadba",
+      "iteration": 2,
+      "payload": {
+        "algorithm": "ECDSA_P256_SHA256",
+        "key": "local-demo",
+        "public_key": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE1eVxTKMADmLoVly0YXJmO4WALibC\nhZ56UWx2uERcgOc649L4rarKmfM6tJJXZIRXCRUWtWNYfHe3nFmvAMLeKA==\n-----END PUBLIC KEY-----\n",
+        "signature": "MEUCIQC3+0IF1rBH8QM4rJbO04HZQLVwdbKqDsizXCDXGyxmDQIgPSkmPGc2u2Hgag1TxPO8G6IET0MFdd2IlFx3G4MsKzg=",
+        "signed_at": "2026-10-14T18:04:36.727939+00:00",
+        "signed_hash": "fe891758b50877317eb920b789d48955b686266d9d6e7f8f9aed6bc7b750cc1e",
+        "signed_seq": 13,
+        "signer": "local-demo"
+      },
+      "prev_hash": "fe891758b50877317eb920b789d48955b686266d9d6e7f8f9aed6bc7b750cc1e",
+      "seq": 14,
+      "ts": "2026-10-14T18:04:36.727960+00:00"
+    },
+    {
+      "actor": "user",
+      "bundle_id": "bnd-4d07f1f17a0e",
+      "event_id": "bnd-4d07f1f17a0e:2:15",
+      "event_type": "CORRECTION_REVERTED",
+      "hash": "c0db0123acd2dfe03e741a268e28d82ac7c12818ba7427fb80f3ee569bbb4176",
+      "iteration": 2,
+      "payload": {
+        "anchor": null,
+        "document_id": "doc-f74c9c3e83f32ccc",
+        "original_unit": null,
+        "original_value": null,
+        "path": "test_results[20]",
+        "previous_unit": null,
+        "previous_value": null,
+        "reason": null,
+        "reverts": "cor-9",
+        "unit": null,
+        "value": null
+      },
+      "prev_hash": "7d44957042da0ca3c6a5bd433764d6a3a3ad13576911cb017f7f05afd43fadba",
+      "seq": 15,
+      "ts": "2026-10-14T18:04:37.244151+00:00"
+    }
+  ],
+  "signature": {
+    "configured": true,
+    "failures": 0,
+    "key": "local-demo",
+    "meaning": "Tamper-evident under the operator's key, here a throwaway demo key that only this process holds: it shows the chain was not edited after it was signed, in this session, and says nothing about who signed it. Not legal non-repudiation: there is no user authentication, so the signer is the service, not a person.",
+    "signatures": [
+      {
+        "algorithm": "ECDSA_P256_SHA256",
+        "event_seq": 8,
+        "key": "local-demo",
+        "reason": null,
+        "signed_at": "2026-10-14T18:04:36.262478+00:00",
+        "signed_hash": "fd18f1b2d0bc31a2a076dfe3e532d6125d9dfaf5a1d53dd08b96c0276ad089a9",
+        "signed_seq": 7,
+        "signer": "local-demo",
+        "valid": true
+      },
+      {
+        "algorithm": "ECDSA_P256_SHA256",
+        "event_seq": 11,
+        "key": "local-demo",
+        "reason": null,
+        "signed_at": "2026-10-14T18:04:36.718373+00:00",
+        "signed_hash": "ea236e012788ef15e113322a2db1f0fe8a8dd0d82136cca3c5f8bba24d05a87f",
+        "signed_seq": 10,
+        "signer": "local-demo",
+        "valid": true
+      },
+      {
+        "algorithm": "ECDSA_P256_SHA256",
+        "event_seq": 14,
+        "key": "local-demo",
+        "reason": null,
+        "signed_at": "2026-10-14T18:04:36.727939+00:00",
+        "signed_hash": "fe891758b50877317eb920b789d48955b686266d9d6e7f8f9aed6bc7b750cc1e",
+        "signed_seq": 13,
+        "signer": "local-demo",
+        "valid": true
+      }
+    ],
+    "signed_seq": 13,
+    "signer": "local-demo",
+    "status": "PARTIAL",
+    "unsigned_events": 1
+  },
+  "verified": true
+}

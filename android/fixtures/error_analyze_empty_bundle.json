@@ -1,0 +1,7 @@
+{
+  "code": "VALIDATION_ERROR",
+  "detail": null,
+  "message": "Cannot analyze an empty bundle. Upload trade documents first.",
+  "request_id": "280dba2f-96e7-4474-9e10-3401a926f759",
+  "status": 422
+}

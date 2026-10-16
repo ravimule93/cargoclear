@@ -1,0 +1,43 @@
+{
+  "document_id": "doc-aef9640294a9299e",
+  "transform_meta": [
+    {
+      "artifact_id": null,
+      "artifact_index": 0,
+      "artifact_page": 1,
+      "crop": null,
+      "deskew_applied": false,
+      "deskew_deg": 0.0,
+      "deskew_detected_deg": 0.0,
+      "deskew_skipped": "disabled",
+      "document_id": "doc-aef9640294a9299e",
+      "height": 2339,
+      "image_mode": "bw",
+      "page": 1,
+      "processed_page": 1,
+      "processed_to_source_affine": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "processed_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-a525e5ae1f37/pages/it0001/doc-aef9640294a9299e/page-001.png",
+      "rotation": 0,
+      "rotation_applied": false,
+      "source_page": 1,
+      "split_offset": 0,
+      "width": 1654
+    }
+  ]
+}

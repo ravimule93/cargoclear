@@ -1,0 +1,11 @@
+{
+  "bundle_id": "bnd-e39886342936",
+  "bytes": 10902,
+  "doc_type": "UNKNOWN",
+  "document_id": "doc-84b80e4e1d7110e3",
+  "filename": "mtc_pipe_test_cert.pdf",
+  "gcs_uri": "gs://cargoclear-raw-pdfs/bundles/bnd-e39886342936/raw/doc-84b80e4e1d7110e3/original.pdf",
+  "sha256": "84b80e4e1d7110e358ef9174263563be0c703e535f71f6cfb6d665b5b8d92f83",
+  "transform_meta_uri": null,
+  "uploaded_at": "2026-10-14T12:02:48.963309+00:00"
+}

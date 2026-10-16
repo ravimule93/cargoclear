@@ -1,0 +1,9 @@
+{
+  "code": "NOT_FOUND",
+  "detail": {
+    "bundle_id": "bnd-does-not-exist"
+  },
+  "message": "Bundle 'bnd-does-not-exist' not found.",
+  "request_id": "c77eba52-a805-4008-8e84-6ae0c79d0bee",
+  "status": 404
+}

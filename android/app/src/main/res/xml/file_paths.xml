@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only the pre-fill pack folder of the app's cache can be shared; documents and everything else stay private. -->
+<paths>
+    <cache-path name="prefill" path="prefill/" />
+</paths>

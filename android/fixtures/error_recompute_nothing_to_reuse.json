@@ -1,0 +1,9 @@
+{
+  "code": "CONFLICT",
+  "detail": {
+    "bundle_id": "bnd-0e64b4bf3b32"
+  },
+  "message": "Run the analysis first: there is nothing to recompute yet.",
+  "request_id": "11da21de-2936-4d04-a06d-468edb8ddabc",
+  "status": 409
+}

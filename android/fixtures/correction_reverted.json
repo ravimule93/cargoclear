@@ -1,0 +1,19 @@
+{
+  "actor": "user",
+  "anchor": null,
+  "correction_id": "cor-15",
+  "created_at": "2026-10-14T18:04:37.244151+00:00",
+  "document_id": "doc-f74c9c3e83f32ccc",
+  "iteration": 2,
+  "kind": "revert",
+  "original_unit": null,
+  "original_value": null,
+  "path": "test_results[20]",
+  "previous_unit": null,
+  "previous_value": null,
+  "reason": null,
+  "reverts": "cor-9",
+  "seq": 15,
+  "unit": null,
+  "value": null
+}
