@@ -128,8 +128,8 @@ function SignInContent() {
   };
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-6 p-6">
-      <div className="rounded-xl border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-6 shadow-xl space-y-6">
+    <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-6 p-3 sm:p-6">
+      <div className="rounded-xl border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-4 sm:p-6 shadow-xl space-y-6">
         <header className="space-y-1 text-center">
           <div className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-[var(--cc-surface-2)] text-xl mb-2">
             🛃

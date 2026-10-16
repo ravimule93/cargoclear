@@ -57,41 +57,41 @@ export function TopBar({
 
   return (
     <header className="cc-top">
-      <div className="flex items-center gap-2">
+      {/* Brand & return breadcrumbs */}
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <Link
           href="/"
-          className="flex items-center gap-2 font-semibold hover:opacity-85 transition-opacity"
+          className="flex items-center gap-1.5 font-semibold hover:opacity-85 transition-opacity"
           title="Return to Dashboard"
         >
-          <span aria-hidden="true" className="text-xl">🛃</span>
-          <span className="tracking-tight text-base font-bold text-[var(--cc-text)]">CargoClear</span>
+          <span aria-hidden="true" className="text-lg sm:text-xl">🛃</span>
+          <span className="tracking-tight text-sm sm:text-base font-bold text-[var(--cc-text)] hidden xs:inline">CargoClear</span>
         </Link>
         <Link
           href="/"
-          className="text-[11px] text-[var(--cc-text-muted)] hover:text-[var(--cc-text)] px-2 py-1 rounded border border-[var(--cc-border)] hover:bg-[var(--cc-surface-2)] transition-colors ml-1"
+          className="text-[11px] text-[var(--cc-text-muted)] hover:text-[var(--cc-text)] px-1.5 sm:px-2 py-0.5 rounded border border-[var(--cc-border)] hover:bg-[var(--cc-surface-2)] transition-colors ml-0.5 sm:ml-1"
           title="View all bundles and assessments"
         >
-          ← All Bundles
+          <span className="hidden sm:inline">← All Bundles</span>
+          <span className="sm:hidden">← All</span>
         </Link>
       </div>
 
-      <div className="text-xs text-[var(--cc-text-muted)] border-l border-[var(--cc-border)] pl-3 flex items-center gap-2">
-        <span>Bundle</span>
-        <code className="font-mono font-medium text-[var(--cc-text)]">{bundle.id}</code>
+      {/* Bundle context: ID, destination, status */}
+      <div className="text-xs text-[var(--cc-text-muted)] sm:border-l border-[var(--cc-border)] sm:pl-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
+        <span className="hidden sm:inline">Bundle</span>
+        <code className="font-mono font-medium text-[var(--cc-text)] text-[11px] sm:text-xs truncate max-w-[120px] sm:max-w-none">{bundle.id}</code>
         {bundle.reference && (
-          <span className="text-[11px] bg-[var(--cc-surface-2)] px-1.5 py-0.5 rounded border border-[var(--cc-border)] text-[var(--cc-text-subtle)]">
+          <span className="hidden md:inline text-[10px] sm:text-[11px] bg-[var(--cc-surface-2)] px-1.5 py-0.5 rounded border border-[var(--cc-border)] text-[var(--cc-text-subtle)] truncate max-w-[100px]">
             {bundle.reference}
           </span>
         )}
         <span
           data-testid="bundle-destination"
-          className="text-[11px] bg-[var(--cc-surface-2)] px-1.5 py-0.5 rounded border border-[var(--cc-border)] text-[var(--cc-text-subtle)]"
+          className="text-[10px] sm:text-[11px] bg-[var(--cc-surface-2)] px-1.5 py-0.5 rounded border border-[var(--cc-border)] text-[var(--cc-text-subtle)] font-medium"
         >
           To {bundle.destination_country}
         </span>
-      </div>
-
-      <div className="ml-2">
         <StatusPill status={status} />
       </div>
 
@@ -99,18 +99,20 @@ export function TopBar({
         <div
           role="status"
           aria-live="polite"
-          className="ml-3 flex items-center gap-2 text-xs bg-[var(--cc-surface-2)] border border-[var(--cc-focus)]/40 px-2.5 py-1 rounded-full text-[var(--cc-text)]"
+          className="flex items-center gap-1.5 text-xs bg-[var(--cc-surface-2)] border border-[var(--cc-focus)]/40 px-2 py-0.5 rounded-full text-[var(--cc-text)] shrink-0"
         >
           <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border-2 border-[var(--cc-focus)] border-t-transparent" />
-          <span className="font-medium text-[11px]">
+          <span className="font-medium text-[10px] sm:text-[11px]">
             Uploading {uploadProgress.current}/{uploadProgress.total}
-            {uploadProgress.filename ? `: ${uploadProgress.filename}` : ""}
           </span>
         </div>
       )}
 
-      <div className="ml-auto flex items-center gap-3">
-        <ModeBadge />
+      {/* Action controls cluster */}
+      <div className="ml-auto flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="hidden lg:block">
+          <ModeBadge />
+        </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -122,10 +124,12 @@ export function TopBar({
           tabIndex={-1}
           onChange={handleFileChange}
         />
-        <DocumentTypeSelect value={declared.declaredType} onChange={declared.setDeclaredType} disabled={isUploading} />
+        <div className="hidden sm:block">
+          <DocumentTypeSelect value={declared.declaredType} onChange={declared.setDeclaredType} disabled={isUploading} className="max-w-[130px] sm:max-w-[150px]" />
+        </div>
         <Link
           href="/"
-          className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-3 py-1.5 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] transition-colors cursor-pointer flex items-center gap-1"
+          className="hidden xl:flex rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-2.5 py-1 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] transition-colors cursor-pointer items-center gap-1"
           title="Create a new bundle"
         >
           <span>+ New Bundle</span>
@@ -134,17 +138,18 @@ export function TopBar({
           type="button"
           disabled={isUploading}
           onClick={() => fileInputRef.current?.click()}
-          className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-3 py-1.5 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 transition-colors cursor-pointer flex items-center gap-1.5"
+          className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-2 sm:px-2.5 py-1 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 transition-colors cursor-pointer flex items-center gap-1"
         >
           {isUploading ? (
             <>
               <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border-2 border-[var(--cc-text)] border-t-transparent" />
-              <span>
-                {uploadProgress ? `Uploading (${uploadProgress.current}/${uploadProgress.total})...` : "Uploading..."}
-              </span>
+              <span className="hidden sm:inline">Uploading...</span>
             </>
           ) : (
-            <span>+ Add Document</span>
+            <>
+              <span>+ Add</span>
+              <span className="hidden sm:inline">Document</span>
+            </>
           )}
         </button>
         <button
@@ -153,7 +158,7 @@ export function TopBar({
           disabled={isRunning}
           aria-busy={isRunning}
           onClick={onRun}
-          className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:brightness-90 disabled:opacity-50 transition-all cursor-pointer flex items-center gap-1.5"
+          className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-2.5 sm:px-3 py-1 text-xs font-semibold text-white shadow-xs hover:brightness-90 disabled:opacity-50 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
         >
           {isRunning && (
             <span

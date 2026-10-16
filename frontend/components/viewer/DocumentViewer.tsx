@@ -231,7 +231,7 @@ export function DocumentViewer({
     : null;
 
   return (
-    <div className="flex flex-col items-center justify-start p-4 h-full">
+    <div className="flex flex-col items-center justify-start p-2 sm:p-4 h-full overflow-y-auto">
       {!hasDocument && (
         <div className="p-2 text-xs text-[var(--cc-text-muted)] italic">
           No documents in this bundle yet. Use Add Document to upload a PDF.
@@ -239,53 +239,57 @@ export function DocumentViewer({
       )}
 
       {hasDocument && (
-        <div className="flex items-center gap-2 mb-3 bg-[var(--cc-surface)] px-3 py-1.5 rounded-[var(--cc-radius)] border border-[var(--cc-border)] text-xs text-[var(--cc-text-muted)]">
-          <button
-            type="button"
-            disabled={loadState !== "ready" || page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="px-2 py-0.5 rounded border border-[var(--cc-border)] disabled:opacity-40 cursor-pointer"
-          >
-            Previous
-          </button>
-          <span aria-live="polite">
-            {loadState === "ready" ? `Page ${page} of ${numPages}` : "Page - of -"}
-          </span>
-          <button
-            type="button"
-            disabled={loadState !== "ready" || page >= numPages}
-            onClick={() => setPage((p) => Math.min(numPages, p + 1))}
-            className="px-2 py-0.5 rounded border border-[var(--cc-border)] disabled:opacity-40 cursor-pointer"
-          >
-            Next
-          </button>
-          <span
-            className="pl-2 ml-1 border-l border-[var(--cc-border)] font-mono truncate max-w-[16rem]"
-            title={filename}
-          >
-            {filename}
-          </span>
-          {pageTransform?.deskew_applied && (
-            <span
-              data-testid="deskew-note"
-              className="pl-2 ml-1 border-l border-[var(--cc-border)]"
-              title="The page was straightened before the model read it; evidence boxes are mapped back onto this original page."
+        <div className="flex flex-wrap items-center justify-between sm:justify-start gap-1.5 sm:gap-2 mb-3 bg-[var(--cc-surface)] px-2.5 sm:px-3 py-1.5 rounded-[var(--cc-radius)] border border-[var(--cc-border)] text-xs text-[var(--cc-text-muted)] max-w-full">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={loadState !== "ready" || page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-2 py-0.5 rounded border border-[var(--cc-border)] disabled:opacity-40 cursor-pointer"
             >
-              straightened {pageTransform.deskew_deg?.toFixed(1)}°
+              Previous
+            </button>
+            <span aria-live="polite">
+              {loadState === "ready" ? `Page ${page} of ${numPages}` : "Page - of -"}
             </span>
-          )}
-          {modelView && (
-            <a
-              data-testid="model-view-link"
-              href={modelView}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="pl-2 ml-1 border-l border-[var(--cc-border)] font-semibold text-[var(--cc-focus)] hover:underline"
-              title="The page image exactly as the extraction saw it (after orientation, straightening and the image mode)"
+            <button
+              type="button"
+              disabled={loadState !== "ready" || page >= numPages}
+              onClick={() => setPage((p) => Math.min(numPages, p + 1))}
+              className="px-2 py-0.5 rounded border border-[var(--cc-border)] disabled:opacity-40 cursor-pointer"
             >
-              What the model saw
-            </a>
-          )}
+              Next
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+            <span
+              className="pl-2 border-l border-[var(--cc-border)] font-mono truncate max-w-[8rem] sm:max-w-[12rem] md:max-w-[16rem]"
+              title={filename}
+            >
+              {filename}
+            </span>
+            {pageTransform?.deskew_applied && (
+              <span
+                data-testid="deskew-note"
+                className="pl-2 border-l border-[var(--cc-border)] hidden sm:inline"
+                title="The page was straightened before the model read it; evidence boxes are mapped back onto this original page."
+              >
+                straightened {pageTransform.deskew_deg?.toFixed(1)}°
+              </span>
+            )}
+            {modelView && (
+              <a
+                data-testid="model-view-link"
+                href={modelView}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="pl-2 border-l border-[var(--cc-border)] font-semibold text-[var(--cc-focus)] hover:underline whitespace-nowrap"
+                title="The page image exactly as the extraction saw it (after orientation, straightening and the image mode)"
+              >
+                What the model saw
+              </a>
+            )}
+          </div>
         </div>
       )}
 
@@ -301,16 +305,16 @@ export function DocumentViewer({
       )}
 
       {/* Always mounted: this container is measured for fit-to-width; the canvas sizes the page wrapper. */}
-      <div ref={containerRef} className="w-full flex justify-center">
+      <div ref={containerRef} className="w-full flex justify-center overflow-hidden">
         <div
-          className="relative shadow-[var(--cc-shadow-1)] rounded-[var(--cc-radius)] overflow-hidden"
+          className="relative shadow-[var(--cc-shadow-1)] rounded-[var(--cc-radius)] overflow-hidden max-w-full"
           style={{ display: hasDocument && loadState === "ready" ? "block" : "none" }}
         >
           <canvas
             ref={canvasRef}
             role="img"
             aria-label={`Page ${page} of ${numPages}: ${filename}`}
-            className="block bg-white"
+            className="block bg-white max-w-full h-auto"
           />
           <BBoxLayer width={cssSize.w} height={cssSize.h} boxes={boxes} />
         </div>
