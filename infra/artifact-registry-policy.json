@@ -1,20 +1,20 @@
 [
   {
-    "name": "keep-latest-3-versions",
+    "name": "keep-latest-1-version",
     "action": {
       "type": "Keep"
     },
     "mostRecentVersions": {
-      "keepCount": 3
+      "keepCount": 1
     }
   },
   {
-    "name": "delete-older-than-3-days",
+    "name": "delete-older-versions",
     "action": {
       "type": "Delete"
     },
     "condition": {
-      "olderThan": "259200s"
+      "olderThan": "86400s"
     }
   }
 ]
