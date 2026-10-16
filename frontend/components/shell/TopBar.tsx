@@ -38,7 +38,7 @@ export function TopBar({
   isUploading = false,
   uploadProgress = null,
   runMode,
-  connection = "open",
+  connection: _connection = "open",
   onRun,
   onFilesSelected,
   onLogin,
@@ -94,22 +94,6 @@ export function TopBar({
       <div className="ml-2">
         <StatusPill status={status} />
       </div>
-
-      {connection !== "open" && connection !== "connecting" && (
-        <span
-          data-testid="stream-connection"
-          aria-live="polite"
-          className="text-[11px] text-[var(--cc-text-muted)] flex items-center gap-1"
-        >
-          {connection === "polling" ? (
-            <span className="rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 border border-emerald-500/20 text-[10px] font-medium">
-              ⚡ Polling active
-            </span>
-          ) : (
-            <span>Live updates: {connection}…</span>
-          )}
-        </span>
-      )}
 
       {isUploading && uploadProgress && (
         <div
