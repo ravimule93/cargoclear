@@ -4,8 +4,9 @@
  * The browser talks to /api/proxy/... only; this handler forwards to the API at the runtime-only API_BASE and streams
  * the answer back (SSE included). Everything that decides HOW it forwards lives in lib/server/proxy.ts:
  *
- * - only GET and POST exist (the API has no other method), and only a fixed list of request headers is forwarded:
- *   cookies, a browser-supplied Authorization and any X-CargoClear-* header never reach the API;
+ * - GET and POST are forwarded, DELETE only to remove one document of a bundle (isForwardable: the API has no other DELETE route),
+ *   and only a fixed list of request headers is forwarded: cookies, a browser-supplied Authorization and any X-CargoClear-*
+ *   header never reach the API;
  * - the path must stay below /api/v1 (no `..`, no encoded slash);
  * - with API_AUTH_MODE=google-id-token the API is a private Cloud Run service and every call carries an ID token of
  *   this service's identity;
@@ -27,6 +28,7 @@ import {
   clientIpFrom,
   downstreamResponseHeaders,
   idTokens,
+  isForwardable,
   isStreamPath,
   proxyError,
   requestIdFor,
@@ -46,6 +48,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
+  return handleProxy(request, await context.params);
+}
+
+export async function DELETE(request: NextRequest, context: RouteContext) {
   return handleProxy(request, await context.params);
 }
 
@@ -70,6 +76,13 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
     });
   }
 
+  if (!isForwardable(request.method, params.path ?? [])) {
+    return NextResponse.json(proxyError("METHOD_NOT_ALLOWED", "This method is not available here.", requestId), {
+      status: 405,
+      headers: { "x-request-id": requestId },
+    });
+  }
+
   try {
     const idToken = authMode() === "google-id-token" ? await idTokens.get(new URL(base).origin) : null;
     const headers = upstreamRequestHeaders(request.headers, {
@@ -78,16 +91,23 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
       requestId,
     });
 
-    // Read active auth session from cookie if Authorization header is not explicitly present.
+    // Read active auth session from cookie if present and forward as dedicated end-user identity.
     // Firebase Hosting CDN rewrites forward ONLY the '__session' cookie, so we check both.
     const sessionToken =
       request.cookies.get("__session")?.value ||
       request.cookies.get("cargoclear_session_token")?.value;
+    if (sessionToken) {
+      headers.set("x-cargoclear-user-token", `Bearer ${sessionToken}`);
+    } else if (request.headers.get("x-cargoclear-user-token")) {
+      headers.set("x-cargoclear-user-token", request.headers.get("x-cargoclear-user-token")!);
+    }
+
     if (sessionToken && !headers.has("authorization")) {
       headers.set("authorization", `Bearer ${sessionToken}`);
     }
 
-    const hasBody = request.method !== "GET" && request.method !== "HEAD";
+    // POST only: DELETE (document remove) must not stream a body through duplex fetch.
+    const hasBody = request.method === "POST";
     const signals: AbortSignal[] = [request.signal];
     if (!isStreamPath(params.path)) signals.push(AbortSignal.timeout(REQUEST_DEADLINE_MS));
 
@@ -104,9 +124,17 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
     const isSse = response.headers.get("content-type")?.includes("text/event-stream");
     const responseHeaders = downstreamResponseHeaders(response.headers);
     if (isSse) {
-      responseHeaders.set("Cache-Control", "no-cache, no-transform");
-      responseHeaders.set("Connection", "keep-alive");
+      responseHeaders.set("Content-Type", "text/event-stream; charset=utf-8");
+      responseHeaders.set("Cache-Control", "no-cache, no-transform, no-store, must-revalidate");
       responseHeaders.set("X-Accel-Buffering", "no");
+      // HTTP/2 explicitly prohibits hop-by-hop headers (RFC 7540)
+      responseHeaders.delete("connection");
+      responseHeaders.delete("keep-alive");
+
+      return new Response(response.body, {
+        status: response.status,
+        headers: responseHeaders,
+      });
     }
 
     return new NextResponse(response.body, {

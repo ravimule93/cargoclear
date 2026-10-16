@@ -13,8 +13,9 @@ from app.core.config import settings
 from app.gateway.errors import PayloadTooLargeError
 from app.repo import firestore
 from app.services import storage
-from tests.helpers import api_client, case_c_pdf
+from tests.helpers import REPO_ROOT, api_client, case_c_pdf
 
+GATING = REPO_ROOT / "backend" / "tests" / "fixtures" / "gating"
 KB = 1024
 MB = 1024 * 1024
 
@@ -158,31 +159,45 @@ async def test_bytes_that_are_not_a_pdf_are_refused_whatever_the_name_says(data)
 
 
 @pytest.mark.asyncio
-async def test_an_encrypted_pdf_is_refused() -> None:
+@pytest.mark.real_poppler
+async def test_a_pdf_that_needs_a_password_is_refused() -> None:
+    locked = (GATING / "f08a_user_password.pdf").read_bytes()
     async with api_client() as client:
         bundle_id = await new_bundle(client)
 
-        response = await upload(client, bundle_id, "locked.pdf", b"%PDF-1.6\n<< /Filter /Standard /Encrypt 4 0 R >>")
+        response = await upload(client, bundle_id, "locked.pdf", locked)
 
     assert response.status_code == 422
     assert response.json()["message"] == "Password-protected PDFs are not supported."
 
 
 @pytest.mark.asyncio
+@pytest.mark.real_poppler
+async def test_a_pdf_that_only_restricts_copying_opens_without_a_password_and_is_accepted() -> None:
+    restricted = (GATING / "f08b_owner_password_only.pdf").read_bytes()
+    async with api_client() as client:
+        bundle_id = await new_bundle(client)
+
+        response = await upload(client, bundle_id, "restricted.pdf", restricted)
+
+    assert response.status_code == 201, response.text
+
+
+@pytest.mark.asyncio
 async def test_too_many_pages_are_refused_when_poppler_can_count_them(monkeypatch) -> None:
-    monkeypatch.setattr("pdf2image.pdfinfo_from_bytes", lambda data, **_kw: {"Pages": 31})
+    monkeypatch.setattr("pdf2image.pdfinfo_from_bytes", lambda data, **_kw: {"Pages": settings.max_pdf_pages + 1})
     async with api_client() as client:
         bundle_id = await new_bundle(client)
 
         response = await upload(client, bundle_id, "long.pdf", pdf("long"))
 
     assert response.status_code == 422
-    assert response.json()["message"] == f"The document has 31 pages; the limit is {settings.gemini_max_pages}."
+    assert response.json()["message"] == f"The document has {settings.max_pdf_pages + 1} pages; the limit is {settings.max_pdf_pages}."
 
 
 @pytest.mark.asyncio
-async def test_the_page_limit_is_the_gemini_setting(monkeypatch) -> None:
-    monkeypatch.setattr(settings, "gemini_max_pages", 3)
+async def test_the_page_limit_is_the_max_pdf_pages_setting(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "max_pdf_pages", 3)
     monkeypatch.setattr("pdf2image.pdfinfo_from_bytes", lambda data, **_kw: {"Pages": 4})
     async with api_client() as client:
         bundle_id = await new_bundle(client)
@@ -194,8 +209,10 @@ async def test_the_page_limit_is_the_gemini_setting(monkeypatch) -> None:
 
 @pytest.mark.asyncio
 async def test_without_poppler_the_page_check_is_skipped_silently(monkeypatch) -> None:
+    from pdf2image.exceptions import PDFInfoNotInstalledError
+
     def missing(_data, **_kw):
-        raise RuntimeError("Unable to get page count. Is poppler installed and in PATH?")
+        raise PDFInfoNotInstalledError("Unable to get page count. Is poppler installed and in PATH?")
 
     monkeypatch.setattr("pdf2image.pdfinfo_from_bytes", missing)
     async with api_client() as client:

@@ -99,3 +99,29 @@ async def test_list_bundles_with_documents():
         assert matching[0]["documents"][0]["filename"] == "invoice.pdf"
 
 
+@pytest.mark.asyncio
+async def test_get_bundle_status_success():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        create_resp = await client.post(
+            "/api/v1/bundles",
+            json={"reference": "REF-STATUS-TEST", "destination_country": "SG"},
+        )
+        bundle_id = create_resp.json()["id"]
+
+        status_resp = await client.get(f"/api/v1/bundles/{bundle_id}/status")
+        assert status_resp.status_code == 200
+        data = status_resp.json()
+        assert data["bundle_id"] == bundle_id
+        assert "state" in data
+
+
+@pytest.mark.asyncio
+async def test_get_bundle_status_not_found():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get("/api/v1/bundles/bnd-nonexistent/status")
+        assert resp.status_code == 404
+
+
+

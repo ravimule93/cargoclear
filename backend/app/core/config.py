@@ -53,10 +53,32 @@ class Settings(BaseSettings):
     gemini_max_attempts: int = Field(default=3, ge=1, alias="GEMINI_MAX_ATTEMPTS")
     gemini_max_concurrency: int = Field(default=3, ge=1, alias="GEMINI_MAX_CONCURRENCY")
     gemini_max_output_tokens: int = Field(default=16384, ge=1, alias="GEMINI_MAX_OUTPUT_TOKENS")
-    # tokens the model may spend thinking; 0 disables it, a NEGATIVE value means "do not send the field"
+    # How much the model may think (agents/extraction.py::thinking_config). Thinking tokens are billed as output and count toward the
+    # output cap, and the knob depends on the model: gemini-2.5-flash takes a BUDGET (tokens; 0 switches thinking off, a NEGATIVE value
+    # means "do not send the field"); gemini-2.5-pro cannot switch it off (its floor, 128, is used when this is lower); gemini-3.x refuses
+    # a budget of ANY value on a request with an image and takes a LEVEL instead (MINIMAL: none; LOW; MEDIUM; HIGH; DEFAULT: do not send
+    # the field, the model's own default, which spends a few hundred tokens on a one-word answer). Measured 2026-10-16: docs/input-gating-audit.md.
     gemini_thinking_budget: int = Field(default=0, alias="GEMINI_THINKING_BUDGET")
+    gemini_thinking_level: Literal["MINIMAL", "LOW", "MEDIUM", "HIGH", "DEFAULT"] = Field(default="MINIMAL", alias="GEMINI_THINKING_LEVEL")
+    # Reuse the model's answer for a document it already read in this bundle: the same pages, model, prompt and settings give the same
+    # request, and the request is what costs tokens. Scoped to the bundle, never shared between bundles. false: every run asks again.
+    extraction_cache: bool = Field(default=True, alias="EXTRACTION_CACHE")
+    # How long a kept answer (the extracted text of a document) is used and kept: each carries an `expires_at` for a Firestore TTL policy
+    # (infra/firestore/setup_ttl.sh), and one past it is never used even before Firestore deletes it.
+    extraction_cache_ttl_days: int = Field(default=30, ge=1, alias="EXTRACTION_CACHE_TTL_DAYS")
     gemini_max_request_mb: float = Field(default=18, gt=0, alias="GEMINI_MAX_REQUEST_MB")
-    gemini_max_pages: int = Field(default=30, ge=1, alias="GEMINI_MAX_PAGES")
+    gemini_max_pages: int = Field(default=30, ge=1, alias="GEMINI_MAX_PAGES")  # the most page images ONE request may carry (a hard stop)
+    # Which pages of a document the model reads (services/relevance.py): page 1 and the pages that look like part of the document,
+    # at most MAX_PAGES_SENT of them; the rest are not read and the assessment says so. MAX_PDF_PAGES is how long a FILE may be at upload.
+    max_pages_sent: int = Field(default=10, ge=1, alias="MAX_PAGES_SENT")
+    max_pdf_pages: int = Field(default=100, ge=1, alias="MAX_PDF_PAGES")
+    # Before a file is stored, the first page must be a document the assessment reads: recognised from its text layer, or, when that
+    # cannot say (a scan, a language not in the lists), by one small vision request (page 1 at 100 DPI, one word back).
+    relevance_gate: bool = Field(default=True, alias="RELEVANCE_GATE")
+    # The text layer is the uploader's to write, so a title phrase in it is trusted only when the words that name the document can be SEEN
+    # on the rendered first page (not white on white, not a speck). A phrase that IS visible still passes without a model call. true:
+    # never accept on the text layer, ask the model about every new file (about 1,900 tokens each) - the strict setting.
+    relevance_vision_always: bool = Field(default=False, alias="RELEVANCE_VISION_ALWAYS")
 
     # Run lifecycle (services/orchestrator.py): a run proves it is alive by touching its run record and extending its lease
     # every RUN_HEARTBEAT_SECONDS, and a run whose lease (or RUNNING record) has been untouched for RUN_STALE_AFTER_SECONDS is dead.
@@ -87,6 +109,9 @@ class Settings(BaseSettings):
 
     # Request and upload limits (gateway/limits.py, api/v1/documents.py, domain/schemas.py::CreateBundleRequest)
     max_upload_mb: float = Field(default=50, gt=0, alias="MAX_UPLOAD_MB")
+    # The most pixels one page may take when it is rendered for the model (at 200 DPI: A4 is 3.9 megapixels, A1 31). A PDF is
+    # cheap to make with a page the size of a billboard; the render of one needs gigabytes. Refused at upload and again before the render.
+    max_page_megapixels: float = Field(default=50, gt=0, alias="MAX_PAGE_MEGAPIXELS")
     max_json_body_kb: float = Field(default=256, gt=0, alias="MAX_JSON_BODY_KB")
     max_documents_per_bundle: int = Field(default=20, ge=1, alias="MAX_DOCUMENTS_PER_BUNDLE")
     max_reference_chars: int = Field(default=200, ge=1, alias="MAX_REFERENCE_CHARS")
@@ -100,6 +125,10 @@ class Settings(BaseSettings):
     rate_limit_runs_per_minute: int = Field(default=10, ge=0, alias="RATE_LIMIT_RUNS_PER_MINUTE")
     rate_limit_backend: Literal["memory", "firestore"] = Field(default="memory", alias="RATE_LIMIT_BACKEND")
     max_concurrent_runs: int = Field(default=4, ge=0, alias="MAX_CONCURRENT_RUNS")
+    # Model tokens the whole service may spend per UTC day (services/token_budget.py): counted as runs end and relevance checks are made,
+    # checked when an analysis or reassessment starts and before a relevance check asks the model. 0 switches it off. A placeholder, not a
+    # price or a quota: 5,000,000 is about 180 four-document analyses (27,315 tokens each, measured); set what the owner is willing to spend.
+    daily_token_budget: int = Field(default=5_000_000, ge=0, alias="DAILY_TOKEN_BUDGET")
     # Key the rate limits by the first valid IP of X-Forwarded-For instead of the socket peer. Only turn this on behind
     # a proxy that overwrites the header: the first entry is whatever the client sent.
     trust_forwarded_for: bool = Field(default=False, alias="TRUST_FORWARDED_FOR")
@@ -144,6 +173,12 @@ class Settings(BaseSettings):
     oauth_issuer: str = Field(default="https://accounts.google.com", alias="OAUTH_ISSUER")
     allowed_email_domains: str = Field(default="*", alias="ALLOWED_EMAIL_DOMAINS")
 
+
+    @model_validator(mode="after")
+    def _pages_sent_fit_the_request(self) -> "Settings":
+        if self.max_pages_sent > self.gemini_max_pages:
+            raise ValueError(f"MAX_PAGES_SENT ({self.max_pages_sent}) cannot exceed GEMINI_MAX_PAGES ({self.gemini_max_pages})")
+        return self
 
     @model_validator(mode="after")
     def _stale_window_covers_the_heartbeat(self) -> "Settings":

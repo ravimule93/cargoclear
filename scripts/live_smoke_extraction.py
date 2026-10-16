@@ -339,6 +339,13 @@ def refusal_reason() -> str | None:
     return None
 
 
+def thinking_description() -> str:
+    """What the extraction request sends for thinking with the configured model (the budget or the level, or that nothing is sent)."""
+    from google.genai import types
+
+    return extraction.describe_thinking(types, settings.gemini_live_model)
+
+
 def sdk_version() -> str:
     try:
         from google import genai
@@ -359,6 +366,7 @@ def environment(page_source: str | None) -> dict[str, Any]:
         "timeout_seconds": settings.gemini_timeout_seconds,
         "max_attempts": settings.gemini_max_attempts,
         "thinking_budget": settings.gemini_thinking_budget,
+        "thinking": thinking_description(),
         "page_image_mode": settings.page_image_mode,
         "preprocess_deskew": settings.preprocess_deskew,
         "max_output_tokens": settings.gemini_max_output_tokens,
@@ -471,7 +479,7 @@ def print_environment(env: dict[str, Any]) -> None:
     print(f"google-genai SDK:  {env['sdk_version']}")
     print(f"credentials:       {env['credential_source']}  (detected by presence only; content is never read or printed)")
     print(f"call settings:     timeout={env['timeout_seconds']:g}s attempts={env['max_attempts']} "
-          f"thinking_budget={env['thinking_budget']} max_output_tokens={env['max_output_tokens']}")
+          f"{env['thinking']} max_output_tokens={env['max_output_tokens']}")
 
 
 def print_page_source(source: str) -> None:
@@ -628,10 +636,8 @@ async def dry_run(args: argparse.Namespace) -> int:
           "no credential is read.")
     print(f"project={settings.project_id}  location={settings.gemini_live_location}  model={settings.gemini_live_model}  "
           f"google-genai={sdk_version()}  credentials detected: {mode.credential_source()}")
-    print(f"config: temperature=0.0  max_output_tokens={settings.gemini_max_output_tokens}  "
-          f"thinking_budget={settings.gemini_thinking_budget}"
-          + ("  (field not sent)" if settings.gemini_thinking_budget < 0 else "")
-          + f"  response_mime_type=application/json  timeout={settings.gemini_timeout_seconds:g}s  "
+    print(f"config: temperature=0.0  max_output_tokens={settings.gemini_max_output_tokens}  {thinking_description()}"
+          f"  response_mime_type=application/json  timeout={settings.gemini_timeout_seconds:g}s  "
             f"attempts={settings.gemini_max_attempts}  concurrency={settings.gemini_max_concurrency}")
 
     try:

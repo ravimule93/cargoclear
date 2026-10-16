@@ -14,5 +14,5 @@ export async function openCaseCDemoWorkbench(page: Page): Promise<void> {
   ]);
 
   await expect(page.getByTestId("status-pill")).toContainText("Not assessed yet");
-  await expect(page.getByLabel("Documents in this bundle").getByRole("button")).toHaveCount(3);
+  await expect(page.getByLabel("Documents in this bundle").getByTestId("document-item")).toHaveCount(3);
 }

@@ -4,6 +4,8 @@ testpaths = ["tests"]
 addopts = "--cov=app --cov-report=term-missing -q"
 markers = [
     "live: calls the real Gemini endpoint (needs credentials, APP_MODE=live and RUN_LIVE_SMOKE=1); see tests/live",
+    "placeholder_pdfs: the test uploads placeholder bytes, so poppler is reported as not installed (see tests/conftest.py)",
+    "real_poppler: the test needs the real poppler even though its module uses placeholder PDFs (see tests/conftest.py)",
 ]
 
 [tool.ruff]

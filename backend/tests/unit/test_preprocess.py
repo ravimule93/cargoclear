@@ -14,6 +14,7 @@ async def test_preprocess_empty_payload():
 
 
 @pytest.mark.asyncio
+@pytest.mark.placeholder_pdfs  # not a renderable PDF: it exercises the no-poppler passthrough
 async def test_preprocess_with_bytes():
     fake_pdf = b"%PDF-1.4 Mock Invoice Stream with trade items and headers"
     ctx = {"raw_bytes": fake_pdf, "document_id": "doc-inv-01"}

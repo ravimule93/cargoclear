@@ -91,6 +91,14 @@ class ServiceBusyError(CargoClearError):
     http_status = 429
 
 
+class TokenBudgetExceededError(CargoClearError):
+    """The service's daily model-token budget (DAILY_TOKEN_BUDGET) is spent: no new analysis or reassessment starts until it resets at
+    00:00 UTC. Carries Retry-After. A recompute asks the model nothing and is never refused for this."""
+
+    code = "TOKEN_BUDGET_EXCEEDED"
+    http_status = 429
+
+
 class UpstreamError(CargoClearError):
     """Raised when a GCP service (GCS, Firestore, BigQuery, Vertex AI) fails."""
 

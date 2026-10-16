@@ -49,11 +49,13 @@ def answer_by_pdf(tweak=None):
 def passthrough_pages(monkeypatch: pytest.MonkeyPatch) -> None:
     """Whatever the machine has installed, pages are the raw PDF (no poppler needed, nothing rendered)."""
     import pdf2image
+    from pdf2image.exceptions import PDFInfoNotInstalledError
 
     def no_poppler(*_a, **_kw):
-        raise RuntimeError("poppler is not available")
+        raise PDFInfoNotInstalledError("poppler is not available")
 
     monkeypatch.setattr(pdf2image, "convert_from_bytes", no_poppler)
+    monkeypatch.setattr(pdf2image, "convert_from_path", no_poppler)  # the pages of a plan are rendered from a file on disk
 
 
 @pytest.fixture
@@ -513,7 +515,10 @@ def test_a_dry_run_shows_page_labels_when_pages_are_images(live, monkeypatch, tm
     import pdf2image
     from PIL import Image
 
+    from app.services import preprocess
+
     monkeypatch.setattr(pdf2image, "convert_from_bytes", lambda *_a, **_k: [Image.new("RGB", (40, 60), "white")] * 2)
+    monkeypatch.setattr(preprocess, "_plan_pages", lambda _raw: None)  # the renderer is faked: no real file to plan pages for
 
     assert script.main(["--dry-run", "--docs", str(CASE_C / "packing_list.pdf"), "--out", str(tmp_path)]) == 0
 
@@ -547,7 +552,7 @@ async def test_overlays_are_saved_per_page_when_pages_are_images(live, install, 
     import pdf2image
     from PIL import Image
 
-    monkeypatch.setattr(pdf2image, "convert_from_bytes", lambda *_a, **_k: [Image.new("RGB", (300, 400), "white")])
+    monkeypatch.setattr(pdf2image, "convert_from_path", lambda *_a, **_k: [Image.new("RGB", (300, 400), "white")])  # a plan's pages come from a file
     order = iter(sorted(PDFS.values()))
 
     def shifted(_n: int, _kw: dict[str, Any]):

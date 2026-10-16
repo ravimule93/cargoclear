@@ -1,0 +1,274 @@
+{
+  "f01_clean/bill_of_lading.pdf": {
+    "bundle": "case_c",
+    "bytes": 3433,
+    "fixture": "F1",
+    "replaces": null,
+    "upload_as": "bill_of_lading.pdf",
+    "what": "clean Case C document bill_of_lading.pdf (the mill test certificate stands in for the SIMS certificate, which this repository does not implement)"
+  },
+  "f01_clean/commercial_invoice.pdf": {
+    "bundle": "case_c",
+    "bytes": 5666,
+    "fixture": "F1",
+    "replaces": null,
+    "upload_as": "commercial_invoice.pdf",
+    "what": "clean Case C document commercial_invoice.pdf (the mill test certificate stands in for the SIMS certificate, which this repository does not implement)"
+  },
+  "f01_clean/mtc_pipe_test_cert.pdf": {
+    "bundle": "case_c",
+    "bytes": 10902,
+    "fixture": "F1",
+    "replaces": null,
+    "upload_as": "mtc_pipe_test_cert.pdf",
+    "what": "clean Case C document mtc_pipe_test_cert.pdf (the mill test certificate stands in for the SIMS certificate, which this repository does not implement)"
+  },
+  "f01_clean/packing_list.pdf": {
+    "bundle": "case_c",
+    "bytes": 5000,
+    "fixture": "F1",
+    "replaces": null,
+    "upload_as": "packing_list.pdf",
+    "what": "clean Case C document packing_list.pdf (the mill test certificate stands in for the SIMS certificate, which this repository does not implement)"
+  },
+  "f02a_resume_as_invoice.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 2551,
+    "fixture": "F2",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "a resume uploaded in the invoice slot"
+  },
+  "f02b_bank_statement_as_invoice.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 5415,
+    "fixture": "F2",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "a bank statement uploaded in the invoice slot"
+  },
+  "f03_300_pages.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 1562935,
+    "fixture": "F3",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "300 pages of boilerplate"
+  },
+  "f04a_invoice_plus_40_pages_terms.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 368538,
+    "fixture": "F4",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "valid invoice plus 40 pages of terms (41 pages)"
+  },
+  "f04b_invoice_plus_15_pages_terms.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 141388,
+    "fixture": "F4",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "valid invoice plus 15 pages of terms (16 pages, under the page cap)"
+  },
+  "f04c_invoice_terms_then_table.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 32993,
+    "fixture": "F4",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "invoice, 2 pages of terms, then a table of itemised lines (pages 1 and 4 are worth reading)"
+  },
+  "f05_visible_injection.pdf": {
+    "bundle": "case_d",
+    "bytes": 5983,
+    "fixture": "F5",
+    "replaces": "case_d_commercial_invoice.pdf",
+    "upload_as": "case_d_commercial_invoice.pdf",
+    "what": "Case D invoice with a visible instruction to mark the shipment ready"
+  },
+  "f06a_white_text_injection.pdf": {
+    "bundle": "case_d",
+    "bytes": 5983,
+    "fixture": "F6",
+    "replaces": "case_d_commercial_invoice.pdf",
+    "upload_as": "case_d_commercial_invoice.pdf",
+    "what": "the same instruction as white text on a white page"
+  },
+  "f06b_tiny_font_injection.pdf": {
+    "bundle": "case_d",
+    "bytes": 5982,
+    "fixture": "F6",
+    "replaces": "case_d_commercial_invoice.pdf",
+    "upload_as": "case_d_commercial_invoice.pdf",
+    "what": "the same instruction at 2 pt"
+  },
+  "f06c_metadata_injection.pdf": {
+    "bundle": "case_d",
+    "bytes": 6238,
+    "fixture": "F6",
+    "replaces": "case_d_commercial_invoice.pdf",
+    "upload_as": "case_d_commercial_invoice.pdf",
+    "what": "the same instruction in the document information (title, author, subject, keywords)"
+  },
+  "f07a_zip_renamed.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 201,
+    "fixture": "F7",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "a zip archive named .pdf"
+  },
+  "f07b_exe_renamed.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 2155,
+    "fixture": "F7",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "the start of a Windows executable named .pdf"
+  },
+  "f07c_pdf_header_then_zip.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 220,
+    "fixture": "F7",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "a zip archive that starts with a PDF header line"
+  },
+  "f08a_user_password.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 6153,
+    "fixture": "F8",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "an invoice that needs a password to open"
+  },
+  "f08b_owner_password_only.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 6123,
+    "fixture": "F8",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "an invoice that opens without a password but forbids copying and editing (owner password only)"
+  },
+  "f09_javascript_and_attachment.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 1419,
+    "fixture": "F9",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "an invoice page with a document script, an OpenAction and an embedded file"
+  },
+  "f09b_javascript_only.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 1369,
+    "fixture": "F9",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "an invoice page with a document script and no attachment"
+  },
+  "f09c_attachment_only.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 1227,
+    "fixture": "F9",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "an invoice page with an embedded file and no script"
+  },
+  "f10a_huge_page_100mpx.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 18212,
+    "fixture": "F10",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "a blank page 50 inches square: 100 megapixels at 200 DPI"
+  },
+  "f10b_huge_page_278mpx.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 18212,
+    "fixture": "F10",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "a blank page 83 inches square: 278 megapixels at 200 DPI"
+  },
+  "f10c_huge_page_1600mpx.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 18216,
+    "fixture": "F10",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "a blank page 200 inches square (the largest size common viewers allow): 1.6 gigapixels at 200 DPI"
+  },
+  "f10d_ten_huge_pages_just_under_the_budget.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 1237,
+    "fixture": "F10",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "10 blank pages of 46.9 megapixels each (under the 50 megapixel budget): the heaviest render the page caps allow"
+  },
+  "f11_scanned_invoice.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 116657,
+    "fixture": "F11",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "the Case C invoice as an image-only scan, skewed 3 degrees"
+  },
+  "f12_non_english_invoice.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 4445,
+    "fixture": "F12",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "an invoice printed entirely in Chinese"
+  },
+  "f13_bol_in_invoice_slot.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 3433,
+    "fixture": "F13",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "the Case C bill of lading uploaded under an invoice file name"
+  },
+  "f15_fake_json_in_description.pdf": {
+    "bundle": "case_d",
+    "bytes": 6068,
+    "fixture": "F15",
+    "replaces": "case_d_commercial_invoice.pdf",
+    "upload_as": "case_d_commercial_invoice.pdf",
+    "what": "Case D invoice whose description cell contains a JSON block shaped like the model's answer"
+  },
+  "f16_worst_case_30_dense_pages.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 280302,
+    "fixture": "F16",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "30 pages of dense numeric tables: the most expensive document the page cap allows"
+  },
+  "f17a_resume_white_title.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 2640,
+    "fixture": "F17",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "the resume with COMMERCIAL INVOICE printed in white on the white page: the text layer names a document, the page does not"
+  },
+  "f17b_resume_one_point_title.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 2638,
+    "fixture": "F17",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "the resume with COMMERCIAL INVOICE printed at one point: in the text layer, a speck on the page"
+  },
+  "f17c_resume_visible_title.pdf": {
+    "bundle": "case_c_swap",
+    "bytes": 2640,
+    "fixture": "F17",
+    "replaces": "commercial_invoice.pdf",
+    "upload_as": "commercial_invoice.pdf",
+    "what": "the resume with COMMERCIAL INVOICE printed plainly at 14 pt: visible, so the text-layer rule still accepts it (RELEVANCE_VISION_ALWAYS does not)"
+  }
+}

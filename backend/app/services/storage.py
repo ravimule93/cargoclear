@@ -26,6 +26,8 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import re
+import shutil
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
@@ -76,6 +78,9 @@ def _get_gcs_client():
                 raise UpstreamError(f"GCS client init failed in live mode: {type(exc).__name__}") from exc
             logger.warning("gcs_client_init_failed", error=str(exc), fallback="local_disk")
             return None
+
+
+_DOCUMENT_ID = re.compile(r"doc-[0-9a-f]{16}")  # what document_id_from_sha256 makes: the only shape that may name a folder to remove
 
 
 def compute_sha256(data: bytes) -> str:
@@ -333,3 +338,73 @@ async def download_transform_meta(bundle_id: str, document_id: str) -> list[dict
     if not isinstance(data, list) or not all(isinstance(entry, dict) for entry in data):
         raise UpstreamError("Transform metadata is invalid.")
     return data
+
+
+def _page_files_of(document_id: str, names: list[str]) -> list[str]:
+    """Of the files under ``bundles/{bundle}/pages/``, those of this document: ``{doc}/page-N.png`` (pages kept per document) and
+    ``it0001/{doc}/page-N.png`` (kept per assessment). ``names`` are paths relative to that folder."""
+    mine = []
+    for name in names:
+        parts = name.split("/")
+        if (len(parts) == 2 and parts[0] == document_id) or (len(parts) == 3 and parts[1] == document_id):
+            mine.append(name)
+    return mine
+
+
+async def delete_document_files(bundle_id: str, document_id: str) -> int:
+    """Remove every file stored for one document of a bundle: the raw PDF and its meta.json, the transform metadata and processed PDFs,
+    and the page images of every assessment. Other documents, other bundles and files that are already gone are left alone (a repeat
+    is a no-op, so a delete that stopped half way can simply be sent again). Returns how many files were removed.
+
+    On Cloud Storage a deleted object can stay restorable by the project's administrators for the bucket's soft-delete period (the
+    bucket default is 7 days; ``infra/bootstrap.sh`` does not change it).
+    """
+    if not _DOCUMENT_ID.fullmatch(document_id):  # the id names a folder that is removed: only an id this service made may
+        raise NotFoundError(f"Document '{document_id}' not found.")
+    raw_prefix = f"bundles/{bundle_id}/raw/{document_id}/"
+    processed_prefix = f"bundles/{bundle_id}/processed/{document_id}/"
+    pages_root = f"bundles/{bundle_id}/pages/"
+    client = _get_gcs_client()
+
+    if client is not None:
+
+        def purge() -> int:
+            removed = 0
+            for prefix in (raw_prefix, processed_prefix):
+                for blob in list(client.list_blobs(settings.raw_bucket, prefix=prefix)):
+                    blob.delete()
+                    removed += 1
+            kept = {blob.name: blob for blob in client.list_blobs(settings.raw_bucket, prefix=pages_root)}
+            for name in _page_files_of(document_id, [n[len(pages_root):] for n in kept]):
+                kept[pages_root + name].delete()
+                removed += 1
+            return removed
+
+        try:
+            removed = await asyncio.to_thread(purge)
+        except Exception as exc:
+            logger.error("gcs_delete_failed", error=str(exc))
+            raise UpstreamError(f"Failed to remove the document from Cloud Storage: {type(exc).__name__}") from exc
+        logger.info("gcs_document_deleted", bundle_id=bundle_id, document_id=document_id, files=removed)
+        return removed
+
+    def purge_local() -> int:
+        root = _get_local_storage_dir()
+        folders = [root / raw_prefix, root / processed_prefix]
+        pages = root / pages_root
+        if pages.is_dir():
+            folders += [pages / document_id, *(f / document_id for f in pages.glob("it*") if f.is_dir())]
+        removed = 0
+        for folder in folders:
+            if folder.is_dir():
+                removed += sum(1 for f in folder.rglob("*") if f.is_file())
+                shutil.rmtree(folder)
+        return removed
+
+    try:
+        removed = await asyncio.to_thread(purge_local)
+    except OSError as exc:
+        logger.error("local_delete_failed", error=str(exc))
+        raise UpstreamError(f"Failed to remove the document from local storage: {type(exc).__name__}") from exc
+    logger.info("local_document_deleted", bundle_id=bundle_id, document_id=document_id, files=removed)
+    return removed

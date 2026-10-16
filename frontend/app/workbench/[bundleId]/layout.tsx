@@ -5,9 +5,5 @@ export default function WorkbenchLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="cc-workbench">
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }

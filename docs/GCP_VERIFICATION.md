@@ -41,8 +41,9 @@ What to decide, and where to record it:
    for `EMBEDDING_ENDPOINT` on purpose.
 3. **Data residency.** The product commits to `asia-south1` (MeitY). A newer model may be served only from a `global`
    endpoint. If so, that is a decision for the product owner, not a config change: write it down before deploying.
-4. Newer Gemini models can reject request settings older ones accepted (for example `GEMINI_THINKING_BUDGET`, the
-   temperature, or the response schema). Step 3 sends the real extraction request, so it tells you.
+4. Newer Gemini models can reject request settings older ones accepted (for example the thinking setting, the
+   temperature, or the response schema). Step 3 sends the real extraction request, with an image part as every real request
+   has (a thinking budget is refused by `gemini-3.x` only when a request carries an image), so it tells you.
 
 ## 1. Bootstrap
 
@@ -89,13 +90,39 @@ Good result: `RESULT: PASS`, and a `preflight-report.json` (git-ignored). **Send
 
 ```bash
 export UI_SERVICE_ACCOUNT=cargoclear-ui-sa@${PROJECT_ID}.iam.gserviceaccount.com
-# optional: GEMINI_LIVE_MODEL, GEMINI_LIVE_LOCATION, BQ_MODEL_EMBEDDING
+export DAILY_TOKEN_BUDGET=<model tokens the whole service may spend per UTC day; 0 = no limit>   # required: your number, not a default
+# optional: GEMINI_LIVE_MODEL, GEMINI_LIVE_LOCATION, BQ_MODEL_EMBEDDING, MEMORY, CPU
 bash infra/deploy_api.sh      # private; also removes a leftover public (allUsers) binding
 bash infra/deploy_ui.sh       # grants the UI identity roles/run.invoker on the API, then deploys the UI
 ```
 
 The deployer needs `iam.serviceAccounts.actAs` on both service accounts and `run.services.setIamPolicy` on the API.
 `cloudbuild.yaml` takes `_RUNTIME_SERVICE_ACCOUNT` and `_UI_SERVICE_ACCOUNT`.
+
+`deploy_api.sh` sets the instance size explicitly: `MEMORY` (default `4Gi`) and `CPU` (default `2`). Cloud Run's default for a service
+is 512 MiB, which one ordinary multi-page document exceeds. The size comes from a measurement on one machine (the heaviest document
+the page caps allow peaked at 673 MB for one render, and up to `MAX_CONCURRENT_RUNS=4` renders can overlap), not from Cloud Run: if the
+instance is ever restarted for running out of memory, raise `MEMORY` first (`docs/input-gating-audit.md`, section 16). Always-on
+`4Gi`/`2` costs more than the default; check the price in the console before deploying.
+
+### 4a. Budget alert and the daily token budget (written, not yet run)
+
+Two independent lines against a runaway cost. Neither replaces the other.
+
+```bash
+# the limit the application enforces: tokens per UTC day for the whole service (default 5,000,000; 0 = off). A placeholder, not a quota:
+# 5,000,000 is about 180 four-document analyses. Set what you are willing to spend: deploy_api.sh REQUIRES DAILY_TOKEN_BUDGET (0 = off),
+# and a live service that was never told one logs daily_token_budget_is_the_default at start.
+# the alert: a budget on the billing account (emails at 50 %, 90 %, 100 % and when the forecast reaches 100 %; it stops NOTHING)
+export BILLING_ACCOUNT_ID=...   BUDGET_AMOUNT=100USD      # the amount per month, in the billing account's currency
+bash infra/budget/setup_budget_alert.sh --dry-run         # prints the commands and calls nothing
+bash infra/budget/setup_budget_alert.sh                   # needs a role that may manage budgets on the billing account
+bash infra/firestore/setup_ttl.sh                         # lets Firestore delete old counters (ratelimits, token_budget) and kept answers (extraction_cache)
+```
+
+`GET /api/v1/token-budget` shows the limit, today's spend and the reset time. At the limit a new analysis or reassessment is refused
+with `429 TOKEN_BUDGET_EXCEEDED` and `Retry-After`; a recompute is not. A run that already started finishes, so a day can overshoot
+by the runs in flight. The counter is Firestore (`token_budget/<YYYYMMDD>`); if it cannot be read the budget is not enforced (logged).
 
 ## 5. The API must be private
 
@@ -138,8 +165,10 @@ Phase 1 added a certificate table and sale terms to what Gemini is asked to read
    correctly (`docs/MEASURED_RESULTS.md`, C-57). Step 3's `gemini` check sends the real request, schema included: a PASS means it
    is accepted, on whatever model and region you set. `tests/unit/test_gemini_request_schema.py` keeps the schema small enough to
    stay far from the limit; it is a tripwire, not a substitute for this check. If a model refuses it, the message names the cause.
-   `gemini-3.5-flash` also refuses `GEMINI_THINKING_BUDGET=0` ("thinking budget is not supported for this model"): set
-   `GEMINI_THINKING_BUDGET=-1` and the field is not sent.
+   `gemini-3.5-flash` refuses `thinking_budget` of any value on a request with an image ("thinking budget is not supported for
+   this model"), so for the `gemini-3` family the application sends `thinking_level` instead: `GEMINI_THINKING_LEVEL`, default
+   `MINIMAL` (no thinking tokens); `DEFAULT` sends nothing, as `GEMINI_THINKING_BUDGET=-1` did. `GEMINI_THINKING_BUDGET` has no
+   effect on that family. `gemini-2.5-pro` cannot switch thinking off: a budget below 128 is raised to 128.
 2. **Does it read a certificate's table correctly?** Run the smoke test on the synthetic certificates:
 
    ```bash
@@ -315,7 +344,7 @@ degraded set AND is no worse on the clean files; say so in `Handoff.md`. Look at
 | Symptom | Likely cause |
 |---|---|
 | Preflight `gemini` fails with 404 / "not found" | the model is retired or not served in that location: step 0 |
-| Preflight `gemini` fails with 400 | the model rejects the request shape (thinking config, schema): the message names it; `gemini-3.5-flash` needs `GEMINI_THINKING_BUDGET=-1` |
+| Preflight `gemini` fails with 400 | the model rejects the request shape (thinking config, schema): the message names it; a model of a new family may need its own thinking knob (`thinking_config` in `agents/extraction.py`) |
 | Preflight `bigquery` 403 | `roles/bigquery.jobUser` or `connectionUser` missing |
 | Preflight `bigquery` "dimensions" mismatch | the table was embedded with another model: re-run `setup_tariff.sh` |
 | Preflight `bigquery` WARN on distance | the 0.35 ambiguity threshold was tuned on another embedding model: recalibrate (`AMBIGUITY_THRESHOLD` in `bq_tariff.py`) |

@@ -2,6 +2,15 @@
   "hosting": [
     {
       "site": "cargoclear-app",
+      "headers": [
+        {
+          "source": "/api/proxy/**/stream",
+          "headers": [
+            { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" },
+            { "key": "X-Accel-Buffering", "value": "no" }
+          ]
+        }
+      ],
       "rewrites": [
         {
           "source": "**",
@@ -14,6 +23,15 @@
     },
     {
       "site": "cargoclear-japac",
+      "headers": [
+        {
+          "source": "/api/proxy/**/stream",
+          "headers": [
+            { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" },
+            { "key": "X-Accel-Buffering", "value": "no" }
+          ]
+        }
+      ],
       "rewrites": [
         {
           "source": "**",
@@ -26,6 +44,15 @@
     },
     {
       "site": "cargoclear-hackathon",
+      "headers": [
+        {
+          "source": "/api/proxy/**/stream",
+          "headers": [
+            { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" },
+            { "key": "X-Accel-Buffering", "value": "no" }
+          ]
+        }
+      ],
       "rewrites": [
         {
           "source": "**",

@@ -73,7 +73,7 @@ def test_the_run_queue_has_a_service_wide_cap_a_takeover_friendly_retry_and_leas
     assert not any("run.invoker" in line or "run services" in line for line in code), "the invoker binding on the API is made after it exists (deploy_api.sh)"
 
     ttl = (ROOT / "infra" / "firestore" / "setup_ttl.sh").read_text(encoding="utf-8")
-    assert "--collection-group=ratelimits" in ttl and "expires_at" in ttl and "--enable-ttl" in ttl
+    assert "ratelimits" in ttl and '--collection-group="${COLLECTION}"' in ttl and "expires_at" in ttl and "--enable-ttl" in ttl
 
 
 def test_the_signing_key_is_an_ec_signing_key_in_the_data_residency_region_with_one_narrow_binding() -> None:
@@ -91,7 +91,7 @@ def test_the_scaling_scripts_are_valid_shell() -> None:
 
     for path in (
         "infra/deploy_api.sh", "infra/bootstrap.sh", "infra/tasks/setup_queue.sh", "infra/firestore/setup_ttl.sh",
-        "infra/kms/setup_signing_key.sh",
+        "infra/kms/setup_signing_key.sh", "infra/budget/setup_budget_alert.sh",
     ):
         result = subprocess.run(["bash", "-n", str(ROOT / path)], capture_output=True, text=True)
         assert result.returncode == 0, f"{path}: {result.stderr}"
@@ -156,7 +156,10 @@ def test_api_is_private_and_only_the_ui_identity_may_invoke_it() -> None:
     assert 'CLIENT_IP_HEADER = "x-cargoclear-client-ip"' in proxy
     assert "google-id-token" in proxy and "metadata.google.internal" in proxy
     assert "export async function GET" in route and "export async function POST" in route
-    assert "export async function PUT" not in route and "export async function DELETE" not in route
+    # no method beyond these; DELETE exists for removing one document of a bundle, and the route refuses it anywhere else
+    assert "export async function PUT" not in route and "export async function PATCH" not in route
+    assert "export async function DELETE" in route and "isForwardable(request.method" in route
+    assert 'decoded[0] === "bundles" && decoded[2] === "documents"' in proxy and "segments.length !== 4" in proxy
 
 
 def test_runtime_identity_roles_include_firestore_without_hardcoded_project_email() -> None:
@@ -252,3 +255,72 @@ def test_backend_image_carries_the_reference_tables_and_both_demo_cases() -> Non
             if fnmatch.fnmatch(table.name, p.rstrip("/")) or fnmatch.fnmatch(relative, p.lstrip("/").rstrip("/"))
         ]
         assert hits == [], f"{relative} is git-ignored by {hits}"
+
+
+def test_the_api_has_explicit_memory_and_cpu_sized_for_four_concurrent_renders() -> None:
+    api = (ROOT / "infra" / "deploy_api.sh").read_text(encoding="utf-8")
+
+    assert 'MEMORY="${MEMORY:-4Gi}"' in api and 'CPU="${CPU:-2}"' in api
+    assert '--memory "${MEMORY}"' in api and '--cpu "${CPU}"' in api
+    assert "673 MB" in api and "MAX_CONCURRENT_RUNS=4" in api  # the number it was sized from, and the concurrency it assumes
+
+
+def test_the_ttl_script_covers_the_counters_and_the_kept_answers() -> None:
+    script = (ROOT / "infra" / "firestore" / "setup_ttl.sh").read_text(encoding="utf-8")
+
+    assert "for COLLECTION in ratelimits token_budget extraction_cache" in script and '--collection-group="${COLLECTION}"' in script
+
+
+def test_a_deployment_has_to_name_the_daily_token_budget_and_the_service_gets_it() -> None:
+    api = (ROOT / "infra" / "deploy_api.sh").read_text(encoding="utf-8")
+
+    assert 'DAILY_TOKEN_BUDGET="${DAILY_TOKEN_BUDGET:?' in api  # the placeholder default is not a decision: the deploy asks for one
+    assert 'DAILY_TOKEN_BUDGET="${DAILY_TOKEN_BUDGET}",' in api  # and the service receives it
+
+
+def test_the_budget_alert_script_is_an_alert_that_says_it_stops_nothing_and_has_not_been_run() -> None:
+    script = (ROOT / "infra" / "budget" / "setup_budget_alert.sh").read_text(encoding="utf-8")
+
+    assert "does NOT stop anything" in script and "HAS NOT BEEN RUN" in script
+    for flag in ("--billing-account", "--display-name", "--budget-amount", "--calendar-period month", "--filter-projects",
+                 "--threshold-rule percent=0.5", "--threshold-rule percent=1.0,basis=forecasted-spend",
+                 "--notifications-rule-pubsub-topic", "--notifications-rule-monitoring-notification-channels"):
+        assert flag in script, flag
+    assert '${#BUDGET_DISPLAY_NAME}" -gt 60' in script  # Google allows 60 characters
+
+
+def test_the_budget_alert_dry_run_prints_the_commands_and_calls_gcloud_never(tmp_path) -> None:
+    """--dry-run is the only way this test runs the script, and a gcloud that fails the test if it is called stands in for the real one."""
+    import os
+    import subprocess
+
+    fake = tmp_path / "bin"
+    fake.mkdir()
+    (fake / "gcloud").write_text(f"#!/bin/sh\necho called > {tmp_path}/gcloud-was-called\nexit 99\n")
+    (fake / "gcloud").chmod(0o755)
+    env = {**os.environ, "PATH": f"{fake}:{os.environ['PATH']}", "PROJECT_ID": "demo-project", "BILLING_ACCOUNT_ID": "000000-000000-000000",
+           "BUDGET_AMOUNT": "100USD", "BUDGET_PUBSUB_TOPIC": "projects/demo-project/topics/budget"}
+
+    result = subprocess.run(["bash", str(ROOT / "infra" / "budget" / "setup_budget_alert.sh"), "--dry-run"], capture_output=True, text=True, env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert not (tmp_path / "gcloud-was-called").exists()
+    assert "gcloud billing budgets create --billing-account 000000-000000-000000" in result.stdout
+    assert "--budget-amount 100USD" in result.stdout and "--filter-projects projects/demo-project" in result.stdout
+    assert "--notifications-rule-pubsub-topic projects/demo-project/topics/budget" in result.stdout
+    assert "Dry run: nothing was created." in result.stdout
+
+
+def test_the_budget_alert_script_refuses_a_missing_amount_and_a_long_name(tmp_path) -> None:
+    import os
+    import subprocess
+
+    base = {**os.environ, "PROJECT_ID": "p", "BILLING_ACCOUNT_ID": "000000-000000-000000"}
+    script = str(ROOT / "infra" / "budget" / "setup_budget_alert.sh")
+
+    missing = subprocess.run(["bash", script, "--dry-run"], capture_output=True, text=True, env={k: v for k, v in base.items() if k != "BUDGET_AMOUNT"})
+    long_name = subprocess.run(["bash", script, "--dry-run"], capture_output=True, text=True,
+                               env={**base, "BUDGET_AMOUNT": "1USD", "BUDGET_DISPLAY_NAME": "x" * 61})
+
+    assert missing.returncode != 0 and "BUDGET_AMOUNT" in missing.stderr
+    assert long_name.returncode == 1 and "at most 60" in long_name.stderr

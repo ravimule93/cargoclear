@@ -18,16 +18,19 @@ from __future__ import annotations
 import asyncio
 import io
 import math
+from collections.abc import Iterable, Iterator
 from typing import TYPE_CHECKING, Any
 
 import structlog
 
 from app.core.config import settings
-from app.gateway.errors import PipelineError
+from app.gateway.errors import PipelineError, ValidationError
 
 if TYPE_CHECKING:  # the image libraries are imported lazily, inside the functions that use them
     import numpy as np
     from PIL import Image
+
+    from app.services.relevance import PagePlan
 
 logger = structlog.get_logger(__name__)
 
@@ -231,23 +234,62 @@ def _processed_to_source_affine(rotation: int) -> list[list[int]]:
     }.get(rotation, [[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
 
+def _plan_pages(raw: bytes) -> "PagePlan | None":
+    """Which pages of ``raw`` are read (``services/relevance.plan_pages``), after refusing a page too large to render
+    (``MAX_PAGE_MEGAPIXELS``) BEFORE poppler is asked to render anything.
+
+    The upload route checks the size too; this is the second line, for a document stored before the check existed or registered by
+    another route. None when there is no plan to make because poppler is not installed. A file ``pdfinfo`` cannot open raises
+    ``PdfUnreadable`` (``run`` fails the document with it): rendering every page of it without a cap or a pixel budget is not a fallback.
+    """
+    from app.services import relevance, upload_checks
+
+    try:
+        facts = upload_checks.read_pdf_facts(raw, settings.max_pdf_pages)  # PdfUnreadable (pdfinfo cannot open it) is the document's failure
+        if facts is None:
+            return None
+        upload_checks.check_page_sizes(facts.page_sizes, settings.max_page_megapixels)
+    except ValidationError as exc:
+        raise PreprocessError(exc.message) from exc
+    texts = relevance.read_page_texts(raw, facts.pages)
+    return relevance.plan_pages(facts.pages, texts, settings.max_pages_sent)
+
+
+def _render_planned(raw: bytes, plan: "PagePlan") -> Iterator[tuple[int, "Image.Image"]]:
+    """The planned pages one at a time, each as (source page number, image): a page is rendered when the loop asks for it and is
+    dropped when the loop moves on, so the memory a document needs is about ONE page (measured: ten pages just under the pixel budget
+    peaked at 2.2 GB when rendered together; see docs/input-gating-audit.md section 16), not all of them."""
+    from pdf2image import convert_from_path
+
+    from app.services import upload_checks
+
+    # the bytes go to disk ONCE (or are already there, for the request's shared file); convert_from_bytes would write them again per page
+    with upload_checks.pdf_on_disk(raw) as path:
+        for page in plan.kept:
+            [image] = convert_from_path(path, dpi=TARGET_DPI, fmt="png", first_page=page, last_page=page)
+            yield page, image
+
+
 def _render_pages(
-    raw: bytes, document_id: str
+    raw: bytes, document_id: str, plan: "PagePlan | None" = None
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     """Render ``raw`` to grayscale PNG pages (blocking: run it with ``asyncio.to_thread``).
 
-    Returns ``(processed_pages, transforms, artifacts)``. Raises when the document cannot be rendered (poppler missing, broken
-    PDF); the caller falls back to passing the raw PDF through.
+    With a ``plan`` only its ``kept`` pages are rendered, and each keeps its SOURCE page number (``page`` and ``source_page``);
+    without one every page is. Returns ``(processed_pages, transforms, artifacts)``. Raises ``PDFInfoNotInstalledError`` when poppler
+    is not installed (the only case ``run`` passes the raw PDF through); any other failure is the document's, and ``run`` fails with it.
     """
     from pdf2image import convert_from_bytes
 
+    # with a plan: one page at a time (a generator), so the pages are never all in memory together; without one: poppler's whole answer
+    rendered: Iterable[tuple[int, Image.Image]] = (
+        enumerate(convert_from_bytes(raw, dpi=TARGET_DPI, fmt="png"), start=1) if plan is None else _render_planned(raw, plan)
+    )
     transforms: list[dict[str, Any]] = []
     processed_pages: list[dict[str, Any]] = []
 
-    images = convert_from_bytes(raw, dpi=TARGET_DPI, fmt="png")
-
     mode = settings.page_image_mode
-    for idx, img in enumerate(images, start=1):
+    for position, (idx, img) in enumerate(rendered, start=1):
         buf = io.BytesIO()
         source_gray = img.convert("L")
         source_buffer = io.BytesIO()
@@ -282,7 +324,7 @@ def _render_pages(
         transforms.append({
             "page": idx,
             "source_page": idx,
-            "processed_page": idx,
+            "processed_page": position,
             "document_id": document_id,
             "deskew_deg": applied_skew,
             "deskew_detected_deg": detected_skew,
@@ -294,7 +336,7 @@ def _render_pages(
             "crop": None,
             "split_offset": 0,
             "artifact_index": 0,
-            "artifact_page": idx,
+            "artifact_page": position,
             "artifact_id": None,
             "image_mode": mode,
             "width": shown.width,
@@ -306,6 +348,7 @@ def _render_pages(
             "document_id": document_id,
             "payload": img_bytes,
             "mime": "image/png",
+            **({"total_pages": plan.total} if plan is not None else {}),
         })
 
     artifacts = _split_artifacts(processed_pages, transforms, raw_size=len(raw), document_id=document_id)
@@ -351,11 +394,11 @@ def _split_artifacts(
     if current:
         artifacts.append({"payload": _artifact_pdf(current), "pages": current})
 
+    by_source_page = {transform["source_page"]: transform for transform in transforms}  # the pages read need not be 1..n
     for artifact_index, artifact in enumerate(artifacts, start=1):
         artifact_id = f"part-{artifact_index:03d}"
         for artifact_page, page in enumerate(artifact["pages"], start=1):
-            index = page["source_page"] - 1
-            transforms[index].update({
+            by_source_page[page["source_page"]].update({
                 "artifact_index": artifact_index,
                 "artifact_page": artifact_page,
                 "artifact_id": artifact_id,
@@ -371,6 +414,27 @@ def _split_artifacts(
     return artifacts
 
 
+def _prepare(
+    raw: bytes, document_id: str
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], "PagePlan | None"]:
+    """Plan which pages are read, then render those (blocking: ONE worker-thread call). Returns the pages, transforms, artifacts
+    and the plan (None when there was none to make)."""
+    from app.services import upload_checks
+
+    with upload_checks.shared_pdf(raw):  # the text for the plan and every page render read ONE copy of the file on disk
+        plan = _plan_pages(raw)
+        return (*_render_pages(raw, document_id, plan), plan)
+
+
+def _poppler_is_missing(exc: BaseException) -> bool:
+    """True when ``exc`` says poppler (or pdf2image) is not installed, as opposed to poppler failing on a document."""
+    try:
+        from pdf2image.exceptions import PDFInfoNotInstalledError
+    except ImportError:
+        return True
+    return isinstance(exc, PDFInfoNotInstalledError)
+
+
 async def run(ctx: dict[str, Any]) -> dict[str, Any]:
     """Execute preprocessing on document pages in the context.
 
@@ -382,6 +446,8 @@ async def run(ctx: dict[str, Any]) -> dict[str, Any]:
     Writes:
       - ctx["processed_pages"] (list[dict]): preprocessed page buffers
       - ctx["transform_meta"] (list[dict]): deskew angle, rotation, and split offsets
+      - ctx["page_plan"] (dict | None): which source pages were read, which were skipped as terms and conditions, and which were left
+        out by the cap (``services/relevance.PagePlan``); None when no plan could be made
     """
     raw: bytes = ctx.get("raw_bytes", b"")
     document_id: str = ctx.get("document_id", "doc-default")
@@ -394,11 +460,18 @@ async def run(ctx: dict[str, Any]) -> dict[str, Any]:
     try:
         # ONE worker-thread call: poppler, PIL and OpenCV block, and the event loop carries the heartbeat, the SSE
         # streams and every other request
-        processed_pages, transforms, artifacts = await asyncio.to_thread(_render_pages, raw, document_id)
+        processed_pages, transforms, artifacts, plan = await asyncio.to_thread(_prepare, raw, document_id)
 
+    except PipelineError:
+        raise
     except Exception as exc:
-        logger.info("pdf2image_processing_fallback", note="Using raw stream passthrough", error=str(exc))
-        # Lightweight fallback: wrap raw PDF directly
+        if not _poppler_is_missing(exc):
+            # A file poppler could not render (a polyglot, a truncated PDF, a page far too large) is NOT handed to the model as the
+            # raw PDF: that would send it exactly what the upload checks refuse. Only a missing poppler is a reason to do that.
+            logger.warning("pdf_render_failed", document_id=document_id, error_type=type(exc).__name__)
+            raise PreprocessError(f"Document {document_id} could not be rendered ({type(exc).__name__}).") from exc
+        logger.info("pdf2image_processing_fallback", note="poppler is not installed: using the raw PDF", error=str(exc))
+        # Development machine without poppler: wrap the raw PDF directly
         if len(raw) > MAX_BYTES_PER_SPLIT:
             raise PreprocessError("Unable to create compliant split artifacts because PDF rendering is unavailable.") from exc
         transforms = [{
@@ -427,6 +500,7 @@ async def run(ctx: dict[str, Any]) -> dict[str, Any]:
             "mime": "application/pdf",
         }]
         artifacts = []
+        plan = None
 
     if artifacts:
         logger.info("auto_split_materialized", document_id=document_id, artifacts=len(artifacts), page_count=len(processed_pages))
@@ -434,4 +508,5 @@ async def run(ctx: dict[str, Any]) -> dict[str, Any]:
     ctx["processed_pages"] = processed_pages
     ctx["transform_meta"] = transforms
     ctx["processed_artifacts"] = artifacts
+    ctx["page_plan"] = plan.as_dict() if plan is not None else None
     return ctx
