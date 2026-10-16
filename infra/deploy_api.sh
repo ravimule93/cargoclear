@@ -63,6 +63,9 @@ MAX_INSTANCES="${MAX_INSTANCES:-1}"
 CPU_THROTTLING_FLAG="${CPU_THROTTLING_FLAG:---no-cpu-throttling}"
 TASKS_QUEUE="${TASKS_QUEUE:-cargoclear-runs}"
 SIGNING_KEY_VERSION="${SIGNING_KEY_VERSION:-}"
+AUTH_ENABLED="${AUTH_ENABLED:-true}"
+ALLOWED_EMAIL_DOMAINS="${ALLOWED_EMAIL_DOMAINS:-*}"
+OAUTH_CLIENT_ID="${OAUTH_CLIENT_ID:-448522365737-41s34pmlanitloca4vd4qesoefa060j9.apps.googleusercontent.com}"
 
 case "${RUN_DISPATCH}" in
   local)
@@ -126,7 +129,10 @@ TASKS_QUEUE="${TASKS_QUEUE}",\
 TASKS_LOCATION="${REGION}",\
 TASKS_SERVICE_ACCOUNT="${TASKS_SERVICE_ACCOUNT}",\
 INTERNAL_CALLER_EMAIL="${TASKS_SERVICE_ACCOUNT}",\
-SIGNING_KEY_VERSION="${SIGNING_KEY_VERSION}"
+SIGNING_KEY_VERSION="${SIGNING_KEY_VERSION}",\
+AUTH_ENABLED="${AUTH_ENABLED}",\
+ALLOWED_EMAIL_DOMAINS="${ALLOWED_EMAIL_DOMAINS}",\
+OAUTH_CLIENT_ID="${OAUTH_CLIENT_ID}"
 
 # An earlier version of this script deployed the API publicly. Make sure no anonymous invoker binding survives
 # on an existing service (idempotent; harmless when there is none).

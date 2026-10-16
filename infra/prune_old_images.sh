@@ -114,10 +114,12 @@ prune_service() {
   local kept_count=0
 
   while IFS= read -r version_digest; do
+    version_digest="$(echo "${version_digest}" | tr -d '\r' | xargs)"
     [[ -z "${version_digest}" ]] && continue
 
     local is_active=0
     for active_digest in "${unique_active[@]}"; do
+      active_digest="$(echo "${active_digest}" | tr -d '\r' | xargs)"
       if [[ "${version_digest}" == "${active_digest}" ]]; then
         is_active=1
         break

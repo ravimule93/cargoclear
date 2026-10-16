@@ -46,9 +46,12 @@ export async function GET(request: NextRequest) {
   }
 
   const redirectUri = `${origin}/api/auth/callback/google`;
+  const stateNonce = crypto.randomUUID();
+  const oidcNonce = crypto.randomUUID();
+
   const statePayload = Buffer.from(
     JSON.stringify({
-      nonce: crypto.randomUUID(),
+      nonce: stateNonce,
       returnTo,
     })
   ).toString("base64url");
@@ -61,12 +64,23 @@ export async function GET(request: NextRequest) {
   googleAuthUrl.searchParams.set("access_type", "offline");
   googleAuthUrl.searchParams.set("prompt", "select_account");
   googleAuthUrl.searchParams.set("state", statePayload);
+  googleAuthUrl.searchParams.set("nonce", oidcNonce);
 
   const response = NextResponse.redirect(googleAuthUrl);
-  response.cookies.set("cargoclear_oauth_state", statePayload, {
+  const isSecure = origin.startsWith("https") || process.env.NODE_ENV === "production";
+
+  response.cookies.set("cargoclear_oauth_state", stateNonce, {
     path: "/",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecure,
+    sameSite: "lax",
+    maxAge: 600, // 10 minutes
+  });
+
+  response.cookies.set("cargoclear_oauth_nonce", oidcNonce, {
+    path: "/",
+    httpOnly: true,
+    secure: isSecure,
     sameSite: "lax",
     maxAge: 600, // 10 minutes
   });

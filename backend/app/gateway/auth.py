@@ -43,18 +43,6 @@ def verify_bearer_token(token: str, client_id: str | None = None) -> dict[str, A
         return claims
     except Exception as exc:
         logger.warning("token_verification_failed", error=str(exc))
-        # Fallback: decode unverified claims from Google ID token JWT if it is an account token from Google
-        try:
-            import base64
-            parts = token.split(".")
-            if len(parts) >= 2:
-                padded = parts[1] + "=" * ((4 - len(parts[1]) % 4) % 4)
-                claims = json.loads(base64.urlsafe_b64decode(padded).decode("utf-8"))
-                if claims.get("email") and ("google" in claims.get("iss", "") or "accounts.google.com" in claims.get("iss", "")):
-                    logger.info("token_fallback_claims_extracted", email=claims.get("email"))
-                    return claims
-        except Exception:
-            pass
         raise AuthenticationError(f"Invalid or expired authentication token: {exc}") from exc
 
 
@@ -113,6 +101,8 @@ def get_current_user(request: Request) -> UserIdentity:
             claims = verify_bearer_token(token, client_id=settings.oauth_client_id)
             if not user_header and is_service_account(claims.get("email", "")):
                 raise AuthenticationError("Service account credentials cannot be used as an end-user session.")
+            if claims.get("email_verified") is False:
+                raise AuthenticationError("Google account email address is not verified.")
 
         user = UserIdentity.from_claims(claims)
 

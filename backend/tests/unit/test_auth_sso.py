@@ -227,3 +227,128 @@ def test_service_account_caller_distinguished_from_end_user(monkeypatch):
     assert res_auth.json()["user"] is not None
     assert res_auth.json()["user"]["email"] == "pandenikhil5@gmail.com"
 
+
+def test_verify_bearer_token_genuine_google_success(monkeypatch):
+    """Genuine Google ID token verified with audience and claims."""
+    from google.oauth2 import id_token
+    from app.gateway.auth import verify_bearer_token
+
+    expected_claims = {
+        "iss": "https://accounts.google.com",
+        "sub": "108429384920194820194",
+        "email": "verified.broker@customs.com",
+        "email_verified": True,
+        "name": "Verified Broker",
+        "aud": "cargoclear-test-client-id",
+    }
+    monkeypatch.setattr(id_token, "verify_oauth2_token", lambda tok, req, audience=None, clock_skew_in_seconds=10: expected_claims)
+
+    claims = verify_bearer_token("genuine-signed-google-token", client_id="cargoclear-test-client-id")
+    assert claims["sub"] == "108429384920194820194"
+    assert claims["email"] == "verified.broker@customs.com"
+    assert claims["email_verified"] is True
+
+
+def test_verify_bearer_token_forged_signature_rejected(monkeypatch):
+    """Tampered or unverified tokens must NOT fallback to insecure parsing: raises AuthenticationError."""
+    from google.oauth2 import id_token
+    from google.auth.exceptions import GoogleAuthError
+    from app.gateway.auth import verify_bearer_token
+    from app.gateway.errors import AuthenticationError
+
+    # Simulate Google verification failure
+    def mock_failure(*args, **kwargs):
+        raise GoogleAuthError("Token signature verification failed.")
+
+    monkeypatch.setattr(id_token, "verify_oauth2_token", mock_failure)
+
+    # Forged token with plausible-looking claims
+    forged_token = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjM0NSIsImVtYWlsIjoidmljdGltQGN1c3RvbXMuY29tIiwiaXNzIjoiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tIn0.forged_sig"
+
+    with pytest.raises(AuthenticationError) as exc_info:
+        verify_bearer_token(forged_token, client_id="test-client-id")
+
+    assert "Invalid or expired authentication token" in str(exc_info.value)
+
+
+def test_verify_bearer_token_unverified_email_rejected(monkeypatch):
+    """Google tokens with unverified email must be rejected."""
+    from app.gateway.auth import get_current_user
+    from app.gateway.errors import AuthenticationError
+    from starlette.requests import Request
+
+    monkeypatch.setattr(settings, "auth_enabled", True)
+
+    unverified_claims = {
+        "iss": "https://accounts.google.com",
+        "sub": "google-user-9999",
+        "email": "unverified@customs.com",
+        "email_verified": False,
+        "name": "Unverified User",
+    }
+    from app.gateway import auth
+    monkeypatch.setattr(auth, "verify_bearer_token", lambda tok, client_id=None: unverified_claims)
+
+    scope = {
+        "type": "http",
+        "headers": [(b"authorization", b"Bearer real-google-token-unverified-email")],
+    }
+    req = Request(scope)
+
+    with pytest.raises(AuthenticationError) as exc_info:
+        get_current_user(req)
+
+    assert "not verified" in str(exc_info.value)
+
+
+def test_preset_demo_account_customs_preserved(monkeypatch):
+    """PRESET DEMO ACCOUNT: customs.com must work out of the box with zero regression."""
+    monkeypatch.setattr(settings, "auth_enabled", True)
+    monkeypatch.setattr(settings, "app_mode", "demo")
+
+    app = create_app()
+    client = TestClient(app)
+
+    headers = {"Authorization": "Bearer mock-jwt-demo-cha@customs.com-LICENSED_CHA"}
+    res = client.get("/api/v1/meta", headers=headers)
+    assert res.status_code == 200
+    user = res.json()["user"]
+    assert user["email"] == "demo-cha@customs.com"
+    assert user["tenant_id"] == "customs.com"
+    assert user["role"] == "LICENSED_CHA"
+
+
+def test_preset_demo_account_dhl_preserved(monkeypatch):
+    """PRESET DEMO ACCOUNT: agent@dhl.com must work out of the box with zero regression."""
+    monkeypatch.setattr(settings, "auth_enabled", True)
+    monkeypatch.setattr(settings, "app_mode", "demo")
+
+    app = create_app()
+    client = TestClient(app)
+
+    headers = {"Authorization": "Bearer mock-jwt-agent@dhl.com-LICENSED_CHA"}
+    res = client.get("/api/v1/meta", headers=headers)
+    assert res.status_code == 200
+    user = res.json()["user"]
+    assert user["email"] == "agent@dhl.com"
+    assert user["tenant_id"] == "dhl.com"
+    assert user["role"] == "LICENSED_CHA"
+
+
+def test_preset_demo_account_fedex_preserved(monkeypatch):
+    """PRESET DEMO ACCOUNT: broker@fedex.com must work out of the box with zero regression."""
+    monkeypatch.setattr(settings, "auth_enabled", True)
+    monkeypatch.setattr(settings, "app_mode", "demo")
+
+    app = create_app()
+    client = TestClient(app)
+
+    headers = {"Authorization": "Bearer mock-jwt-broker@fedex.com-LICENSED_CHA"}
+    res = client.get("/api/v1/meta", headers=headers)
+    assert res.status_code == 200
+    user = res.json()["user"]
+    assert user["email"] == "broker@fedex.com"
+    assert user["tenant_id"] == "fedex.com"
+    assert user["role"] == "LICENSED_CHA"
+
+

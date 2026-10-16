@@ -20,8 +20,30 @@ function SignInContent() {
   // Sign In form state
   const [signInEmail, setSignInEmail] = useState(initialEmail);
   const [signInPassword, setSignInPassword] = useState("");
+  const getErrorMessage = (err: string | null) => {
+    if (!err) return null;
+    switch (err) {
+      case "csrf_validation_failed":
+        return "Security verification failed (OAuth state mismatch). Please try signing in again.";
+      case "token_exchange_failed":
+        return "Failed to exchange authorization code with Google. Please retry.";
+      case "token_verification_failed":
+        return "Google ID token cryptographic validation failed. Access denied.";
+      case "token_audience_mismatch":
+        return "Google token was not issued for this application.";
+      case "email_not_verified":
+        return "Your Google email address is not verified by Google. Access denied.";
+      case "authorization_cancelled":
+        return "Google sign-in was cancelled.";
+      case "missing_oauth_config":
+        return "Google OAuth Client credentials are not configured.";
+      default:
+        return err;
+    }
+  };
+
   const [signInLoading, setSignInLoading] = useState(false);
-  const [signInError, setSignInError] = useState<string | null>(queryError);
+  const [signInError, setSignInError] = useState<string | null>(getErrorMessage(queryError));
 
   // Sign Up form state
   const [signUpName, setSignUpName] = useState("");

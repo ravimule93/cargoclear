@@ -60,5 +60,21 @@ export async function GET(request: NextRequest) {
     secure: isSecure,
   });
 
+  response.cookies.set("cargoclear_user_email", "", {
+    path: "/",
+    maxAge: 0,
+    expires: new Date(0),
+    sameSite: "lax",
+    secure: isSecure,
+  });
+
+  response.cookies.set("cargoclear_user_name", "", {
+    path: "/",
+    maxAge: 0,
+    expires: new Date(0),
+    sameSite: "lax",
+    secure: isSecure,
+  });
+
   return response;
 }
