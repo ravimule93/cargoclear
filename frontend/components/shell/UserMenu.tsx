@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { UserIdentity } from "@/lib/types";
+import { invalidateMetaCache } from "@/lib/hooks/useMeta";
 
 interface UserMenuProps {
   user?: UserIdentity | null;
@@ -11,12 +12,19 @@ interface UserMenuProps {
 
 export function UserMenu({ user, onLogout }: UserMenuProps) {
   const handleLogout = () => {
+    invalidateMetaCache();
+    const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
+    const secureFlag = isHttps ? "; Secure" : "";
+    document.cookie = `__session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${secureFlag}`;
+    document.cookie = `cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${secureFlag}`;
+    document.cookie = `cargoclear_google_id_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${secureFlag}`;
     document.cookie = "__session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "cargoclear_google_id_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     if (onLogout) {
       onLogout();
     } else {
-      window.location.href = "/api/auth/logout";
+      window.location.href = "/api/auth/logout?returnTo=/";
     }
   };
 

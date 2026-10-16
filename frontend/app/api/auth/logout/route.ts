@@ -35,22 +35,29 @@ export async function GET(request: NextRequest) {
   const targetUrl = new URL(returnTo, origin);
   const response = NextResponse.redirect(targetUrl);
 
+  const isSecure = origin.startsWith("https");
   response.cookies.set("__session", "", {
     path: "/",
     maxAge: 0,
+    expires: new Date(0),
     sameSite: "lax",
+    secure: isSecure,
   });
 
   response.cookies.set("cargoclear_session_token", "", {
     path: "/",
     maxAge: 0,
+    expires: new Date(0),
     sameSite: "lax",
+    secure: isSecure,
   });
 
   response.cookies.set("cargoclear_google_id_token", "", {
     path: "/",
     maxAge: 0,
+    expires: new Date(0),
     sameSite: "lax",
+    secure: isSecure,
   });
 
   return response;

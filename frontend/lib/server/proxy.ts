@@ -27,6 +27,7 @@ const FORWARDED_REQUEST_HEADERS = [
   "last-event-id",
   "if-none-match",
   "range",
+  "x-cargoclear-user-token",
 ] as const;
 
 /** Response headers that must not be copied: the body is re-streamed (and may have been decoded) by fetch. */

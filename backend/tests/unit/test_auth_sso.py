@@ -193,3 +193,37 @@ def test_user_check_and_signup_flow():
     assert "USER_REGISTERED" in actions
     assert "USER_LOGIN_SUCCESS" in actions
 
+
+def test_service_account_caller_distinguished_from_end_user(monkeypatch):
+    """When Cloud Run IAM passes service account token, meta ignores it for end user unless X-CargoClear-User-Token is passed."""
+    monkeypatch.setattr(settings, "auth_enabled", True)
+    monkeypatch.setattr(settings, "app_mode", "live")
+
+    # Mock verify_bearer_token to return service account claims for the Authorization header
+    sa_claims = {
+        "email": "448522365737-compute@developer.gserviceaccount.com",
+        "sub": "sa-12345",
+        "iss": "https://accounts.google.com",
+    }
+    from app.gateway import auth
+    monkeypatch.setattr(auth, "verify_bearer_token", lambda token, client_id=None: sa_claims)
+
+    app = create_app()
+    client = TestClient(app)
+
+    # 1. Unauthenticated request from proxy: carries Cloud Run SA token, NO user token
+    headers_unauth = {"Authorization": "Bearer google-iam-sa-token"}
+    res_unauth = client.get("/api/v1/meta", headers=headers_unauth)
+    assert res_unauth.status_code == 200
+    assert res_unauth.json()["user"] is None
+
+    # 2. Authenticated request from proxy: carries Cloud Run SA token AND X-CargoClear-User-Token
+    headers_auth = {
+        "Authorization": "Bearer google-iam-sa-token",
+        "X-CargoClear-User-Token": "Bearer mock-jwt-pandenikhil5@gmail.com-LICENSED_CHA",
+    }
+    res_auth = client.get("/api/v1/meta", headers=headers_auth)
+    assert res_auth.status_code == 200
+    assert res_auth.json()["user"] is not None
+    assert res_auth.json()["user"]["email"] == "pandenikhil5@gmail.com"
+

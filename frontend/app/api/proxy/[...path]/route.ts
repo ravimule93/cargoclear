@@ -91,11 +91,17 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
       requestId,
     });
 
-    // Read active auth session from cookie if Authorization header is not explicitly present.
+    // Read active auth session from cookie if present and forward as dedicated end-user identity.
     // Firebase Hosting CDN rewrites forward ONLY the '__session' cookie, so we check both.
     const sessionToken =
       request.cookies.get("__session")?.value ||
       request.cookies.get("cargoclear_session_token")?.value;
+    if (sessionToken) {
+      headers.set("x-cargoclear-user-token", `Bearer ${sessionToken}`);
+    } else if (request.headers.get("x-cargoclear-user-token")) {
+      headers.set("x-cargoclear-user-token", request.headers.get("x-cargoclear-user-token")!);
+    }
+
     if (sessionToken && !headers.has("authorization")) {
       headers.set("authorization", `Bearer ${sessionToken}`);
     }

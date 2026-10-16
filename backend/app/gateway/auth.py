@@ -58,17 +58,33 @@ def verify_bearer_token(token: str, client_id: str | None = None) -> dict[str, A
         raise AuthenticationError(f"Invalid or expired authentication token: {exc}") from exc
 
 
+def is_service_account(email: str) -> bool:
+    """True if email belongs to a Google Cloud service account."""
+    return (
+        email.endswith(".gserviceaccount.com")
+        or email.endswith(".google.com")
+        or email.startswith("service-")
+    )
+
+
 def get_current_user(request: Request) -> UserIdentity:
     """FastAPI dependency to extract and verify the authenticated user.
 
     Behaviors:
-    - If `Authorization: Bearer <token>` is present: validates claims, extracts domain tenancy,
-      and verifies allowed corporate email domains.
-    - If no Authorization header is present:
+    - If `X-CargoClear-User-Token` is forwarded by the trusted BFF proxy: validates end-user claims.
+    - If standard `Authorization: Bearer <token>` is present: validates claims.
+      Note: If the token is a Google Cloud Run service account (used for IAM invoker checks between
+      the UI proxy and the private API) and no end-user token is forwarded, it is rejected as a human session.
+    - If no user token is present:
         - If AUTH_ENABLED is False (or demo mode): Injects mock commercial CHA identity (demo-cha@customs.com).
         - If AUTH_ENABLED is True: Raises 401 AuthenticationError.
     """
-    auth_header = request.headers.get("Authorization")
+    user_header = (
+        request.headers.get("X-CargoClear-User-Token")
+        or request.headers.get("X-End-User-Authorization")
+    )
+    auth_header = user_header or request.headers.get("Authorization")
+
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header.split(" ", 1)[1].strip()
         if not token:
@@ -95,6 +111,8 @@ def get_current_user(request: Request) -> UserIdentity:
             claims = {"email": email, "sub": f"usr-{email}", "cargo_role": role, "name": email.split("@")[0].title()}
         else:
             claims = verify_bearer_token(token, client_id=settings.oauth_client_id)
+            if not user_header and is_service_account(claims.get("email", "")):
+                raise AuthenticationError("Service account credentials cannot be used as an end-user session.")
 
         user = UserIdentity.from_claims(claims)
 
@@ -122,13 +140,32 @@ def get_current_user(request: Request) -> UserIdentity:
 
 def get_optional_user(request: Request) -> UserIdentity | None:
     """Optional user dependency for public metadata routes like /meta."""
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Bearer "):
+    user_header = (
+        request.headers.get("X-CargoClear-User-Token")
+        or request.headers.get("X-End-User-Authorization")
+    )
+    if user_header and user_header.startswith("Bearer "):
         try:
             return get_current_user(request)
         except Exception as exc:
             logger.warning("optional_user_auth_failed", error=str(exc))
             return None
+
+    # Check Authorization header only if not a Cloud Run service account
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        try:
+            token = auth_header.split(" ", 1)[1].strip()
+            if token.startswith("mock-jwt-"):
+                return get_current_user(request)
+            claims = verify_bearer_token(token, client_id=settings.oauth_client_id)
+            if is_service_account(claims.get("email", "")):
+                # Service account is the Cloud Run IAM proxy caller, not an end user
+                return None
+            return UserIdentity.from_claims(claims)
+        except Exception:
+            return None
+
     if not settings.auth_enabled:
         return get_current_user(request)
     return None
