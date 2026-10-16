@@ -22,7 +22,6 @@ export interface BundleStream {
   error: string | null;
 }
 
-
 function parseJson(raw: unknown): unknown {
   if (typeof raw !== "string") return null;
   try {
@@ -46,12 +45,11 @@ function isIterationPayload(value: unknown): value is AssessmentIteration {
 }
 
 /**
- * Subscribes to the same-origin /api/proxy/bundles/{id}/stream (the Next.js server proxies it to the API).
+ * Subscribes to the same-origin /api/proxy/bundles/{id}/stream with automatic fallback to polling.
  *
- * The backend sends NAMED SSE events, so the event name decides how a payload is read:
- *   `status`    -> run progress (payload carries kind:"status")
- *   `iteration` -> a full AssessmentIteration (no `kind` field)
- * On connect it immediately replays the current status and latest iteration.
+ * If the connection cannot be established or is buffered by an intermediate CDN (e.g. Firebase Hosting
+ * edge rewrites), a watchdog timer automatically degrades to adaptive polling after 3.5s so live updates
+ * are never blocked or stuck on "connecting".
  */
 export function useBundleStream(bundleId: string | null): BundleStream {
   const [assessment, setAssessment] = useState<AssessmentIteration | null>(null);
@@ -59,6 +57,7 @@ export function useBundleStream(bundleId: string | null): BundleStream {
   const [connection, setConnection] = useState<StreamConnection>("connecting");
   const [error, setError] = useState<string | null>(null);
 
+  // 1. SSE Connection effect
   useEffect(() => {
     setAssessment(null);
     setRun(null);
@@ -69,11 +68,10 @@ export function useBundleStream(bundleId: string | null): BundleStream {
 
     const url = `/api/proxy/bundles/${encodeURIComponent(bundleId)}/stream`;
 
-    // `disposed` makes this safe under React StrictMode's mount/unmount/mount in dev:
-    // the first source is closed by cleanup and can never write state afterwards.
     let disposed = false;
     let source: EventSource | null = null;
     let reopenTimer: ReturnType<typeof setTimeout> | undefined;
+    let watchdogTimer: ReturnType<typeof setTimeout> | undefined;
     let retryAttempt = 0;
 
     const connect = () => {
@@ -81,8 +79,21 @@ export function useBundleStream(bundleId: string | null): BundleStream {
       const es = new EventSource(url);
       source = es;
 
+      // Watchdog: If edge CDN or reverse proxy buffers SSE and never fires open,
+      // fallback smoothly to active polling after 3.5s.
+      if (watchdogTimer !== undefined) clearTimeout(watchdogTimer);
+      watchdogTimer = setTimeout(() => {
+        if (disposed) return;
+        if (es.readyState === EventSource.CONNECTING) {
+          console.info("[BundleStream] SSE connection pending; transitioning to polling fallback.");
+          es.close();
+          setConnection("polling");
+        }
+      }, 3500);
+
       es.addEventListener("open", () => {
         if (disposed) return;
+        if (watchdogTimer !== undefined) clearTimeout(watchdogTimer);
         setConnection("open");
         retryAttempt = 0;
       });
@@ -118,20 +129,20 @@ export function useBundleStream(bundleId: string | null): BundleStream {
           setError(data?.message ?? "Stream error");
           return;
         }
-        if (es.readyState === EventSource.CLOSED) {
+
+        if (watchdogTimer !== undefined) clearTimeout(watchdogTimer);
+
+        if (es.readyState === EventSource.CLOSED || retryAttempt >= 2) {
           es.close();
-          if (retryAttempt >= 3) {
-            // Degrade gracefully to polling if SSE disconnected/timed out
-            setConnection("polling");
-            return;
-          }
-          setConnection("reconnecting");
-          const delay = Math.min(10000, 2000 * Math.pow(1.5, retryAttempt));
-          retryAttempt++;
-          reopenTimer = setTimeout(connect, delay);
-        } else {
-          setConnection("reconnecting");
+          // Degrade gracefully to polling if SSE disconnected or timed out
+          setConnection("polling");
+          return;
         }
+
+        setConnection("reconnecting");
+        const delay = Math.min(10000, 2000 * Math.pow(1.5, retryAttempt));
+        retryAttempt++;
+        reopenTimer = setTimeout(connect, delay);
       });
     };
 
@@ -139,10 +150,70 @@ export function useBundleStream(bundleId: string | null): BundleStream {
 
     return () => {
       disposed = true;
+      if (watchdogTimer !== undefined) clearTimeout(watchdogTimer);
       if (reopenTimer !== undefined) clearTimeout(reopenTimer);
       source?.close();
     };
   }, [bundleId]);
+
+  // 2. Active Polling fallback effect when connection === "polling"
+  useEffect(() => {
+    if (connection !== "polling" || !bundleId) return;
+
+    let cancelled = false;
+    let pollTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const poll = async () => {
+      if (cancelled) return;
+      try {
+        // Fetch run status
+        const statusRes = await fetch(`/api/proxy/bundles/${encodeURIComponent(bundleId)}/status`, {
+          headers: { Accept: "application/json" },
+          cache: "no-store",
+        });
+        if (statusRes.ok && !cancelled) {
+          const statusData = await statusRes.json();
+          if (isStatusPayload(statusData)) {
+            setRun({
+              run_id: statusData.run_id,
+              state: statusData.state,
+              stage: statusData.stage,
+              progress: statusData.progress,
+              message: statusData.message,
+            });
+            setError(statusData.state === "ERROR" ? (statusData.message ?? "Pipeline run failed") : null);
+          }
+        }
+
+        // Fetch latest assessment
+        const assessRes = await fetch(`/api/proxy/bundles/${encodeURIComponent(bundleId)}/assessment`, {
+          headers: { Accept: "application/json" },
+          cache: "no-store",
+        });
+        if (assessRes.ok && !cancelled) {
+          const assessData = await assessRes.json();
+          if (isIterationPayload(assessData)) {
+            setAssessment((prev) => (prev && assessData.iteration < prev.iteration ? prev : assessData));
+          }
+        }
+      } catch (err) {
+        console.debug("[BundleStream] Polling cycle error:", err);
+      } finally {
+        if (!cancelled) {
+          // Poll faster (2000ms) while running/queued, slower (5000ms) when idle
+          const interval = run?.state === "RUNNING" || run?.state === "QUEUED" ? 2000 : 5000;
+          pollTimer = setTimeout(poll, interval);
+        }
+      }
+    };
+
+    void poll();
+
+    return () => {
+      cancelled = true;
+      if (pollTimer !== undefined) clearTimeout(pollTimer);
+    };
+  }, [connection, bundleId, run?.state]);
 
   return { assessment, run, connection, error };
 }

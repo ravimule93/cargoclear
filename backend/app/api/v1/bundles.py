@@ -131,6 +131,28 @@ async def get_bundle(
         created_by=bundle.get("created_by") or current_user.email,
     )
 
+@router.get(
+    "/bundles/{bundle_id}/status",
+    summary="Get current run status and pipeline stage",
+)
+async def get_bundle_status(
+    bundle_id: str,
+    current_user: UserIdentity = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Retrieve current pipeline execution status and stage for a bundle."""
+    bundle = await firestore.get_bundle(bundle_id)
+    if bundle is None:
+        raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
+
+    bundle_tenant = bundle.get("tenant_id")
+    if bundle_tenant and bundle_tenant != current_user.tenant_id and current_user.tenant_id != "*":
+        raise ForbiddenError(
+            f"Access denied: Bundle belongs to organization '{bundle_tenant}'.",
+            detail={"bundle_tenant": bundle_tenant, "user_tenant": current_user.tenant_id},
+        )
+
+    return await firestore.get_run_state(bundle_id)
+
 
 
 @router.get(

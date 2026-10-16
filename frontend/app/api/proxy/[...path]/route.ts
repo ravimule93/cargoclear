@@ -124,9 +124,17 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
     const isSse = response.headers.get("content-type")?.includes("text/event-stream");
     const responseHeaders = downstreamResponseHeaders(response.headers);
     if (isSse) {
-      responseHeaders.set("Cache-Control", "no-cache, no-transform");
-      responseHeaders.set("Connection", "keep-alive");
+      responseHeaders.set("Content-Type", "text/event-stream; charset=utf-8");
+      responseHeaders.set("Cache-Control", "no-cache, no-transform, no-store, must-revalidate");
       responseHeaders.set("X-Accel-Buffering", "no");
+      // HTTP/2 explicitly prohibits hop-by-hop headers (RFC 7540)
+      responseHeaders.delete("connection");
+      responseHeaders.delete("keep-alive");
+
+      return new Response(response.body, {
+        status: response.status,
+        headers: responseHeaders,
+      });
     }
 
     return new NextResponse(response.body, {
