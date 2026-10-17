@@ -19,6 +19,10 @@ export interface MetaState {
  */
 let cached: Promise<Meta> | null = null;
 
+export function invalidateMetaCache(): void {
+  cached = null;
+}
+
 function loadMeta(force: boolean): Promise<Meta> {
   if (force || cached === null) {
     cached = api.getMeta().catch((err: unknown) => {

@@ -229,6 +229,9 @@ RUN_TIMEOUT_SECONDS="1200",`
 CLIENT_IP_HEADER="x-cargoclear-client-ip",`
 TRUST_FORWARDED_FOR="false",`
 AUTH_ENABLED="true"
+
+# Prune older API container images from Artifact Registry (deploy_api.sh does this automatically):
+.\infra\prune_old_images.ps1 -Service cargoclear-api
 ```
 
 ---
@@ -278,6 +281,9 @@ Deploy the Next.js 15 UI to Cloud Run as a **public** service.
    API_BASE="$API_URL",`
    API_AUTH_MODE="google-id-token",`
    TRUSTED_PROXY_HOPS="1"
+
+   # Prune older UI container images from Artifact Registry (deploy_ui.sh does this automatically):
+   .\infra\prune_old_images.ps1 -Service cargoclear-ui
    ```
 
 ---
@@ -438,5 +444,5 @@ python scripts/clean_bundles.py --all -y
 | **Unexpected Cloud Run Costs** | Service configured with always-on instances (`min-instances 1`) | Update Cloud Run to scale-to-zero: `gcloud run services update cargoclear-api --region asia-south1 --min-instances 0 --cpu-throttling` |
 | **High Vertex AI Token Costs** | Unconstrained thinking tokens on every document | Set `GEMINI_THINKING_BUDGET=0` for routine development and test extractions. |
 | **BigQuery Vector Search Fails** | Missing `roles/bigquery.jobUser` on runtime SA | Ensure `cargoclear-sa` has `roles/bigquery.jobUser` (needed to run query jobs, not just read). |
-| **Artifact Registry Storage Growth** | Old Docker container images accumulating across revisions | Set 7-day cleanup policy: `gcloud artifacts repositories set-cleanup-policies cloud-run-source-deploy --location=asia-south1 --policy=...` |
+| **Artifact Registry Storage Growth** | Old Docker container images accumulating across revisions | Deployment scripts (`deploy_ui.sh`, `deploy_api.sh`, and `prune_old_images.ps1`) automatically purge superseded container images after every deployment, keeping only the active Cloud Run image. In addition, repository background cleanup policy keeps only latest 1 version (`infra/artifact-registry-policy.json`). |
 

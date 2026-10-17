@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { TopBar } from "@/components/shell/TopBar";
 import { UserMenu } from "@/components/shell/UserMenu";
@@ -20,6 +20,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
   const { bundleId } = use(params);
   const wb = useWorkbench(bundleId);
   const { meta } = useMeta();
+  const [activeTab, setActiveTab] = useState<"assess" | "viewer" | "rail" | "drawer">("assess");
 
   if (wb.loadState === "loading") {
     return (
@@ -87,8 +88,15 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
   const actionError = wb.actionError ?? wb.streamError;
   const auditRefreshKey = `${assessment?.iteration ?? 0}:${wb.run?.run_id ?? ""}:${wb.run?.state ?? ""}:${wb.documents.length}:${wb.corrections?.corrections.length ?? 0}`;
 
+  const handleSelectDocument = (docId: string) => {
+    wb.selectDocument(docId);
+    setActiveTab("viewer");
+  };
+
+  const openIssuesCount = assessment?.checks?.filter((c) => c.severity !== "PASS").length ?? 0;
+
   return (
-    <>
+    <div className="cc-workbench" data-tab={activeTab}>
       <DemoBanner appMode={meta?.app_mode} dataSource={assessment?.data_source} />
 
       <TopBar
@@ -116,34 +124,102 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         }}
       />
 
+      <nav className="cc-tabs" role="tablist" aria-label="Workbench sections">
+        <button
+          type="button"
+          role="tab"
+          id="tab-btn-assess"
+          aria-selected={activeTab === "assess"}
+          aria-controls="panel-assess"
+          className="cc-tab-btn"
+          onClick={() => setActiveTab("assess")}
+        >
+          <span>⚖️ Assessment</span>
+          {openIssuesCount > 0 ? (
+            <span className="cc-tab-badge bg-[var(--cc-err-bg)] text-[var(--cc-err)] border border-[var(--cc-err-bd)]">
+              {openIssuesCount}
+            </span>
+          ) : assessment?.checks?.length ? (
+            <span className="cc-tab-badge bg-[var(--cc-ok-bg)] text-[var(--cc-ok)] border border-[var(--cc-ok-bd)]">
+              ✓
+            </span>
+          ) : null}
+        </button>
 
-      <aside className="cc-rail" aria-label="Documents in this bundle">
+        <button
+          type="button"
+          role="tab"
+          id="tab-btn-viewer"
+          aria-selected={activeTab === "viewer"}
+          aria-controls="panel-viewer"
+          className="cc-tab-btn"
+          onClick={() => setActiveTab("viewer")}
+        >
+          <span>🔍 Viewer</span>
+          {wb.documents.length > 0 && (
+            <span className="cc-tab-badge">
+              {wb.activeDocumentId ? "1 doc" : `${wb.documents.length}`}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          id="tab-btn-rail"
+          aria-selected={activeTab === "rail"}
+          aria-controls="panel-rail"
+          className="cc-tab-btn"
+          onClick={() => setActiveTab("rail")}
+        >
+          <span>📁 Files</span>
+          <span className="cc-tab-badge">{wb.documents.length}</span>
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          id="tab-btn-drawer"
+          aria-selected={activeTab === "drawer"}
+          aria-controls="panel-drawer"
+          className="cc-tab-btn"
+          onClick={() => setActiveTab("drawer")}
+        >
+          <span>📜 Audit & Delta</span>
+          {assessment?.iteration ? (
+            <span className="cc-tab-badge">v{assessment.iteration}</span>
+          ) : null}
+        </button>
+      </nav>
+
+      <aside id="panel-rail" className="cc-rail" aria-label="Documents in this bundle">
         <DocumentRail
           documents={wb.documents}
           checks={assessment?.checks ?? []}
           activeDocumentId={wb.activeDocumentId ?? undefined}
-          onSelectDocument={wb.selectDocument}
+          onSelectDocument={handleSelectDocument}
           onRemoveDocument={wb.removeDocument}
           removeDisabled={wb.isRunning || wb.isUploading || wb.isRemoving}
         />
       </aside>
 
-      <main className="cc-viewer" aria-label="Document viewer and annotations">
+      <main id="panel-viewer" className="cc-viewer" aria-label="Document viewer and annotations">
         <DocumentViewer
           bundleId={bundleId}
           documents={wb.documents}
           activeDocumentId={wb.activeDocumentId}
           highlights={wb.highlights}
           iteration={assessment?.iteration ?? null}
+          isVisible={activeTab === "viewer"}
         />
       </main>
 
-      <section className="cc-assess" aria-label="Compliance assessment and actions">
+      <section id="panel-assess" className="cc-assess" aria-label="Compliance assessment and actions">
         <AssessmentPanel
           assessment={assessment}
           bundleId={bundleId}
           documents={wb.documents}
-          onSelectDocument={wb.selectDocument}
+          onSelectDocument={handleSelectDocument}
           run={wb.run}
           isRunning={wb.isRunning}
           actionError={actionError}
@@ -157,13 +233,13 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         />
       </section>
 
-      <section className="cc-drawer" aria-label="Reasoning delta and audit trail">
+      <section id="panel-drawer" className="cc-drawer" aria-label="Reasoning delta and audit trail">
         <DeltaDrawer
           bundleId={bundleId}
           iterations={wb.iterations}
           auditRefreshKey={auditRefreshKey}
         />
       </section>
-    </>
+    </div>
   );
 }

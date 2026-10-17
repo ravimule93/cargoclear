@@ -76,7 +76,7 @@ export function DocumentRail({
                 }`}
               >
                 <div className="flex items-start justify-between gap-1">
-                  <span className="font-semibold text-[var(--cc-text)] truncate flex-1" title={doc.filename}>
+                  <span className="font-semibold text-[var(--cc-text)] truncate flex-1 min-w-0" title={doc.filename}>
                     {doc.filename}
                   </span>
                   {health && health.material > 0 && (

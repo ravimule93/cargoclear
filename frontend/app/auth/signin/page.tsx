@@ -20,8 +20,34 @@ function SignInContent() {
   // Sign In form state
   const [signInEmail, setSignInEmail] = useState(initialEmail);
   const [signInPassword, setSignInPassword] = useState("");
+  const getErrorMessage = (err: string | null) => {
+    if (!err) return null;
+    switch (err) {
+      case "csrf_validation_failed":
+        return "Security verification failed (OAuth state mismatch). Please try signing in again.";
+      case "state_expired":
+        return "Sign-in session timed out. Please try signing in again.";
+      case "invalid_state":
+        return "Invalid sign-in request. Please try signing in again.";
+      case "token_exchange_failed":
+        return "Failed to exchange authorization code with Google. Please retry.";
+      case "token_verification_failed":
+        return "Google ID token cryptographic validation failed. Access denied.";
+      case "token_audience_mismatch":
+        return "Google token was not issued for this application.";
+      case "email_not_verified":
+        return "Your Google email address is not verified by Google. Access denied.";
+      case "authorization_cancelled":
+        return "Google sign-in was cancelled.";
+      case "missing_oauth_config":
+        return "Google OAuth Client credentials are not configured.";
+      default:
+        return err;
+    }
+  };
+
   const [signInLoading, setSignInLoading] = useState(false);
-  const [signInError, setSignInError] = useState<string | null>(queryError);
+  const [signInError, setSignInError] = useState<string | null>(getErrorMessage(queryError));
 
   // Sign Up form state
   const [signUpName, setSignUpName] = useState("");
@@ -128,8 +154,8 @@ function SignInContent() {
   };
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-6 p-6">
-      <div className="rounded-xl border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-6 shadow-xl space-y-6">
+    <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-6 p-3 sm:p-6">
+      <div className="rounded-xl border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-4 sm:p-6 shadow-xl space-y-6">
         <header className="space-y-1 text-center">
           <div className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-[var(--cc-surface-2)] text-xl mb-2">
             🛃

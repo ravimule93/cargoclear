@@ -17,6 +17,10 @@ PROJECT_ID="${PROJECT_ID:?PROJECT_ID must identify the target GCP project}"
 REGION="${REGION:-asia-south1}"
 UI_SERVICE_ACCOUNT="${UI_SERVICE_ACCOUNT:?UI_SERVICE_ACCOUNT must be the dedicated Cloud Run identity of the UI (it needs roles/run.invoker on the API, nothing else)}"
 
+PUBLIC_URL="${PUBLIC_URL:-https://cargoclear-app.web.app}"
+GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID:-448522365737-41s34pmlanitloca4vd4qesoefa060j9.apps.googleusercontent.com}"
+NEXT_PUBLIC_APP_MODE="${NEXT_PUBLIC_APP_MODE:-live}"
+
 echo "Deploying cargoclear-ui to Google Cloud Run in ${REGION} (project: ${PROJECT_ID})..."
 
 # Fetch the deployed backend URL for the server-side BFF proxy.  Do not invent
@@ -51,6 +55,14 @@ GOOGLE_CLIENT_SECRET="google-client-secret:latest" \
   --set-env-vars \
 API_BASE="${API_URL}",\
 API_AUTH_MODE="google-id-token",\
-TRUSTED_PROXY_HOPS="1"
+TRUSTED_PROXY_HOPS="1",\
+PUBLIC_URL="${PUBLIC_URL}",\
+GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}",\
+NEXT_PUBLIC_APP_MODE="${NEXT_PUBLIC_APP_MODE}"
+
+# Automatically prune older container images from Artifact Registry, keeping only the active image
+echo "Pruning older cargoclear-ui container images from Artifact Registry..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+bash "${SCRIPT_DIR}/prune_old_images.sh" cargoclear-ui || echo "WARNING: Image pruning step encountered an issue; proceeding."
 
 echo "cargoclear-ui deployment completed successfully."

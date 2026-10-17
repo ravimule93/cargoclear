@@ -74,6 +74,9 @@ MAX_INSTANCES="${MAX_INSTANCES:-1}"
 CPU_THROTTLING_FLAG="${CPU_THROTTLING_FLAG:---no-cpu-throttling}"
 TASKS_QUEUE="${TASKS_QUEUE:-cargoclear-runs}"
 SIGNING_KEY_VERSION="${SIGNING_KEY_VERSION:-}"
+AUTH_ENABLED="${AUTH_ENABLED:-true}"
+ALLOWED_EMAIL_DOMAINS="${ALLOWED_EMAIL_DOMAINS:-*}"
+OAUTH_CLIENT_ID="${OAUTH_CLIENT_ID:-448522365737-41s34pmlanitloca4vd4qesoefa060j9.apps.googleusercontent.com}"
 
 case "${RUN_DISPATCH}" in
   local)
@@ -141,7 +144,10 @@ TASKS_QUEUE="${TASKS_QUEUE}",\
 TASKS_LOCATION="${REGION}",\
 TASKS_SERVICE_ACCOUNT="${TASKS_SERVICE_ACCOUNT}",\
 INTERNAL_CALLER_EMAIL="${TASKS_SERVICE_ACCOUNT}",\
-SIGNING_KEY_VERSION="${SIGNING_KEY_VERSION}"
+SIGNING_KEY_VERSION="${SIGNING_KEY_VERSION}",\
+AUTH_ENABLED="${AUTH_ENABLED}",\
+ALLOWED_EMAIL_DOMAINS="${ALLOWED_EMAIL_DOMAINS}",\
+OAUTH_CLIENT_ID="${OAUTH_CLIENT_ID}"
 
 # An earlier version of this script deployed the API publicly. Make sure no anonymous invoker binding survives
 # on an existing service (idempotent; harmless when there is none).
@@ -171,5 +177,10 @@ if [ "${RUN_DISPATCH}" = "cloudtasks" ]; then
     --quiet >/dev/null
   echo "Runs are dispatched through the '${TASKS_QUEUE}' queue (up to ${MAX_INSTANCES} instances); API_URL=${API_URL}"
 fi
+
+# Automatically prune older container images from Artifact Registry, keeping only the active image
+echo "Pruning older cargoclear-api container images from Artifact Registry..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+bash "${SCRIPT_DIR}/prune_old_images.sh" cargoclear-api || echo "WARNING: Image pruning step encountered an issue; proceeding."
 
 echo "cargoclear-api deployment completed successfully."

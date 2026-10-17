@@ -52,15 +52,41 @@ def verify_bearer_token(token: str, client_id: str | None = None) -> dict[str, A
         raise AuthenticationError(f"Invalid or expired authentication token: {exc}") from exc
 
 
+def is_service_account(email: str) -> bool:
+    """True if email belongs to a Google Cloud service account."""
+    return (
+        email.endswith(".gserviceaccount.com")
+        or email.endswith(".google.com")
+        or email.startswith("service-")
+    )
+
+
+def _end_user_token(request: Request) -> str | None:
+    """The end user's token as the private BFF forwarded it, or None when the header is absent.
+
+    The BFF sends the bare token; a leading ``Bearer `` is tolerated so either form of the header authenticates the same person.
+    """
+    value = request.headers.get(END_USER_TOKEN_HEADER)
+    if value is None:
+        return None
+    value = value.strip()
+    if value.lower().startswith("bearer "):
+        value = value[len("bearer "):].strip()
+    return value
+
+
 def get_current_user(request: Request) -> UserIdentity:
     """FastAPI dependency to extract and verify the authenticated user.
 
     Behaviors:
     In live mode, an end-user Google ID token must be supplied in the private
-    BFF header. Authorization carries the BFF's service identity and cannot
-    authenticate a person. Demo mode permits mock identities for local flows.
+    BFF header (`X-CargoClear-User-Token`). Authorization carries the BFF's
+    service identity (a Cloud Run service account used for IAM invoker checks
+    between the UI proxy and this private API) and can never authenticate a
+    person. Demo mode permits mock identities for local flows, and may also
+    read a direct `Authorization: Bearer` token.
     """
-    end_user_token = request.headers.get(END_USER_TOKEN_HEADER)
+    end_user_token = _end_user_token(request)
     auth_header = request.headers.get("Authorization")
     token: str | None = end_user_token
     if (
@@ -105,6 +131,11 @@ def get_current_user(request: Request) -> UserIdentity:
             }
         else:
             claims = verify_bearer_token(token, client_id=settings.oauth_client_id)
+            if end_user_token is None and is_service_account(claims.get("email", "")):
+                # Only reachable outside live mode: a service identity in Authorization is the IAM caller, not a person.
+                raise AuthenticationError("Service account credentials cannot be used as an end-user session.")
+            if claims.get("email_verified") is False:
+                raise AuthenticationError("Google account email address is not verified.")
 
         user = UserIdentity.from_claims(claims)
 
@@ -132,7 +163,7 @@ def get_current_user(request: Request) -> UserIdentity:
 
 def get_optional_user(request: Request) -> UserIdentity | None:
     """Optional user dependency for public metadata routes like /meta."""
-    has_end_user_token = bool(request.headers.get(END_USER_TOKEN_HEADER))
+    has_end_user_token = bool(_end_user_token(request))
     has_demo_bearer = (
         settings.app_mode == "demo"
         and request.headers.get("Authorization", "").startswith("Bearer ")
@@ -146,4 +177,3 @@ def get_optional_user(request: Request) -> UserIdentity | None:
     if settings.app_mode == "demo" and not settings.auth_enabled:
         return get_current_user(request)
     return None
-

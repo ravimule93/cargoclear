@@ -89,8 +89,14 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
     // separate HttpOnly Google ID-token cookie identifies the human user; it
     // is never readable by browser JavaScript and is never treated as the
     // service Authorization token.
+    // Firebase Hosting forwards ONLY the '__session' cookie across its rewrite to Cloud Run, so that is where the token must be read from
+    // there. A value starting "oauth:" is the sign-in flow's state cookie (same name, ten minutes), never a token.
     const endUserToken =
-      request.cookies.get("cargoclear_google_id_token")?.value ?? request.cookies.get("__session")?.value ?? null;
+      [
+        request.cookies.get("cargoclear_google_id_token")?.value,
+        request.cookies.get("__session")?.value,
+        request.cookies.get("cargoclear_session_token")?.value,
+      ].find((value): value is string => !!value && !value.startsWith("oauth:")) ?? null;
     const headers = upstreamRequestHeaders(request.headers, {
       idToken,
       endUserToken,
@@ -98,7 +104,8 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
       requestId,
     });
 
-    const hasBody = request.method !== "GET" && request.method !== "HEAD";
+    // POST only: DELETE (document remove) must not stream a body through duplex fetch.
+    const hasBody = request.method === "POST";
     const signals: AbortSignal[] = [request.signal];
     if (!isStreamPath(params.path)) signals.push(AbortSignal.timeout(REQUEST_DEADLINE_MS));
 
@@ -115,9 +122,17 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
     const isSse = response.headers.get("content-type")?.includes("text/event-stream");
     const responseHeaders = downstreamResponseHeaders(response.headers);
     if (isSse) {
-      responseHeaders.set("Cache-Control", "no-cache, no-transform");
-      responseHeaders.set("Connection", "keep-alive");
+      responseHeaders.set("Content-Type", "text/event-stream; charset=utf-8");
+      responseHeaders.set("Cache-Control", "no-cache, no-transform, no-store, must-revalidate");
       responseHeaders.set("X-Accel-Buffering", "no");
+      // HTTP/2 explicitly prohibits hop-by-hop headers (RFC 7540)
+      responseHeaders.delete("connection");
+      responseHeaders.delete("keep-alive");
+
+      return new Response(response.body, {
+        status: response.status,
+        headers: responseHeaders,
+      });
     }
 
     return new NextResponse(response.body, {

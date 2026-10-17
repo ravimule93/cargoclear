@@ -189,7 +189,7 @@ export function CheckList({
                   <div key={`${ev.doc}:${ev.field}:${evIdx}`} className="flex flex-col gap-1">
                   <div
                     onClick={() => ev.doc && onSelectDocument?.(ev.doc)}
-                    className={`p-1.5 rounded border text-[11px] flex items-center justify-between gap-2 transition-all ${
+                    className={`p-1.5 rounded border text-[11px] flex flex-wrap sm:flex-nowrap items-center justify-between gap-1.5 sm:gap-2 transition-all ${
                       ev.doc
                         ? "cursor-pointer hover:border-[var(--cc-focus)] hover:bg-[var(--cc-surface)]"
                         : ""
@@ -200,27 +200,27 @@ export function CheckList({
                     }`}
                     title={ev.doc ? `Click to view ${docName}` : undefined}
                   >
-                    <div className="flex items-center gap-1.5 truncate flex-1">
-                      <span aria-hidden="true" className="text-xs">
+                    <div className="flex items-center gap-1.5 truncate min-w-0 flex-1">
+                      <span aria-hidden="true" className="text-xs shrink-0">
                         {isGap ? "⚠️" : "📄"}
                       </span>
                       <span className="font-semibold truncate">
                         {docName}
                       </span>
                       {docType && (
-                        <span className="text-[9px] uppercase px-1 rounded bg-[var(--cc-surface-2)] text-[var(--cc-text-muted)] border border-[var(--cc-border)]">
+                        <span className="text-[9px] uppercase px-1 rounded bg-[var(--cc-surface-2)] text-[var(--cc-text-muted)] border border-[var(--cc-border)] shrink-0">
                           {docType}
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2 whitespace-nowrap text-right">
+                    <div className="flex flex-wrap items-center justify-end gap-1.5 text-right shrink-0">
                       {isGap ? (
                         <span className="font-medium text-[10px] text-[var(--cc-warn)] italic">
                           Field Omitted / Absent (Gap)
                         </span>
                       ) : (
-                        <span className="font-mono text-[11px] font-semibold text-[var(--cc-text)] bg-[var(--cc-surface-2)] px-1.5 py-0.5 rounded border border-[var(--cc-border)]">
+                        <span className="font-mono text-[11px] font-semibold text-[var(--cc-text)] bg-[var(--cc-surface-2)] px-1.5 py-0.5 rounded border border-[var(--cc-border)] max-w-[12rem] truncate" title={String(ev.raw_value)}>
                           {String(ev.raw_value)}
                         </span>
                       )}

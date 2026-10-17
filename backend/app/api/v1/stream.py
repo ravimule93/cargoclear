@@ -157,4 +157,4 @@ async def stream(bundle_id: str = Path(..., description="Target bundle ID")) -> 
     if await firestore.get_bundle(bundle_id) is None:
         raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
 
-    return EventSourceResponse(event_stream(bundle_id), ping=5)
+    return EventSourceResponse(event_stream(bundle_id), ping=15)

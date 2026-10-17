@@ -123,6 +123,20 @@ async def get_bundle(
         created_by=bundle.get("created_by") or current_user.email,
     )
 
+@router.get(
+    "/bundles/{bundle_id}/status",
+    summary="Get current run status and pipeline stage",
+)
+async def get_bundle_status(
+    bundle_id: str,
+    _: None = Depends(require_authorized_bundle),
+) -> dict[str, Any]:
+    """Retrieve current pipeline execution status and stage for a bundle.
+
+    Tenant isolation is the shared dependency's: a bundle of another organisation looks exactly like a bundle that does not exist.
+    """
+    return await firestore.get_run_state(bundle_id)
+
 
 
 @router.get(

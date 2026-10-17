@@ -189,9 +189,9 @@ export default function Home() {
   const showDemo = meta?.app_mode === "demo";
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center gap-6 p-6">
+    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center gap-6 p-4 sm:p-6">
       <header className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-bold tracking-tight text-[var(--cc-text)]">CargoClear-JAPAC</h1>
           <div className="flex items-center gap-2">
             <ModeBadge />
@@ -310,13 +310,13 @@ export default function Home() {
       )}
 
       {meta?.user && (
-        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[var(--cc-text)]">
+        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="text-[var(--cc-text)] truncate max-w-[200px] sm:max-w-none">
               Signed in as <strong className="font-semibold">{meta.user.email}</strong>
             </span>
-            <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
               Tenant: {meta.user.tenant_id}
             </span>
           </div>
@@ -327,7 +327,7 @@ export default function Home() {
               document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
               window.location.href = "/api/auth/logout";
             }}
-            className="text-[11px] text-[var(--cc-text-muted)] hover:text-red-500 underline cursor-pointer"
+            className="text-[11px] text-[var(--cc-text-muted)] hover:text-red-500 underline cursor-pointer shrink-0"
           >
             Sign out
           </button>
