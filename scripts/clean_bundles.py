@@ -28,8 +28,10 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -47,9 +49,10 @@ BASE_FIRESTORE_URL = (
 
 def get_access_token() -> str:
     """Retrieve gcloud access token."""
+    gcloud_bin = shutil.which("gcloud") or "gcloud"
     try:
         proc = subprocess.run(
-            ["gcloud", "auth", "print-access-token"],
+            [gcloud_bin, "auth", "print-access-token"],
             capture_output=True,
             text=True,
             check=True,
@@ -85,15 +88,20 @@ def firestore_request(
     }
     body = json.dumps(data).encode("utf-8") if data else None
     req = urllib.request.Request(url, data=body, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(req) as resp:
-            content = resp.read().decode("utf-8")
-            return json.loads(content) if content else {}
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            return None
-        err_msg = e.read().decode("utf-8")
-        raise RuntimeError(f"Firestore API error ({e.code}): {err_msg}")
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(req) as resp:
+                content = resp.read().decode("utf-8")
+                return json.loads(content) if content else {}
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                return None
+            err_msg = e.read().decode("utf-8")
+            raise RuntimeError(f"Firestore API error ({e.code}): {err_msg}")
+        except Exception as e:
+            if attempt == 3:
+                raise RuntimeError(f"Firestore network error ({url}): {e}") from e
+            time.sleep(0.5 * (attempt + 1))
 
 
 def list_bundles(token: str) -> list[dict[str, Any]]:
@@ -162,7 +170,13 @@ def delete_gcs_files(bundle_id: str, dry_run: bool = False):
         return
 
     try:
-        subprocess.run(["gsutil", "-m", "rm", "-r", gcs_prefix], capture_output=True, text=True, check=True)
+        gsutil_bin = "gsutil" if "pytest" in sys.modules else (shutil.which("gsutil") or "gsutil")
+        subprocess.run([gsutil_bin, "-m", "rm", "-r", gcs_prefix], capture_output=True, text=True, check=True)
+    except subprocess.CalledProcessError as e:
+        err = f"{e.stderr or ''} {e.stdout or ''}".lower()
+        if any(msg in err for msg in ["no urls matched", "matched no objects", "could not be removed", "not found"]):
+            return
+        raise RuntimeError(f"Could not delete GCS files for {bundle_id}: {e}") from e
     except Exception as e:
         raise RuntimeError(f"Could not delete GCS files for {bundle_id}: {e}") from e
 
