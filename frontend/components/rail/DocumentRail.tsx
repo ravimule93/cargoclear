@@ -66,7 +66,7 @@ export function DocumentRail({
         </h2>
       </div>
 
-      <nav aria-label="Documents list" className="flex flex-col gap-1.5 mt-1">
+      <nav aria-label="Documents in this bundle" className="flex flex-col gap-1.5 mt-1">
         {documents.map((doc) => {
           const isActive = doc.document_id === (activeDocumentId || documents[0]?.document_id);
           const health = docHealthMap.get(doc.document_id);

@@ -14,6 +14,7 @@ import { MissingEvidenceCard } from "./MissingEvidenceCard";
 import { UploadDropzone } from "../upload/UploadDropzone";
 import { useAnnounce } from "../a11y/LiveRegion";
 import { WorkflowStepper } from "../shell/WorkflowStepper";
+import { StatusPill } from "./StatusPill";
 
 interface AssessmentPanelProps {
   /** null = the bundle has not been analysed yet */
@@ -95,6 +96,34 @@ function ActionErrorBanner({ error }: { error: string }) {
   );
 }
 
+/** Keeps the verdict and the next work item visible while evidence is reviewed. */
+function DecisionSummary({ assessment }: { assessment: AssessmentIteration }) {
+  const material = assessment.checks.filter((check) => check.severity === "MATERIAL").length;
+  const warnings = assessment.checks.filter((check) => check.severity === "WARN").length;
+  const gaps = assessment.missing_evidence.length;
+  const nextAction = assessment.status === "COMPLIANT_FOR_SUBMISSION"
+    ? "Review the declaration prefill and export the available outputs."
+    : material > 0
+      ? `Resolve ${material} material ${material === 1 ? "contradiction" : "contradictions"}, then reassess.`
+      : gaps > 0
+        ? `Upload ${gaps === 1 ? "the required document" : `${gaps} required documents`}, then reassess.`
+        : "Review the warnings before preparing the declaration.";
+
+  return (
+    <section className="cc-decision-summary -mx-4 -mt-4 border-b border-[var(--cc-border)] bg-[var(--cc-surface)] px-4 pb-3 pt-4 shadow-[0_5px_12px_rgba(18,22,28,.05)]" aria-labelledby="decision-summary-heading">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p id="decision-summary-heading" className="text-[10px] font-bold uppercase tracking-[.12em] text-[var(--cc-text-subtle)]">Current decision</p>
+          <div className="mt-1"><StatusPill status={assessment.status} testId="decision-status-pill" /></div>
+        </div>
+        <span className="rounded-md bg-[var(--cc-surface-2)] px-2 py-1 text-[10px] font-mono text-[var(--cc-text-muted)]">Iteration {assessment.iteration}</span>
+      </div>
+      <p className="mt-2 text-xs font-semibold leading-relaxed text-[var(--cc-text)]">{nextAction}</p>
+      <p className="mt-1 text-[11px] text-[var(--cc-text-muted)]">{material} material · {warnings} warning{warnings === 1 ? "" : "s"} · {gaps} document gap{gaps === 1 ? "" : "s"}</p>
+    </section>
+  );
+}
+
 export function AssessmentPanel({
   assessment,
   bundleId,
@@ -118,7 +147,8 @@ export function AssessmentPanel({
   const [sampleBusy, setSampleBusy] = useState(false);
   const [sampleError, setSampleError] = useState<string | null>(null);
 
-  // WCAG 2.2 AA Focus management & ARIA announcements on status changes
+  // Announce a changed decision without taking a reviewer away from the
+  // correction, upload, or evidence control they are actively using.
   useEffect(() => {
     if (prevStatusRef.current === status) return;
     prevStatusRef.current = status;
@@ -139,7 +169,6 @@ export function AssessmentPanel({
         "polite"
       );
     }
-    panelRef.current?.focus({ preventScroll: true });
   }, [status, assessment, announce]);
 
   if (!assessment) {
@@ -188,6 +217,7 @@ export function AssessmentPanel({
       tabIndex={-1}
       className="flex flex-col gap-4 p-4 h-full overflow-y-auto focus:outline-none"
     >
+      <DecisionSummary assessment={assessment} />
       <WorkflowStepper
         documents={documents}
         assessment={assessment}

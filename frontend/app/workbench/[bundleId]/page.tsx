@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { KeyboardEvent, use, useState } from "react";
 import Link from "next/link";
 import { TopBar } from "@/components/shell/TopBar";
 import { UserMenu } from "@/components/shell/UserMenu";
@@ -22,6 +22,8 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
   const wb = useWorkbench(bundleId);
   const { meta } = useMeta();
   const [activeTab, setActiveTab] = useState<"assess" | "viewer" | "rail" | "drawer">("assess");
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [drawerCollapsed, setDrawerCollapsed] = useState(true);
 
   if (wb.loadState === "loading") {
     return (
@@ -84,13 +86,30 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
 
   const handleSelectDocument = (docId: string) => {
     wb.selectDocument(docId);
+    setViewerOpen(true);
     setActiveTab("viewer");
+  };
+
+  const handleWorkbenchTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, current: typeof activeTab) => {
+    const tabs: typeof activeTab[] = ["assess", "viewer", "rail", "drawer"];
+    if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const currentIndex = tabs.indexOf(current);
+    const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+    const next = tabs[nextIndex];
+    setActiveTab(next);
+    document.getElementById(`tab-btn-${next}`)?.focus();
   };
 
   const openIssuesCount = assessment?.checks?.filter((c) => c.severity !== "PASS").length ?? 0;
 
   return (
-    <div className="cc-workbench" data-tab={activeTab}>
+    <div
+      className="cc-workbench"
+      data-tab={activeTab}
+      data-viewer-collapsed={viewerOpen ? undefined : "true"}
+      data-drawer-collapsed={drawerCollapsed ? "true" : undefined}
+    >
       <DemoBanner appMode={meta?.app_mode} dataSource={assessment?.data_source} />
 
       <TopBar
@@ -110,6 +129,8 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           if (demoSignIn(email, meta?.app_mode)) window.location.reload();
         }}
         onLogout={signOut}
+        viewerOpen={viewerOpen}
+        onToggleViewer={() => setViewerOpen((open) => !open)}
       />
 
       <nav className="cc-tabs" role="tablist" aria-label="Workbench sections">
@@ -121,6 +142,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           aria-controls="panel-assess"
           className="cc-tab-btn"
           onClick={() => setActiveTab("assess")}
+          onKeyDown={(event) => handleWorkbenchTabKeyDown(event, "assess")}
         >
           <span>⚖️ Assessment</span>
           {openIssuesCount > 0 ? (
@@ -142,6 +164,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           aria-controls="panel-viewer"
           className="cc-tab-btn"
           onClick={() => setActiveTab("viewer")}
+          onKeyDown={(event) => handleWorkbenchTabKeyDown(event, "viewer")}
         >
           <span>🔍 Viewer</span>
           {wb.documents.length > 0 && (
@@ -159,6 +182,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           aria-controls="panel-rail"
           className="cc-tab-btn"
           onClick={() => setActiveTab("rail")}
+          onKeyDown={(event) => handleWorkbenchTabKeyDown(event, "rail")}
         >
           <span>📁 Files</span>
           <span className="cc-tab-badge">{wb.documents.length}</span>
@@ -172,6 +196,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           aria-controls="panel-drawer"
           className="cc-tab-btn"
           onClick={() => setActiveTab("drawer")}
+          onKeyDown={(event) => handleWorkbenchTabKeyDown(event, "drawer")}
         >
           <span>📜 Audit & Delta</span>
           {assessment?.iteration ? (
@@ -180,7 +205,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         </button>
       </nav>
 
-      <aside id="panel-rail" className="cc-rail" aria-label="Documents in this bundle">
+      <aside id="panel-rail" role="tabpanel" aria-labelledby="tab-btn-rail" tabIndex={-1} className="cc-rail" aria-label="Documents in this bundle">
         <DocumentRail
           documents={wb.documents}
           checks={assessment?.checks ?? []}
@@ -192,7 +217,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         />
       </aside>
 
-      <main id="panel-viewer" className="cc-viewer" aria-label="Document viewer and annotations">
+      <main id="panel-viewer" role="tabpanel" aria-labelledby="tab-btn-viewer" tabIndex={-1} className="cc-viewer" aria-label="Document viewer and annotations">
         <DocumentViewer
           bundleId={bundleId}
           documents={wb.documents}
@@ -203,7 +228,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         />
       </main>
 
-      <section id="panel-assess" className="cc-assess" aria-label="Compliance assessment and actions">
+      <section id="panel-assess" role="tabpanel" aria-labelledby="tab-btn-assess" tabIndex={-1} className="cc-assess" aria-label="Compliance assessment and actions">
         <AssessmentPanel
           assessment={assessment}
           bundleId={bundleId}
@@ -222,11 +247,13 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         />
       </section>
 
-      <section id="panel-drawer" className="cc-drawer" aria-label="Reasoning delta and audit trail">
+      <section id="panel-drawer" role="tabpanel" aria-labelledby="tab-btn-drawer" tabIndex={-1} className="cc-drawer" aria-label="Reasoning delta and audit trail">
         <DeltaDrawer
           bundleId={bundleId}
           iterations={wb.iterations}
           auditRefreshKey={auditRefreshKey}
+          isCollapsed={drawerCollapsed}
+          onCollapsedChange={setDrawerCollapsed}
         />
       </section>
     </div>

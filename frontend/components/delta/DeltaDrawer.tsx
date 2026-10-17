@@ -10,6 +10,8 @@ interface DeltaDrawerProps {
   iterations: AssessmentIteration[];
   /** Changing this value refetches the audit chain (new iteration, run state change, upload). */
   auditRefreshKey?: string | number;
+  isCollapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
 }
 
 const TABS = [
@@ -17,32 +19,24 @@ const TABS = [
   { id: "audit", label: "Audit Chain Timeline" },
 ] as const;
 
-export function DeltaDrawer({ bundleId, iterations, auditRefreshKey }: DeltaDrawerProps) {
+export function DeltaDrawer({ bundleId, iterations, auditRefreshKey, isCollapsed, onCollapsedChange }: DeltaDrawerProps) {
   const [activeTab, setActiveTab] = useState<"delta" | "audit">("delta");
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const latestIteration = iterations[iterations.length - 1];
 
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
     if (e.key === "ArrowRight") {
       const nextIndex = (index + 1) % TABS.length;
       setActiveTab(TABS[nextIndex].id);
+      document.getElementById(`tab-${TABS[nextIndex].id}`)?.focus();
     } else if (e.key === "ArrowLeft") {
       const prevIndex = (index - 1 + TABS.length) % TABS.length;
       setActiveTab(TABS[prevIndex].id);
+      document.getElementById(`tab-${TABS[prevIndex].id}`)?.focus();
     }
   };
 
   const toggleCollapse = () => {
-    const next = !isCollapsed;
-    setIsCollapsed(next);
-    const workbenchEl = document.querySelector(".cc-workbench");
-    if (workbenchEl) {
-      if (next) {
-        workbenchEl.setAttribute("data-drawer-collapsed", "true");
-      } else {
-        workbenchEl.removeAttribute("data-drawer-collapsed");
-      }
-    }
+    onCollapsedChange(!isCollapsed);
   };
 
   return (
@@ -62,7 +56,7 @@ export function DeltaDrawer({ bundleId, iterations, auditRefreshKey }: DeltaDraw
                 tabIndex={isSelected ? 0 : -1}
                 onClick={() => {
                   setActiveTab(tab.id);
-                  if (isCollapsed) toggleCollapse();
+                  if (isCollapsed) onCollapsedChange(false);
                 }}
                 onKeyDown={(e) => handleKeyDown(e, idx)}
                 className={`py-2 px-3 text-xs font-semibold cursor-pointer border-b-2 transition-colors ${
@@ -80,6 +74,8 @@ export function DeltaDrawer({ bundleId, iterations, auditRefreshKey }: DeltaDraw
         <button
           type="button"
           onClick={toggleCollapse}
+          aria-expanded={!isCollapsed}
+          aria-controls={`panel-${activeTab}`}
           className="text-xs text-[var(--cc-text-muted)] hover:text-[var(--cc-text)] px-2 py-1 rounded hover:bg-[var(--cc-surface)] transition-colors cursor-pointer flex items-center gap-1"
           title={isCollapsed ? "Expand Drawer" : "Collapse Drawer"}
         >
@@ -87,20 +83,24 @@ export function DeltaDrawer({ bundleId, iterations, auditRefreshKey }: DeltaDraw
         </button>
       </div>
 
-      {!isCollapsed && (
+      {TABS.map((tab) => (
         <div
+          key={tab.id}
           role="tabpanel"
-          id={`panel-${activeTab}`}
-          aria-labelledby={`tab-${activeTab}`}
+          id={`panel-${tab.id}`}
+          aria-labelledby={`tab-${tab.id}`}
+          hidden={isCollapsed || activeTab !== tab.id}
           className="p-4 flex-1 overflow-y-auto"
         >
-          {activeTab === "delta" ? (
-            <ReasoningDelta delta={latestIteration?.reasoning_delta} />
-          ) : (
-            <AuditTimeline bundleId={bundleId} refreshKey={auditRefreshKey} />
+          {!isCollapsed && activeTab === tab.id && (
+            tab.id === "delta" ? (
+              <ReasoningDelta delta={latestIteration?.reasoning_delta} />
+            ) : (
+              <AuditTimeline bundleId={bundleId} refreshKey={auditRefreshKey} />
+            )
           )}
         </div>
-      )}
+      ))}
     </div>
   );
 }

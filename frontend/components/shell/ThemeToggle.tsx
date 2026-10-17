@@ -31,6 +31,7 @@ export function ThemeToggle({ className = "", showLabel = false }: ThemeTogglePr
     <button
       type="button"
       onClick={toggleTheme}
+      aria-pressed={isDark}
       aria-label={`Switch to ${isDark ? "light" : "dark"} theme (currently ${isDark ? "dark" : "light"})`}
       title={`Switch to ${isDark ? "light" : "dark"} theme (currently ${isDark ? "dark" : "light"})`}
       className={`inline-flex items-center gap-1.5 rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] px-2.5 py-1 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] transition-colors cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-[var(--cc-focus)] ${className}`}
@@ -40,7 +41,7 @@ export function ThemeToggle({ className = "", showLabel = false }: ThemeTogglePr
       </span>
       {showLabel && (
         <span className="font-semibold">
-          {isDark ? "Light" : "Dark"}
+          {isDark ? "Dark" : "Light"}
         </span>
       )}
     </button>

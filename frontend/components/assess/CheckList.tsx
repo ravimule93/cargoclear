@@ -190,11 +190,14 @@ export function CheckList({
                 const hasVal = ev.raw_value !== undefined && ev.raw_value !== null && String(ev.raw_value).trim() !== "";
 
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={`comp-card-${ev.doc}-${evIdx}`}
+                    disabled={!ev.doc}
                     onClick={() => ev.doc && onSelectDocument?.(ev.doc)}
+                    aria-label={ev.doc ? `Open ${docName}${ev.page ? `, page ${ev.page}` : ""}` : undefined}
                     className={`p-2 rounded border text-xs flex flex-col gap-1 transition-all ${
-                      ev.doc ? "cursor-pointer hover:border-[var(--cc-focus)] hover:shadow-xs" : ""
+                      ev.doc ? "cursor-pointer text-left hover:border-[var(--cc-focus)] hover:shadow-xs" : "cursor-default text-left"
                     } ${
                       !hasVal
                         ? "bg-[var(--cc-warn-bg)]/40 border-[var(--cc-warn-bd)]"
@@ -218,7 +221,7 @@ export function CheckList({
                       <span>{ev.field.replace(/_/g, " ")}</span>
                       {ev.page && <span className="text-[var(--cc-focus)] font-medium">Page {ev.page} →</span>}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -245,7 +248,6 @@ export function CheckList({
                 return (
                   <div key={`${ev.doc}:${ev.field}:${evIdx}`} className="flex flex-col gap-1">
                   <div
-                    onClick={() => ev.doc && onSelectDocument?.(ev.doc)}
                     className={`p-1.5 rounded border text-[11px] flex flex-wrap sm:flex-nowrap items-center justify-between gap-1.5 sm:gap-2 transition-all ${
                       ev.doc
                         ? "cursor-pointer hover:border-[var(--cc-focus)] hover:bg-[var(--cc-surface)]"
@@ -255,15 +257,23 @@ export function CheckList({
                         ? "border-[var(--cc-warn-bd)]/60 bg-[var(--cc-warn-bg)]/30 text-[var(--cc-warn)]"
                         : "border-[var(--cc-border)] bg-[var(--cc-surface)] text-[var(--cc-text)]"
                     }`}
-                    title={ev.doc ? `Click to view ${docName}` : undefined}
                   >
                     <div className="flex items-center gap-1.5 truncate min-w-0 flex-1">
                       <span aria-hidden="true" className="text-xs shrink-0">
                         {isGap ? "⚠️" : "📄"}
                       </span>
-                      <span className="font-semibold truncate">
-                        {docName}
-                      </span>
+                      {ev.doc ? (
+                        <button
+                          type="button"
+                          onClick={() => onSelectDocument?.(ev.doc!)}
+                          className="font-semibold truncate text-left hover:underline"
+                          aria-label={`Open ${docName}${ev.page ? `, page ${ev.page}` : ""}`}
+                        >
+                          {docName}
+                        </button>
+                      ) : (
+                        <span className="font-semibold truncate">{docName}</span>
+                      )}
                       {docType && (
                         <span className="text-[9px] uppercase px-1 rounded bg-[var(--cc-surface-2)] text-[var(--cc-text-muted)] border border-[var(--cc-border)] shrink-0">
                           {docType}
@@ -283,9 +293,15 @@ export function CheckList({
                       )}
                       {ev.unit && !isGap && <span className="text-[10px] text-[var(--cc-text-muted)]">{ev.unit}</span>}
                       {ev.page && (
-                        <span className="text-[10px] text-[var(--cc-text-subtle)]">
+                        <button
+                          type="button"
+                          onClick={() => ev.doc && onSelectDocument?.(ev.doc)}
+                          disabled={!ev.doc}
+                          className="text-[10px] text-[var(--cc-focus)] underline disabled:no-underline disabled:text-[var(--cc-text-subtle)]"
+                          aria-label={ev.doc ? `Open ${docName}, page ${ev.page}` : undefined}
+                        >
                           p.{ev.page}
-                        </span>
+                        </button>
                       )}
                       {path && (
                         <button

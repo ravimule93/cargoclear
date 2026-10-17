@@ -34,10 +34,10 @@ function RecentBundlesList({
   onRefresh: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--cc-border)] bg-[var(--cc-surface-2)] p-4 shadow-xs space-y-3">
+    <section className="rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-4 shadow-[var(--cc-shadow-1)] space-y-3" aria-labelledby="recent-cases-heading">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-[var(--cc-text)] flex items-center gap-1.5">
-          <span>📁</span> Recent Bundles & Assessments
+          <span id="recent-cases-heading">Recent cases</span>
         </h2>
         <button
           type="button"
@@ -132,7 +132,7 @@ function RecentBundlesList({
           </table>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -191,13 +191,17 @@ export default function Home() {
   const showDemo = meta?.app_mode === "demo";
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center gap-6 p-4 sm:p-6">
-      <header className="flex flex-col gap-2">
+    <main className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-6 px-4 py-5 sm:px-6 lg:py-8">
+      <header className="flex flex-col gap-3 border-b border-[var(--cc-border)] pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--cc-text)]">CargoClear-JAPAC</h1>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[.15em] text-[var(--cc-text-subtle)]">JAPAC customs workspace</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-[var(--cc-text)]">CargoClear</h1>
+            <p className="mt-1 max-w-xl text-sm leading-relaxed text-[var(--cc-text-muted)]">Assess a trade-document bundle, resolve evidence gaps, and prepare a supported declaration.</p>
+          </div>
           <div className="flex items-center gap-2">
             <ModeBadge />
-            <ThemeToggle />
+            <ThemeToggle showLabel />
             <UserMenu
               user={meta?.user ?? null}
               onLogin={(email) => {
@@ -207,10 +211,6 @@ export default function Home() {
             />
           </div>
         </div>
-        <p className="text-sm text-[var(--cc-text-muted)] leading-relaxed">
-          Pre-submission customs document assessment. Create a bundle, add trade documents and run
-          the analysis. Decision support only: the authorised CHA decides.
-        </p>
       </header>
 
       {meta?.auth?.enabled && !meta?.user && (
@@ -275,38 +275,14 @@ export default function Home() {
         </div>
       )}
 
-      {meta?.user && (
-        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex flex-wrap items-center gap-2 min-w-0">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span className="text-[var(--cc-text)] truncate max-w-[200px] sm:max-w-none">
-              Signed in as <strong className="font-semibold">{meta.user.email}</strong>
-            </span>
-            <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
-              Tenant: {meta.user.tenant_id}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={signOut}
-            className="text-[11px] text-[var(--cc-text-muted)] hover:text-red-500 underline cursor-pointer shrink-0"
-          >
-            Sign out
-          </button>
-        </div>
-      )}
-
       {/* Bundle creation & Assessment Hub */}
       {(!meta?.auth?.enabled || meta?.user) && (
         <div className="space-y-4">
           {/* Custom Assessment Card */}
-          <div className="rounded-lg border border-[var(--cc-border)] bg-[var(--cc-surface-2)] p-4 shadow-xs">
-            <h2 className="text-sm font-semibold text-[var(--cc-text)] flex items-center gap-1.5">
-              <span>🚀</span> Start New Trade Assessment
-            </h2>
-            <p className="text-xs text-[var(--cc-text-muted)] mt-0.5">
-              Select destination jurisdiction to enforce applicable tariff schedules and compliance rules.
-            </p>
+          <section className="rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 shadow-[var(--cc-shadow-1)]">
+            <p className="text-[10px] font-bold uppercase tracking-[.12em] text-[var(--cc-text-subtle)]">Primary task</p>
+            <h2 className="mt-1 text-lg font-semibold text-[var(--cc-text)]">Start a trade assessment</h2>
+            <p className="mt-1 text-xs text-[var(--cc-text-muted)]">Choose a destination and open a case. Documents and analysis come next.</p>
             <div className="flex flex-wrap items-center gap-3 mt-3 pt-2 border-t border-[var(--cc-border)]">
               <label className="flex items-center gap-2 text-xs font-medium text-[var(--cc-text-muted)]">
                 <span>Destination:</span>
@@ -333,7 +309,7 @@ export default function Home() {
                 {pending === "empty" ? "Creating bundle..." : "New empty bundle"}
               </button>
             </div>
-          </div>
+          </section>
 
           {/* Pre-Configured Benchmark Scenarios */}
           {showDemo && (

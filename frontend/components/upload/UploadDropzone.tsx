@@ -29,6 +29,9 @@ export function UploadDropzone({
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const declared = useDeclaredType(); // what the NEXT file is, if the person says (one file; cleared by every upload)
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputId = `upload-input-${bundleId}`;
+  const hintId = `${inputId}-hint`;
+  const errorId = `${inputId}-error`;
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -63,7 +66,7 @@ export function UploadDropzone({
     if (uploaded > 0) onUploaded?.();
   };
 
-  const onDragOver = (e: DragEvent<HTMLDivElement>) => {
+  const onDragOver = (e: DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     setIsDragOver(true);
   };
@@ -72,7 +75,7 @@ export function UploadDropzone({
     setIsDragOver(false);
   };
 
-  const onDrop = (e: DragEvent<HTMLDivElement>) => {
+  const onDrop = (e: DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     setIsDragOver(false);
     handleFiles(e.dataTransfer.files);
@@ -94,11 +97,11 @@ export function UploadDropzone({
         </button>
       </div>
 
-      <div
+      <label
+        htmlFor={inputId}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
-        onClick={() => fileInputRef.current?.click()}
         className={`border-2 border-dashed rounded-[var(--cc-radius)] p-4 text-center cursor-pointer transition-all ${
           isDragOver
             ? "border-[var(--cc-focus)] bg-[var(--cc-surface-2)] scale-[1.01]"
@@ -106,12 +109,14 @@ export function UploadDropzone({
         }`}
       >
         <input
+          id={inputId}
           ref={fileInputRef}
           type="file"
           multiple={declared.allowsSeveralFiles}
           accept="application/pdf"
-          className="hidden"
+          className="sr-only"
           data-testid="upload-input"
+          aria-describedby={`${hintId}${errorMessage ? ` ${errorId}` : ""}`}
           onChange={(e) => handleFiles(e.target.files)}
         />
 
@@ -126,7 +131,7 @@ export function UploadDropzone({
                 : "Uploading document..."
               : label}
           </div>
-          <p className="text-[11px] text-[var(--cc-text-muted)]">
+          <p id={hintId} className="text-[11px] text-[var(--cc-text-muted)]">
             {uploading && uploadProgress?.name
               ? uploadProgress.name
               : "Drag & drop trade PDF or browse file"}
@@ -134,11 +139,11 @@ export function UploadDropzone({
         </div>
 
         {errorMessage && (
-          <div role="alert" className="mt-2 text-[11px] text-[var(--cc-err)] font-medium">
+          <div id={errorId} role="alert" className="mt-2 text-[11px] text-[var(--cc-err)] font-medium">
             {errorMessage}
           </div>
         )}
-      </div>
+      </label>
 
       <UploadStagingModal
         bundleId={bundleId}

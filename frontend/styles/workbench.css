@@ -1,20 +1,20 @@
 /* =============================================================================
    Workbench grid layout
-   Three-column investigator layout (not a chat UI):
-     [DocumentRail | DocumentViewer | AssessmentPanel]
-     [          DeltaDrawer / AuditTimeline          ]
+   The assessment is the persistent decision workspace. The source PDF opens as
+   contextual reference above it instead of pushing the decision into a narrow
+   third column. The document rail and audit drawer remain independently usable.
    ============================================================================= */
 
 .cc-workbench {
   display: grid;
   height: 100dvh;
-  grid-template-columns: 260px minmax(0, 1fr) 360px;
+  grid-template-columns: 260px minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr) var(--cc-drawer-height, min(240px, 32vh));
   grid-template-areas:
-    "banner banner banner"
-    "top    top    top"
-    "rail   viewer assess"
-    "drawer drawer drawer";
+    "banner banner"
+    "top    top"
+    "rail   assess"
+    "drawer drawer";
   background: var(--cc-bg);
   color: var(--cc-text);
   overflow: hidden;
@@ -23,6 +23,25 @@
 
 .cc-workbench[data-drawer-collapsed="true"] {
   --cc-drawer-height: 40px;
+}
+
+/*
+ * The decision workspace owns the screen. Opening source evidence deliberately
+ * does not reflow it back to the legacy three-column layout: the viewer layers
+ * over the right side as a dismissible reference panel instead.
+ */
+@media (min-width: 1024px) {
+  .cc-workbench[data-viewer-collapsed="true"] .cc-viewer { display: none; }
+  .cc-workbench:not([data-viewer-collapsed]) .cc-viewer {
+    grid-area: assess;
+    align-self: stretch;
+    justify-self: end;
+    z-index: 12;
+    width: min(48%, 680px);
+    height: 100%;
+    border-left: 1px solid var(--cc-border);
+    box-shadow: -16px 0 28px rgba(18, 22, 28, 0.16);
+  }
 }
 
 .cc-banner {
@@ -67,6 +86,27 @@
   flex-wrap: wrap;
 }
 
+/*
+ * A wide screen is not a reason to make the header taller. Keep the route,
+ * case context and primary actions on one purposeful line; lower-priority
+ * context already has a home in the assessment and document rail.
+ */
+@media (min-width: 1280px) {
+  .cc-top {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr) max-content;
+    flex-wrap: nowrap;
+    min-height: 56px;
+  }
+  .cc-bundle-context {
+    justify-content: flex-end;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .cc-top-actions { margin-left: 0; }
+}
+
 .cc-rail {
   grid-area: rail;
   border-right: 1px solid var(--cc-border);
@@ -93,6 +133,12 @@
   min-width: 0;
 }
 
+.cc-decision-summary {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
 .cc-drawer {
   grid-area: drawer;
   border-top: 1px solid var(--cc-border);
@@ -101,6 +147,11 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+/* A collapsed audit drawer is a deliberate, discoverable handle—not dead space. */
+.cc-workbench[data-drawer-collapsed="true"] .cc-drawer {
+  box-shadow: 0 -4px 12px rgba(18, 22, 28, 0.04);
 }
 
 /* Compact tabs bar: hidden on desktop, active on compact/mobile */
@@ -166,7 +217,10 @@
    ============================================================================= */
 @media (max-width: 1279px) and (min-width: 1024px) {
   .cc-workbench {
-    grid-template-columns: 220px minmax(0, 1fr) 320px;
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+  .cc-workbench:not([data-viewer-collapsed]) .cc-viewer {
+    width: min(54%, 560px);
   }
 }
 

@@ -43,29 +43,17 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
   const roleLabel = user.role.replace("_", " ");
 
   return (
-    <div className="flex items-center gap-2 pl-2 border-l border-[var(--cc-border)]">
-      <div className="h-6 w-6 rounded-full bg-[var(--cc-focus)]/20 border border-[var(--cc-focus)]/40 flex items-center justify-center text-[10px] font-bold text-[var(--cc-focus)]">
-        {user.email.slice(0, 2).toUpperCase()}
+    <details className="relative">
+      <summary aria-label="Open account menu" className="flex cursor-pointer list-none items-center gap-2 border-l border-[var(--cc-border)] pl-2">
+        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[var(--cc-focus)]/40 bg-[var(--cc-focus)]/15 text-[10px] font-bold text-[var(--cc-focus)]">{user.email.slice(0, 2).toUpperCase()}</span>
+        <span className="hidden max-w-[130px] truncate text-[11px] font-medium text-[var(--cc-text)] lg:block" title={user.email}>{user.email}</span>
+        <span aria-hidden="true" className="text-[10px] text-[var(--cc-text-muted)]">⌄</span>
+      </summary>
+      <div className="absolute right-0 top-[calc(100%+.5rem)] z-30 w-60 rounded-lg border border-[var(--cc-border)] bg-[var(--cc-surface)] p-3 shadow-lg">
+        <p className="truncate text-xs font-semibold text-[var(--cc-text)]" title={user.email}>{user.email}</p>
+        <p className="mt-0.5 text-[10px] text-[var(--cc-text-muted)]">{user.tenant_id} · {roleLabel}</p>
+        <button type="button" onClick={handleLogout} className="mt-3 w-full rounded-md border border-[var(--cc-border-strong)] px-2 py-1.5 text-left text-xs font-semibold text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)]">Sign out</button>
       </div>
-      <div className="hidden sm:flex flex-col text-left">
-        <span className="text-[11px] font-medium text-[var(--cc-text)] leading-tight max-w-[130px] truncate" title={user.email}>
-          {user.email}
-        </span>
-        <div className="flex items-center gap-1">
-          <span className="text-[9px] text-[var(--cc-text-muted)] font-mono">{user.tenant_id}</span>
-          <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold px-1 py-0.2 rounded border border-emerald-500/20">
-            {roleLabel}
-          </span>
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={handleLogout}
-        title="Sign out of customs workspace"
-        className="text-[11px] text-[var(--cc-text-muted)] hover:text-red-500 ml-1 cursor-pointer p-1 rounded hover:bg-[var(--cc-surface-2)] transition-colors"
-      >
-        ↪
-      </button>
-    </div>
+    </details>
   );
 }

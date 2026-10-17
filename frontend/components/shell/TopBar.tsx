@@ -30,6 +30,8 @@ interface TopBarProps {
   onRefresh?: () => void;
   onLogin?: (email: string) => void;
   onLogout?: () => void;
+  viewerOpen?: boolean;
+  onToggleViewer?: () => void;
 }
 
 export function TopBar({
@@ -46,6 +48,8 @@ export function TopBar({
   onRefresh,
   onLogin,
   onLogout,
+  viewerOpen = false,
+  onToggleViewer,
 }: TopBarProps) {
   const [stagingOpen, setStagingOpen] = useState(false);
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
@@ -92,7 +96,7 @@ export function TopBar({
       </div>
 
       {/* Bundle context: ID, destination, status, docs count */}
-      <div className="text-xs text-[var(--cc-text-muted)] flex flex-wrap items-center gap-2">
+      <div className="cc-bundle-context text-xs text-[var(--cc-text-muted)] flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1.5 bg-[var(--cc-surface-2)] px-2 py-0.5 rounded border border-[var(--cc-border)]">
           <span className="text-[10px] uppercase font-bold text-[var(--cc-text-subtle)]">Bundle</span>
           <code className="font-mono font-semibold text-[var(--cc-text)] text-xs truncate max-w-[130px] sm:max-w-none" title={bundle.id}>
@@ -135,11 +139,19 @@ export function TopBar({
       )}
 
       {/* Action controls cluster */}
-      <div className="ml-auto flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <div className="cc-top-actions ml-auto flex items-center gap-1.5 sm:gap-2 shrink-0">
         <div className="hidden lg:block">
           <ModeBadge />
         </div>
-        <ThemeToggle />
+        <button
+          type="button"
+          onClick={onToggleViewer}
+          aria-pressed={viewerOpen}
+          className="hidden rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] lg:inline-flex"
+        >
+          {viewerOpen ? "Hide PDF" : "View PDF"}
+        </button>
+        <ThemeToggle showLabel />
         <input
           ref={fileInputRef}
           type="file"
