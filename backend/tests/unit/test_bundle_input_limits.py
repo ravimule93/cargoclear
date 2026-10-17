@@ -96,7 +96,12 @@ async def test_the_bundle_created_audit_payload_stays_small() -> None:
         audit = (await client.get(f"/api/v1/bundles/{created.json()['id']}/audit")).json()
 
     [event] = [e for e in audit["events"] if e["event_type"] == "BUNDLE_CREATED"]
-    assert event["payload"] == {"reference": "r" * 200, "destination_country": "SG"}
+    assert event["payload"] == {
+        "reference": "r" * 200,
+        "destination_country": "SG",
+        "tenant_id": "customs.com",
+        "created_by": "demo-cha@customs.com",
+    }
     import json
 
     assert len(json.dumps(event["payload"])) < 400

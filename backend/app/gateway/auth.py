@@ -49,7 +49,7 @@ def verify_bearer_token(token: str, client_id: str | None = None) -> dict[str, A
         return claims
     except Exception as exc:
         logger.warning("token_verification_failed", error=str(exc))
-        raise AuthenticationError(f"Invalid or expired authentication token: {exc}") from exc
+        raise AuthenticationError("Invalid or expired authentication token.") from exc
 
 
 def is_service_account(email: str) -> bool:
@@ -151,7 +151,7 @@ def get_current_user(request: Request) -> UserIdentity:
 
         return user
 
-    if settings.app_mode == "demo" and not settings.auth_enabled:
+    if not settings.auth_enabled:
         # Check if an optional test header is passed to simulate different users in test mode
         custom_email = request.headers.get("X-Test-User-Email")
         if custom_email:
@@ -174,6 +174,6 @@ def get_optional_user(request: Request) -> UserIdentity | None:
         except Exception as exc:
             logger.warning("optional_user_auth_failed", error=str(exc))
             return None
-    if settings.app_mode == "demo" and not settings.auth_enabled:
+    if not settings.auth_enabled:
         return get_current_user(request)
     return None

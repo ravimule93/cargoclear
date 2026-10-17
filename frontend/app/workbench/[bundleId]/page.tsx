@@ -105,6 +105,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         actionError={actionError}
         onRun={wb.runAnalysis}
         onFilesSelected={wb.uploadFiles}
+        onRefresh={wb.handleUploaded}
         onLogin={(email) => {
           if (demoSignIn(email, meta?.app_mode)) window.location.reload();
         }}
@@ -186,6 +187,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           activeDocumentId={wb.activeDocumentId ?? undefined}
           onSelectDocument={handleSelectDocument}
           onRemoveDocument={wb.removeDocument}
+          onCorrect={wb.submitCorrection}
           removeDisabled={wb.isRunning || wb.isUploading || wb.isRemoving}
         />
       </aside>

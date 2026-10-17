@@ -17,6 +17,8 @@ import {
   SignUpRequest,
   SignInRequest,
   UserAuditResponse,
+  AppMode,
+  ExecutionModeStatus,
 } from "./types";
 import type { ExtractedDoc } from "./corrections";
 
@@ -209,6 +211,18 @@ export const api = {
 
   async getMeta(): Promise<Meta> {
     return request<Meta>("/meta");
+  },
+
+  async getMode(): Promise<ExecutionModeStatus> {
+    return request<ExecutionModeStatus>("/mode");
+  },
+
+  async setMode(mode: AppMode): Promise<ExecutionModeStatus> {
+    return request<ExecutionModeStatus>("/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode }),
+    });
   },
 
   async checkUser(email: string): Promise<CheckUserResponse> {

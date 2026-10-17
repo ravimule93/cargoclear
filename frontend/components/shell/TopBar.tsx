@@ -1,13 +1,15 @@
 "use client";
 
-import { ChangeEvent, useRef } from "react";
+import { ChangeEvent, useRef, useState } from "react";
 import Link from "next/link";
 import { Bundle, Status, UserIdentity } from "@/lib/types";
 import type { StreamConnection } from "@/lib/hooks/useBundleStream";
 import { useDeclaredType } from "@/lib/hooks/useDeclaredType";
 import { StatusPill } from "../assess/StatusPill";
 import { DocumentTypeSelect } from "../upload/DocumentTypeSelect";
+import { UploadStagingModal } from "../upload/UploadStagingModal";
 import { ModeBadge } from "./ModeBadge";
+import { ThemeToggle } from "./ThemeToggle";
 import { UserMenu } from "./UserMenu";
 
 interface TopBarProps {
@@ -26,6 +28,7 @@ interface TopBarProps {
   onRun?: () => void;
   /** `declaredType` is set only when the person picked a type, and then for exactly one file (the picker allows one). */
   onFilesSelected?: (files: File[], declaredType?: string | null) => void;
+  onRefresh?: () => void;
   onLogin?: (email: string) => void;
   onLogout?: () => void;
 }
@@ -41,10 +44,12 @@ export function TopBar({
   connection: _connection = "open",
   onRun,
   onFilesSelected,
+  onRefresh,
   onLogin,
   onLogout,
 }: TopBarProps) {
-
+  const [stagingOpen, setStagingOpen] = useState(false);
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const declared = useDeclaredType(); // what the NEXT file is, if the person says (one file; cleared by every upload)
 
@@ -104,7 +109,7 @@ export function TopBar({
           data-testid="bundle-destination"
           className="text-[11px] bg-[var(--cc-surface-2)] px-2 py-0.5 rounded border border-[var(--cc-border)] text-[var(--cc-text)] font-medium inline-flex items-center gap-1"
         >
-          <span>{bundle.destination_country === "SG" ? "🇸🇬 Singapore (SG)" : bundle.destination_country === "IN" ? "🇮🇳 India (IN)" : `📍 ${bundle.destination_country}`}</span>
+          To {bundle.destination_country}
         </span>
         {bundle.documents && bundle.documents.length > 0 && (
           <span
@@ -135,6 +140,7 @@ export function TopBar({
         <div className="hidden lg:block">
           <ModeBadge />
         </div>
+        <ThemeToggle />
         <input
           ref={fileInputRef}
           type="file"
@@ -149,6 +155,19 @@ export function TopBar({
         <div className="hidden sm:block">
           <DocumentTypeSelect value={declared.declaredType} onChange={declared.setDeclaredType} disabled={isUploading} className="max-w-[130px] sm:max-w-[150px]" />
         </div>
+        <button
+          type="button"
+          disabled={isUploading}
+          onClick={() => {
+            setStagedFiles([]);
+            setStagingOpen(true);
+          }}
+          title="Open multi-file staging and document type classification modal"
+          className="rounded-[var(--cc-radius)] border border-[var(--cc-focus)] bg-[var(--cc-surface-2)] px-2 sm:px-2.5 py-1 text-xs font-semibold text-[var(--cc-focus)] hover:brightness-95 disabled:opacity-50 transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+        >
+          <span>📄</span>
+          <span className="hidden md:inline">Classify & Upload</span>
+        </button>
         <button
           type="button"
           disabled={isUploading}
@@ -185,6 +204,18 @@ export function TopBar({
         </button>
         <UserMenu user={user} onLogin={onLogin} onLogout={onLogout} />
       </div>
+
+      <UploadStagingModal
+        bundleId={bundle.id}
+        isOpen={stagingOpen}
+        initialFiles={stagedFiles}
+        existingDocuments={bundle.documents ?? []}
+        onClose={() => setStagingOpen(false)}
+        onUploaded={() => {
+          setStagingOpen(false);
+          onRefresh?.();
+        }}
+      />
     </header>
   );
 }

@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { toErrorEnvelope } from "@/lib/errors";
 import { useMeta } from "@/lib/hooks/useMeta";
 import { DEMO_ACCOUNTS, demoSignIn, storeDemoSessionToken } from "@/lib/session";
+import { ThemeToggle } from "@/components/shell/ThemeToggle";
 
 function SignInContent() {
   const { meta } = useMeta();
@@ -158,8 +159,11 @@ function SignInContent() {
   if (meta?.app_mode !== "demo") {
     return (
       <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-6 p-3 sm:p-6">
-        <div className="rounded-xl border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-4 sm:p-6 shadow-xl space-y-6 text-center">
-          <h1 className="text-xl font-bold tracking-tight text-[var(--cc-text)]">CargoClear Commercial Identity</h1>
+        <div className="rounded-xl border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-4 sm:p-6 shadow-xl space-y-6 text-center relative">
+          <div className="absolute top-4 right-4">
+            <ThemeToggle />
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-[var(--cc-text)] pt-2">CargoClear Commercial Identity</h1>
           {queryError && <p role="alert" className="text-xs text-red-500">{getErrorMessage(queryError)}</p>}
           <p className="text-xs text-[var(--cc-text-muted)]">Sign in with your corporate Google Workspace account.</p>
           <a
@@ -176,7 +180,10 @@ function SignInContent() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-6 p-3 sm:p-6">
-      <div className="rounded-xl border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-4 sm:p-6 shadow-xl space-y-6">
+      <div className="rounded-xl border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-4 sm:p-6 shadow-xl space-y-6 relative">
+        <div className="absolute top-4 right-4">
+          <ThemeToggle />
+        </div>
         <header className="space-y-1 text-center">
           <div className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-[var(--cc-surface-2)] text-xl mb-2">
             🛃

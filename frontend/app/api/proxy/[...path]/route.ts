@@ -103,6 +103,12 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
       clientIp: clientIpFrom(request.headers, trustedProxyHops()),
       requestId,
     });
+    if (!headers.has("x-cargoclear-execution-mode")) {
+      const modeCookie = request.cookies.get("cargoclear_execution_mode")?.value;
+      if (modeCookie === "demo" || modeCookie === "live") {
+        headers.set("x-cargoclear-execution-mode", modeCookie);
+      }
+    }
 
     // POST only: DELETE (document remove) must not stream a body through duplex fetch.
     const hasBody = request.method === "POST";

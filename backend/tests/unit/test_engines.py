@@ -6,6 +6,7 @@ Everything here runs without google-adk. The ADK engine itself is tested in test
 from __future__ import annotations
 
 import asyncio
+import os
 import subprocess
 import sys
 import types
@@ -48,9 +49,10 @@ def test_any_other_engine_name_is_a_startup_error(bad) -> None:
 
 
 def test_importing_the_app_with_a_bad_engine_name_fails_at_startup() -> None:
+    env = {**os.environ, "PIPELINE_ENGINE": "langgraph", "APP_MODE": "demo"}
     result = subprocess.run(
         [sys.executable, "-c", "import app.main"], cwd=BACKEND, capture_output=True, text=True,
-        env={"PATH": "/usr/bin:/bin", "PIPELINE_ENGINE": "langgraph", "APP_MODE": "demo"},
+        env=env,
     )
 
     assert result.returncode != 0 and "pipeline_engine" in result.stderr.lower()
@@ -196,9 +198,10 @@ async def test_the_native_engine_never_looks_for_google_adk(monkeypatch) -> None
 
 def test_agents_workflow_imports_without_google_adk() -> None:
     code = "import sys; sys.modules['google.adk'] = None; import app.agents.workflow as w; print(sorted(n for n in dir(w) if n in ('build_workflow', 'run_adk')))"
+    env = {**os.environ, "APP_MODE": "demo"}
     result = subprocess.run(
         [sys.executable, "-c", code], cwd=BACKEND, capture_output=True, text=True,
-        env={"PATH": "/usr/bin:/bin", "APP_MODE": "demo"},
+        env=env,
     )
 
     assert result.returncode == 0, result.stderr

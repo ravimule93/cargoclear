@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckResult, DocumentRecord } from "@/lib/types";
+import { CheckResult, CorrectionRequest, DocumentRecord } from "@/lib/types";
+import { DECLARABLE_DOCUMENT_TYPES, DeclarableDocumentType } from "@/lib/documentTypes";
 
 interface DocumentRailProps {
   documents: DocumentRecord[];
@@ -10,6 +11,8 @@ interface DocumentRailProps {
   onSelectDocument?: (id: string) => void;
   /** Takes a document out of the bundle. Without it the rail has no remove control. */
   onRemoveDocument?: (id: string) => void | Promise<void>;
+  /** Submits a correction, e.g. reclassifying a document type. */
+  onCorrect?: (request: CorrectionRequest) => Promise<string | null>;
   /** A run or an upload is in progress: removing is refused by the API (409) until it ends, so the control waits. */
   removeDisabled?: boolean;
 }
@@ -20,10 +23,15 @@ export function DocumentRail({
   activeDocumentId,
   onSelectDocument,
   onRemoveDocument,
+  onCorrect,
   removeDisabled = false,
 }: DocumentRailProps) {
   // The document whose removal is waiting for a second click (removing is not undoable).
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [reclassifyingDocId, setReclassifyingDocId] = useState<string | null>(null);
+  const [targetType, setTargetType] = useState<DeclarableDocumentType | "">("");
+  const [reclassifySubmitting, setReclassifySubmitting] = useState(false);
+  const [reclassifyError, setReclassifyError] = useState<string | null>(null);
   // A confirmation waits for the document it was asked about: showing another one (or none) withdraws it, so it is never found open later.
   const shownDocumentId = activeDocumentId || documents[0]?.document_id;
   useEffect(() => {
@@ -96,13 +104,111 @@ export function DocumentRail({
                   )}
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-[var(--cc-text-muted)]">
-                  <span className="font-mono uppercase text-[10px] bg-[var(--cc-surface)] px-1.5 py-0.5 rounded border border-[var(--cc-border)]">
-                    {doc.doc_type.replace(/_/g, " ")}
-                  </span>
-                  <span>{(doc.bytes / 1024).toFixed(0)} KB</span>
+                <div className="flex flex-col gap-1 text-[11px] text-[var(--cc-text-muted)]">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="font-mono uppercase text-[10px] bg-[var(--cc-surface)] px-1.5 py-0.5 rounded border border-[var(--cc-border)] font-semibold text-[var(--cc-text)]">
+                      {doc.doc_type.replace(/_/g, " ")}
+                    </span>
+                    <span>{(doc.bytes / 1024).toFixed(0)} KB</span>
+                  </div>
+
+                  {doc.declared_type && (
+                    <div className="flex items-center gap-1 text-[10px]">
+                      <span className="text-[var(--cc-text-muted)]">Declared:</span>
+                      <span className="font-semibold text-[var(--cc-text)]">{doc.declared_type.replace(/_/g, " ")}</span>
+                      {doc.declared_type !== doc.doc_type && doc.doc_type !== "UNKNOWN" && (
+                        <span
+                          className="px-1 py-0.2 rounded text-[9px] font-bold bg-[var(--cc-warn-bg)] text-[var(--cc-warn)] border border-[var(--cc-warn-bd)]"
+                          title="Declared type differs from AI model reading (T-001)"
+                        >
+                          ⚠️ Mismatch
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </button>
+
+              {onCorrect && isActive && (
+                <div className="px-1 flex flex-col gap-1">
+                  {reclassifyingDocId === doc.document_id ? (
+                    <div className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] bg-[var(--cc-surface-2)] p-2 text-xs space-y-1.5 animate-in fade-in">
+                      <span className="font-semibold text-[10px] uppercase tracking-wider text-[var(--cc-text-subtle)]">
+                        Reclassify Document Type
+                      </span>
+                      <select
+                        value={targetType}
+                        onChange={(e) => setTargetType(e.target.value as DeclarableDocumentType)}
+                        disabled={reclassifySubmitting}
+                        className="w-full rounded border border-[var(--cc-border)] bg-[var(--cc-surface)] p-1 text-xs text-[var(--cc-text)]"
+                      >
+                        <option value="">Select correct type...</option>
+                        {DECLARABLE_DOCUMENT_TYPES.map((t) => (
+                          <option key={t.value} value={t.value}>
+                            {t.label}
+                          </option>
+                        ))}
+                      </select>
+                      {reclassifyError && (
+                        <p className="text-[10px] text-[var(--cc-err)]">{reclassifyError}</p>
+                      )}
+                      <div className="flex items-center justify-end gap-1.5 pt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReclassifyingDocId(null);
+                            setTargetType("");
+                            setReclassifyError(null);
+                          }}
+                          className="rounded border border-[var(--cc-border)] px-2 py-0.5 text-[10px] text-[var(--cc-text-muted)] hover:text-[var(--cc-text)] cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!targetType || reclassifySubmitting}
+                          onClick={async () => {
+                            if (!targetType) return;
+                            setReclassifySubmitting(true);
+                            setReclassifyError(null);
+                            try {
+                              const err = await onCorrect({
+                                document_id: doc.document_id,
+                                path: "doc_type",
+                                value: targetType,
+                                reason: "Corrected document type classification",
+                              });
+                              if (err) setReclassifyError(err);
+                              else {
+                                setReclassifyingDocId(null);
+                                setTargetType("");
+                              }
+                            } catch (e: unknown) {
+                              setReclassifyError(e instanceof Error ? e.message : "Correction failed");
+                            } finally {
+                              setReclassifySubmitting(false);
+                            }
+                          }}
+                          className="rounded bg-[var(--cc-focus)] px-2 py-0.5 text-[10px] font-semibold text-white hover:brightness-90 disabled:opacity-50 cursor-pointer"
+                        >
+                          {reclassifySubmitting ? "Saving..." : "Apply Type"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReclassifyingDocId(doc.document_id);
+                        setTargetType((doc.doc_type as DeclarableDocumentType) || "");
+                      }}
+                      className="self-start min-h-[24px] inline-flex items-center text-[10px] text-[var(--cc-focus)] hover:underline cursor-pointer py-1"
+                    >
+                      ✎ Reclassify Type
+                    </button>
+                  )}
+                </div>
+              )}
               {onRemoveDocument && isActive && (
                 confirming === doc.document_id ? (
                   <div

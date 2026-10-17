@@ -83,11 +83,28 @@ async def shared_pdf_async(data: bytes) -> AsyncIterator[str]:
         await asyncio.to_thread(handle.close)  # closing deletes the file
 
 
-def _write_temp(data: bytes) -> "tempfile._TemporaryFileWrapper[bytes]":
-    handle = tempfile.NamedTemporaryFile(suffix=".pdf")  # noqa: SIM115 - closed by the caller, after the block that uses it
-    handle.write(data)
-    handle.flush()
-    return handle
+class _TempPdf:
+    def __init__(self, path: str):
+        self.name = path
+
+    def close(self) -> None:
+        try:
+            os.unlink(self.name)
+        except OSError:
+            pass
+
+    def __enter__(self) -> "_TempPdf":
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        self.close()
+
+
+def _write_temp(data: bytes) -> _TempPdf:
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as handle:
+        handle.write(data)
+        path = handle.name
+    return _TempPdf(path)
 
 
 @contextmanager

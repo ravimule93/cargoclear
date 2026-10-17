@@ -8,12 +8,15 @@
    ============================================================================= */
 
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
-:root {
+:root,
+html.light {
   /* --- Surfaces --- */
   --cc-bg:            #F4F6F9;
   --cc-surface:       #FFFFFF;
   --cc-surface-2:     #FAFBFC;
+  --cc-surface-3:     #EEF2F6;
   --cc-border:        #E3E7ED;   /* decorative only — no contrast req */
   --cc-border-strong: #6B7684;   /* 3.0:1 on white → allowed graphical boundary */
 
@@ -55,12 +58,35 @@
   --cc-shadow-1: 0 1px 2px rgba(18,22,28,.06), 0 1px 3px rgba(18,22,28,.10);
 }
 
-/* Dark mode — verified contrast ratios at same thresholds */
+/* Explicit dark theme via class on html or root */
+html.dark,
+:root.dark {
+  --cc-bg:            #0F1319;
+  --cc-surface:       #161B22;
+  --cc-surface-2:     #1C222B;
+  --cc-surface-3:     #252C37;
+  --cc-border:        #2A313B;
+  --cc-border-strong: #8B949E;  /* 3.2:1 on #161B22 */
+
+  --cc-text:          #E6EDF3;  /* 14.8:1 */
+  --cc-text-muted:    #B1BAC4;  /*  7.1:1 */
+  --cc-text-subtle:   #8B949E;  /*  4.5:1 */
+
+  --cc-focus:         #58A6FF;
+
+  --cc-ok:      #4ADE80;  --cc-ok-bd:   #4ADE80;  --cc-ok-bg:   #0F2A1A;
+  --cc-warn:    #FBBF24;  --cc-warn-bd: #FBBF24;  --cc-warn-bg: #2E2205;
+  --cc-err:     #F87171;  --cc-err-bd:  #F87171;  --cc-err-bg:  #2E0F0F;
+  --cc-info:    #A78BFA;  --cc-info-bd: #A78BFA;  --cc-info-bg: #1E1533;
+}
+
+/* System dark preference fallback when no explicit light theme class is set */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --cc-bg:            #0F1319;
     --cc-surface:       #161B22;
     --cc-surface-2:     #1C222B;
+    --cc-surface-3:     #252C37;
     --cc-border:        #2A313B;
     --cc-border-strong: #8B949E;  /* 3.2:1 on #161B22 */
 

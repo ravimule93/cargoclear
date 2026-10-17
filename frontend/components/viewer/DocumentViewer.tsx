@@ -351,7 +351,7 @@ export function DocumentViewer({
                 type="button"
                 onClick={handleZoomOut}
                 disabled={loadState !== "ready"}
-                className="px-1.5 py-0.5 text-xs font-bold rounded hover:bg-[var(--cc-surface)] text-[var(--cc-text)] disabled:opacity-40 cursor-pointer"
+                className="min-w-[24px] min-h-[24px] inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold rounded hover:bg-[var(--cc-surface)] text-[var(--cc-text)] disabled:opacity-40 cursor-pointer"
                 title="Zoom Out (−)"
               >
                 −
@@ -359,7 +359,7 @@ export function DocumentViewer({
               <button
                 type="button"
                 onClick={() => setZoomMode("fit-width")}
-                className="px-1.5 py-0.5 font-mono text-[10px] text-[var(--cc-text-muted)] min-w-[3.2rem] text-center hover:text-[var(--cc-text)] cursor-pointer"
+                className="min-h-[24px] inline-flex items-center justify-center px-1.5 py-0.5 font-mono text-[10px] text-[var(--cc-text-muted)] min-w-[3.2rem] text-center hover:text-[var(--cc-text)] cursor-pointer"
                 title="Click to reset to Fit Width"
               >
                 {zoomMode === "fit-width"
@@ -372,7 +372,7 @@ export function DocumentViewer({
                 type="button"
                 onClick={handleZoomIn}
                 disabled={loadState !== "ready"}
-                className="px-1.5 py-0.5 text-xs font-bold rounded hover:bg-[var(--cc-surface)] text-[var(--cc-text)] disabled:opacity-40 cursor-pointer"
+                className="min-w-[24px] min-h-[24px] inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold rounded hover:bg-[var(--cc-surface)] text-[var(--cc-text)] disabled:opacity-40 cursor-pointer"
                 title="Zoom In (+)"
               >
                 +
@@ -426,7 +426,7 @@ export function DocumentViewer({
                 className="pl-2 border-l border-[var(--cc-border)] font-semibold text-[11px] text-[var(--cc-focus)] hover:underline whitespace-nowrap"
                 title="The page image exactly as the extraction saw it (after orientation, straightening and the image mode)"
               >
-                Model view ↗
+                What the model saw
               </a>
             )}
           </div>

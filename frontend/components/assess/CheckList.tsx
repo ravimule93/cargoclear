@@ -168,11 +168,68 @@ export function CheckList({
           </details>
         )}
 
-        {/* Structured Evidence Comparison Breakdown */}
+        {/* Side-by-Side Comparison Box for multi-document discrepancy */}
+        {!isPass && evidenceList.length >= 2 && (
+          <div className="mt-1 rounded-md border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-2.5 flex flex-col gap-2 shadow-2xs">
+            <div className="flex items-center justify-between text-[11px] font-bold text-[var(--cc-text)]">
+              <span className="flex items-center gap-1.5">
+                <span>⚖️</span>
+                <span>Compared Documents:</span>
+              </span>
+              {check.delta !== null && check.delta !== undefined && (
+                <span className="font-mono text-[10px] text-[var(--cc-err)] bg-[var(--cc-err-bg)] px-1.5 py-0.5 rounded border border-[var(--cc-err-bd)] font-semibold">
+                  Discrepancy / Delta: {check.delta}
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {visibleEvidence.slice(0, 2).map((ev, evIdx) => {
+                const docRecord = ev.doc ? docMap.get(ev.doc) : null;
+                const docName = docRecord?.filename || ev.doc || "Document";
+                const docType = docRecord?.doc_type?.replace(/_/g, " ") || "";
+                const hasVal = ev.raw_value !== undefined && ev.raw_value !== null && String(ev.raw_value).trim() !== "";
+
+                return (
+                  <div
+                    key={`comp-card-${ev.doc}-${evIdx}`}
+                    onClick={() => ev.doc && onSelectDocument?.(ev.doc)}
+                    className={`p-2 rounded border text-xs flex flex-col gap-1 transition-all ${
+                      ev.doc ? "cursor-pointer hover:border-[var(--cc-focus)] hover:shadow-xs" : ""
+                    } ${
+                      !hasVal
+                        ? "bg-[var(--cc-warn-bg)]/40 border-[var(--cc-warn-bd)]"
+                        : "bg-[var(--cc-surface-2)] border-[var(--cc-border)]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-[10px] text-[var(--cc-text-muted)]">
+                      <span className="font-bold text-[var(--cc-text)] truncate max-w-[130px] sm:max-w-[150px]">{docName}</span>
+                      {docType && <span className="uppercase text-[9px] px-1 bg-[var(--cc-surface)] rounded border border-[var(--cc-border)] shrink-0">{docType}</span>}
+                    </div>
+                    <div className="text-[11px] font-mono font-bold text-[var(--cc-text)]">
+                      {hasVal ? (
+                        <span>
+                          {String(ev.raw_value)} {ev.unit || ""}
+                        </span>
+                      ) : (
+                        <span className="text-[var(--cc-warn)] italic">Field Omitted (Gap in {docName})</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-[var(--cc-text-subtle)] mt-0.5">
+                      <span>{ev.field.replace(/_/g, " ")}</span>
+                      {ev.page && <span className="text-[var(--cc-focus)] font-medium">Page {ev.page} →</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Structured Evidence Breakdown */}
         {evidenceList.length > 0 && (
           <div className="mt-1 pt-2 border-t border-[var(--cc-border)]/60 flex flex-col gap-1.5">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--cc-text-subtle)]">
-              Compared Documents & Stated Evidence:
+              All Cited Evidence & Grounding:
             </span>
             <div className="flex flex-col gap-1.5">
               {visibleEvidence.map((ev, evIdx) => {
@@ -217,7 +274,7 @@ export function CheckList({
                     <div className="flex flex-wrap items-center justify-end gap-1.5 text-right shrink-0">
                       {isGap ? (
                         <span className="font-medium text-[10px] text-[var(--cc-warn)] italic">
-                          Field Omitted / Absent (Gap)
+                          Omitted in {docName} (Gap)
                         </span>
                       ) : (
                         <span className="font-mono text-[11px] font-semibold text-[var(--cc-text)] bg-[var(--cc-surface-2)] px-1.5 py-0.5 rounded border border-[var(--cc-border)] max-w-[12rem] truncate" title={String(ev.raw_value)}>
@@ -274,7 +331,7 @@ export function CheckList({
                 <button
                   type="button"
                   onClick={() => setAllEvidence((prev) => ({ ...prev, [check.check_id]: !evidenceExpanded }))}
-                  className="self-start text-[10px] font-semibold text-[var(--cc-focus)] hover:underline cursor-pointer"
+                  className="self-start min-h-[24px] inline-flex items-center text-[10px] font-semibold text-[var(--cc-focus)] hover:underline cursor-pointer py-1"
                 >
                   {evidenceExpanded ? "Show fewer" : `Show all ${evidenceList.length} (${hiddenEvidence} more)`}
                 </button>

@@ -5,32 +5,41 @@ import { api } from "@/lib/api";
 import { toErrorEnvelope } from "@/lib/errors";
 import { useDeclaredType } from "@/lib/hooks/useDeclaredType";
 import { DocumentTypeSelect } from "./DocumentTypeSelect";
+import { UploadStagingModal } from "./UploadStagingModal";
+import type { DocumentRecord } from "@/lib/types";
 
 interface UploadDropzoneProps {
   bundleId: string;
   onUploaded?: () => void;
   label?: string;
+  existingDocuments?: DocumentRecord[];
 }
 
 export function UploadDropzone({
   bundleId,
   onUploaded,
   label = "Upload Missing Document (PDF)",
+  existingDocuments = [],
 }: UploadDropzoneProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number; name?: string } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [stagingOpen, setStagingOpen] = useState(false);
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const declared = useDeclaredType(); // what the NEXT file is, if the person says (one file; cleared by every upload)
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    if (declared.stated && files.length > 1) {
-      // dropping several files cannot be told apart from one: never label them all with one type
-      setErrorMessage("A document type labels one file. Drop one file, or set the type back to “not stated”.");
+
+    // If multiple files are provided, open the staging modal so user can assign per-file document types
+    if (files.length > 1) {
+      setStagedFiles(Array.from(files));
+      setStagingOpen(true);
       return;
     }
+
     const declaredType = declared.take();
     setUploading(true);
     setUploadProgress({ current: 0, total: files.length, name: files[0]?.name });
@@ -71,7 +80,20 @@ export function UploadDropzone({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <DocumentTypeSelect value={declared.declaredType} onChange={declared.setDeclaredType} disabled={uploading} className="self-start" />
+      <div className="flex items-center justify-between gap-2">
+        <DocumentTypeSelect value={declared.declaredType} onChange={declared.setDeclaredType} disabled={uploading} className="self-start" />
+        <button
+          type="button"
+          onClick={() => {
+            setStagedFiles([]);
+            setStagingOpen(true);
+          }}
+          className="text-[11px] font-semibold text-[var(--cc-focus)] hover:underline cursor-pointer"
+        >
+          📄 Multi-file Staging & Classification
+        </button>
+      </div>
+
       <div
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
@@ -117,6 +139,18 @@ export function UploadDropzone({
           </div>
         )}
       </div>
+
+      <UploadStagingModal
+        bundleId={bundleId}
+        isOpen={stagingOpen}
+        initialFiles={stagedFiles}
+        existingDocuments={existingDocuments}
+        onClose={() => setStagingOpen(false)}
+        onUploaded={() => {
+          setStagingOpen(false);
+          onUploaded?.();
+        }}
+      />
     </div>
   );
 }

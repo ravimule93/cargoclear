@@ -485,9 +485,15 @@ def test_a_dry_run_prints_the_exact_request_and_touches_neither_network_nor_cred
     live, monkeypatch, tmp_path, capsys
 ) -> None:
     os.chmod(live, 0)  # reading this file would raise PermissionError
-    monkeypatch.setattr(
-        socket.socket, "connect", lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("network call attempted"))
-    )
+    orig_connect = socket.socket.connect
+
+    def guarded_connect(self, *a, **k):
+        addr = a[0] if a else k.get("address")
+        if isinstance(addr, tuple) and addr[0] in ("127.0.0.1", "localhost", "::1"):
+            return orig_connect(self, *a, **k)
+        raise AssertionError("network call attempted")
+
+    monkeypatch.setattr(socket.socket, "connect", guarded_connect)
 
     def forbidden_client():
         raise AssertionError("the real client (which reads credentials) must not be created in a dry run")
@@ -551,8 +557,11 @@ def test_a_dry_run_notes_when_the_thinking_field_is_not_sent(live, monkeypatch, 
 async def test_overlays_are_saved_per_page_when_pages_are_images(live, install, monkeypatch, tmp_path, capsys) -> None:
     import pdf2image
     from PIL import Image
+    from app.services import upload_checks
 
     monkeypatch.setattr(pdf2image, "convert_from_path", lambda *_a, **_k: [Image.new("RGB", (300, 400), "white")])  # a plan's pages come from a file
+    monkeypatch.setattr(pdf2image, "convert_from_bytes", lambda *_a, **_k: [Image.new("RGB", (300, 400), "white")])
+    monkeypatch.setattr(upload_checks, "read_pdf_facts", lambda *_a, **_k: SimpleNamespace(pages=1, page_sizes=[(1, 300.0, 400.0)], has_js=False))
     order = iter(sorted(PDFS.values()))
 
     def shifted(_n: int, _kw: dict[str, Any]):

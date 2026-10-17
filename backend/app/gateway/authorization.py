@@ -20,7 +20,7 @@ async def get_authorized_bundle(
     """Return a bundle only when it belongs to the authenticated tenant."""
     bundle = await firestore.get_bundle(bundle_id)
     if bundle is None:
-        raise NotFoundError("Bundle not found.", detail={"bundle_id": bundle_id})
+        raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
     tenant_id = bundle.get("tenant_id")
     if tenant_id is None:
         if settings.app_mode == "live":

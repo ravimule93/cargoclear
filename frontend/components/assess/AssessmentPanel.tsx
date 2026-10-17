@@ -13,6 +13,7 @@ import { ValuationCard } from "./ValuationCard";
 import { MissingEvidenceCard } from "./MissingEvidenceCard";
 import { UploadDropzone } from "../upload/UploadDropzone";
 import { useAnnounce } from "../a11y/LiveRegion";
+import { WorkflowStepper } from "../shell/WorkflowStepper";
 
 interface AssessmentPanelProps {
   /** null = the bundle has not been analysed yet */
@@ -148,6 +149,12 @@ export function AssessmentPanel({
         tabIndex={-1}
         className="flex flex-col gap-3 p-4 h-full overflow-y-auto focus:outline-none"
       >
+        <WorkflowStepper
+          documents={documents}
+          assessment={null}
+          status={null}
+          isRunning={isRunning}
+        />
         {actionError && <ActionErrorBanner error={actionError} />}
         {isRunning && <RunProgress run={run} />}
         <h2 className="text-sm font-bold text-[var(--cc-text)]">No assessment yet</h2>
@@ -181,6 +188,12 @@ export function AssessmentPanel({
       tabIndex={-1}
       className="flex flex-col gap-4 p-4 h-full overflow-y-auto focus:outline-none"
     >
+      <WorkflowStepper
+        documents={documents}
+        assessment={assessment}
+        status={assessment.status}
+        isRunning={isRunning}
+      />
       <header className="pb-3 border-b border-[var(--cc-border)]">
         <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--cc-text-subtle)]">
           Compliance Assessment

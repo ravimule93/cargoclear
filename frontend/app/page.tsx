@@ -7,6 +7,7 @@ import { api } from "@/lib/api";
 import { toErrorEnvelope } from "@/lib/errors";
 import { useMeta } from "@/lib/hooks/useMeta";
 import { ModeBadge } from "@/components/shell/ModeBadge";
+import { ThemeToggle } from "@/components/shell/ThemeToggle";
 import { UserMenu } from "@/components/shell/UserMenu";
 import { StatusPill } from "@/components/assess/StatusPill";
 import { DEMO_ACCOUNTS, demoSignIn, signOut } from "@/lib/session";
@@ -196,6 +197,7 @@ export default function Home() {
           <h1 className="text-2xl font-bold tracking-tight text-[var(--cc-text)]">CargoClear-JAPAC</h1>
           <div className="flex items-center gap-2">
             <ModeBadge />
+            <ThemeToggle />
             <UserMenu
               user={meta?.user ?? null}
               onLogin={(email) => {
@@ -298,54 +300,105 @@ export default function Home() {
         </div>
       )}
 
-      {/* Bundle creation controls: only shown when signed in or auth is disabled */}
+      {/* Bundle creation & Assessment Hub */}
       {(!meta?.auth?.enabled || meta?.user) && (
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-[var(--cc-text-muted)]">
-            Destination
-            <select
-              data-testid="destination-select"
-              value={destination}
-              disabled={pending !== null}
-              onChange={(e) => setDestination(e.target.value as Destination)}
-              className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] bg-transparent px-2 py-1.5 text-sm text-[var(--cc-text)] cursor-pointer"
-            >
-              {DESTINATIONS.map((d) => (
-                <option key={d.code} value={d.code}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            disabled={pending !== null}
-            onClick={() => start("empty", () => api.createBundle(undefined, destination))}
-            className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-4 py-2 text-sm font-semibold text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 cursor-pointer"
-          >
-            {pending === "empty" ? "Creating bundle..." : "New empty bundle"}
-          </button>
+        <div className="space-y-4">
+          {/* Custom Assessment Card */}
+          <div className="rounded-lg border border-[var(--cc-border)] bg-[var(--cc-surface-2)] p-4 shadow-xs">
+            <h2 className="text-sm font-semibold text-[var(--cc-text)] flex items-center gap-1.5">
+              <span>🚀</span> Start New Trade Assessment
+            </h2>
+            <p className="text-xs text-[var(--cc-text-muted)] mt-0.5">
+              Select destination jurisdiction to enforce applicable tariff schedules and compliance rules.
+            </p>
+            <div className="flex flex-wrap items-center gap-3 mt-3 pt-2 border-t border-[var(--cc-border)]">
+              <label className="flex items-center gap-2 text-xs font-medium text-[var(--cc-text-muted)]">
+                <span>Destination:</span>
+                <select
+                  data-testid="destination-select"
+                  value={destination}
+                  disabled={pending !== null}
+                  onChange={(e) => setDestination(e.target.value as Destination)}
+                  className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] px-2.5 py-1.5 text-xs font-semibold text-[var(--cc-text)] cursor-pointer"
+                >
+                  {DESTINATIONS.map((d) => (
+                    <option key={d.code} value={d.code}>
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                disabled={pending !== null}
+                onClick={() => start("empty", () => api.createBundle(undefined, destination))}
+                className="rounded-[var(--cc-radius)] bg-[var(--cc-surface)] border border-[var(--cc-border-strong)] px-4 py-1.5 text-xs font-bold text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] disabled:opacity-50 transition-colors cursor-pointer ml-auto"
+              >
+                {pending === "empty" ? "Creating bundle..." : "New empty bundle"}
+              </button>
+            </div>
+          </div>
 
+          {/* Pre-Configured Benchmark Scenarios */}
           {showDemo && (
-            <button
-              type="button"
-              disabled={pending !== null}
-              onClick={() => start("demo", () => api.createCaseCDemo())}
-              className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-4 py-2 text-sm font-semibold text-white hover:brightness-90 disabled:opacity-50 cursor-pointer"
-            >
-              {pending === "demo" ? "Starting demo..." : "Start Case C demo"}
-            </button>
-          )}
+            <div className="rounded-lg border border-[var(--cc-border)] bg-[var(--cc-surface-2)] p-4 shadow-xs space-y-3">
+              <div>
+                <h2 className="text-sm font-semibold text-[var(--cc-text)] flex items-center gap-1.5">
+                  <span>🧪</span> Pre-Loaded Benchmark Scenarios
+                </h2>
+                <p className="text-xs text-[var(--cc-text-muted)] mt-0.5">
+                  Launch verified cross-border trade packages to evaluate multimodal AI extraction, discrepancy engines, and tariff calculation.
+                </p>
+              </div>
 
-          {showDemo && (
-            <button
-              type="button"
-              disabled={pending !== null}
-              onClick={() => start("demo-d", () => api.createCaseDDemo())}
-              className="rounded-[var(--cc-radius)] border border-[var(--cc-focus)] px-4 py-2 text-sm font-semibold text-[var(--cc-focus)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 cursor-pointer"
-            >
-              {pending === "demo-d" ? "Starting demo..." : "Start Case D demo (India import)"}
-            </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                {/* Case C Card */}
+                <div className="rounded-md border border-[var(--cc-border)] bg-[var(--cc-surface)] p-3 flex flex-col justify-between gap-2.5">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold text-xs text-[var(--cc-text)]">Case C: Seamless Pipe (SG)</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-500/30">
+                        Missing MTC
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[var(--cc-text-muted)] leading-relaxed">
+                      Invoice, BoL & Packing List for HS 7304. Demonstrates missing regulatory document detection and dynamic upload to achieve compliance.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={pending !== null}
+                    onClick={() => start("demo", () => api.createCaseCDemo())}
+                    className="w-full rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 text-xs font-bold text-white hover:brightness-90 disabled:opacity-50 transition-all cursor-pointer text-center"
+                  >
+                    {pending === "demo" ? "Starting demo..." : "Start Case C demo"}
+                  </button>
+                </div>
+
+                {/* Case D Card */}
+                <div className="rounded-md border border-[var(--cc-border)] bg-[var(--cc-surface)] p-3 flex flex-col justify-between gap-2.5">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold text-xs text-[var(--cc-text)]">Case D: Line Pipe (IN)</span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-red-100 dark:bg-red-950/60 text-red-900 dark:text-red-200 border border-red-500/30">
+                        Chemistry & Tariff
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[var(--cc-text-muted)] leading-relaxed">
+                      Complete 4-doc package into India. Demonstrates metallurgical chemistry contradiction (HS Note 1), anti-dumping checks, and duty estimate.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={pending !== null}
+                    onClick={() => start("demo-d", () => api.createCaseDDemo())}
+                    className="w-full rounded-[var(--cc-radius)] border border-[var(--cc-focus)] px-3 py-1.5 text-xs font-bold text-[var(--cc-focus)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 transition-all cursor-pointer text-center"
+                  >
+                    {pending === "demo-d" ? "Starting demo..." : "Start Case D demo (India import)"}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}
