@@ -345,6 +345,8 @@ curl -i "${UI_URL}/api/proxy/meta"
 ```
 *Expected Result:* `HTTP/1.1 200 OK` with JSON payload `{ "app_mode": "live", "region": "asia-south1", ... }`.
 
+The standard UI deployment runs `scripts/verify_live_domain.py` after deployment. It checks public `/api/proxy/meta` and authenticated private `/version`, and fails if either reports demo mode.
+
 ### 3. Run Live E2E Case D Assessment:
 Navigate to the deployed UI in your browser or run:
 ```bash

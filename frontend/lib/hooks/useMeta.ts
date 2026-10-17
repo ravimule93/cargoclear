@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api";
 import { toErrorEnvelope } from "../errors";
+import { demoUserFromCookie } from "../session";
 import type { Meta } from "../types";
 
 export interface MetaState {
@@ -60,25 +61,8 @@ export function useMeta(): MetaState {
         if (cancelled) return;
         // If user is not yet populated in meta, read active session from cookie
         if (value?.app_mode === "demo" && !value.user && typeof document !== "undefined") {
-          const match = document.cookie.match(/(?:__session|cargoclear_session_token)=mock-jwt-([^;]+)/);
-          if (match && match[1]) {
-            const tokenPayload = decodeURIComponent(match[1]);
-            const parts = tokenPayload.split("-");
-            const role = parts.length > 1 ? parts[parts.length - 1] : "LICENSED_CHA";
-            const email = parts.length > 1 ? parts.slice(0, parts.length - 1).join("-") : tokenPayload;
-            const domain = email.includes("@") ? email.split("@")[1] : "customs.com";
-            value = {
-              ...value,
-              user: {
-                user_id: `usr-${email}`,
-                email,
-                name: email.split("@")[0].toUpperCase(),
-                tenant_id: domain,
-                role: role as any,
-                issuer: "https://accounts.google.com",
-              },
-            };
-          }
+          const demoUser = demoUserFromCookie(document.cookie);
+          if (demoUser) value = { ...value, user: demoUser };
         }
         setMeta(value);
         setLoading(false);

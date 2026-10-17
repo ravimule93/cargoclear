@@ -34,8 +34,6 @@ from app.services.upload_checks import download_headers
 
 logger = structlog.get_logger(__name__)
 
-router = APIRouter(tags=["demo"])
-
 CASE_C_REFERENCE = "CASE-C-7304-DEMO"
 CASE_C_DESTINATION = "SG"
 CASE_C_PRELOADED = ("commercial_invoice.pdf", "bill_of_lading.pdf", "packing_list.pdf")
@@ -60,6 +58,11 @@ _PACKAGED_FIXTURE_DIR = Path(__file__).resolve().parents[2] / "fixtures" / "case
 def _require_demo_mode() -> None:
     if settings.app_mode != "demo":
         raise NotFoundError("Demo endpoints are only available when APP_MODE=demo.")
+
+
+# Router dependencies run before endpoint dependencies. Keep this first so a
+# live deployment answers 404 without attempting to authenticate a caller.
+router = APIRouter(tags=["demo"], dependencies=[Depends(_require_demo_mode)])
 
 
 def _fixture_dir(case: str = "case_c") -> Path:

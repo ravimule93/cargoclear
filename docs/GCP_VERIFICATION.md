@@ -305,6 +305,7 @@ export RUNTIME_SERVICE_ACCOUNT=cargoclear-sa@${PROJECT_ID}.iam.gserviceaccount.c
 bash infra/kms/setup_signing_key.sh              # key ring + EC P-256 key + signerVerifier on THAT key; prints SIGNING_KEY_VERSION
 export SIGNING_KEY_VERSION=<printed value>
 bash infra/deploy_api.sh
+bash infra/deploy_ui.sh  # also fails if /api/proxy/meta or private /version reports demo mode
 python3 scripts/live_e2e_hosted.py --base-url "$UI_URL" --expect-mode live --case d --expect-signer kms
 ```
 

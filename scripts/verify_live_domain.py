@@ -1,54 +1,42 @@
+#!/usr/bin/env python3
+"""Read-only live-mode smoke check for the public UI and private API."""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+import urllib.error
 import urllib.request
-import re
 
-print("=== Checking Homepage (https://cargoclear-app.web.app/) ===")
-req = urllib.request.Request("https://cargoclear-app.web.app/")
-with urllib.request.urlopen(req) as resp:
-    print("Status:", resp.status)
-    print("Cache-Control:", resp.headers.get("Cache-Control"))
-    html = resp.read().decode("utf-8")
 
-matches = re.findall(r'(?:src|href)="(/_next/[^"]+)"', html)
-print(f"Total _next assets referenced: {len(matches)}")
+def get_json(url: str, headers: dict[str, str] | None = None) -> dict:
+    request = urllib.request.Request(url, headers=headers or {})
+    with urllib.request.urlopen(request, timeout=20) as response:
+        return json.loads(response.read().decode("utf-8"))
 
-errs = []
-for path in matches:
-    asset_url = "https://cargoclear-app.web.app" + path
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Fail when a purported live CargoClear deployment exposes demo mode.")
+    parser.add_argument("--ui-url", required=True)
+    parser.add_argument("--api-url", required=True)
+    parser.add_argument("--identity-token", required=True)
+    args = parser.parse_args()
     try:
-        with urllib.request.urlopen(asset_url) as aresp:
-            if aresp.status != 200:
-                errs.append((path, aresp.status))
-    except Exception as e:
-        errs.append((path, str(e)))
+        meta = get_json(f"{args.ui_url.rstrip('/')}/api/proxy/meta")
+        version = get_json(
+            f"{args.api_url.rstrip('/')}/version",
+            {"Authorization": f"Bearer {args.identity_token}"},
+        )
+    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError) as error:
+        print(f"LIVE MODE VERIFICATION FAILED: {error}", file=sys.stderr)
+        return 1
+    modes = {"/api/proxy/meta": meta.get("app_mode"), "/version": version.get("app_mode")}
+    if any(mode != "live" for mode in modes.values()) or meta.get("user") is not None:
+        print(f"LIVE MODE VERIFICATION FAILED: unexpected public state: {modes}, user={meta.get('user')!r}", file=sys.stderr)
+        return 1
+    print("LIVE MODE VERIFIED: UI metadata and private API version report live with no public user session.")
+    return 0
 
-print(f"Failed chunks count: {len(errs)}")
-if not errs:
-    print("SUCCESS: 100% of homepage JS/CSS chunks loaded with HTTP 200!")
-print("Contains 'Live GCP':", "Live GCP" in html)
 
-print("\n=== Checking Workbench (https://cargoclear-app.web.app/workbench/bnd-b91c2577aeb3) ===")
-wb_req = urllib.request.Request(
-    "https://cargoclear-app.web.app/workbench/bnd-b91c2577aeb3",
-    headers={"Cookie": "__session=mock-jwt-demo-cha@customs.com-LICENSED_CHA"}
-)
-with urllib.request.urlopen(wb_req) as resp:
-    print("Workbench Status:", resp.status)
-    print("Workbench Cache-Control:", resp.headers.get("Cache-Control"))
-    wb_html = resp.read().decode("utf-8")
-
-wb_matches = re.findall(r'(?:src|href)="(/_next/[^"]+)"', wb_html)
-print(f"Total _next assets in workbench: {len(wb_matches)}")
-wb_errs = []
-for path in wb_matches:
-    asset_url = "https://cargoclear-app.web.app" + path
-    try:
-        with urllib.request.urlopen(asset_url) as aresp:
-            if aresp.status != 200:
-                wb_errs.append((path, aresp.status))
-    except Exception as e:
-        wb_errs.append((path, str(e)))
-
-print(f"Workbench Failed chunks count: {len(wb_errs)}")
-if not wb_errs:
-    print("SUCCESS: 100% of workbench JS/CSS chunks loaded with HTTP 200!")
-print("Workbench Contains 'Live GCP':", "Live GCP" in wb_html)
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -112,10 +112,11 @@ def test_live_mode_refuses_mock_tokens_and_service_only_requests(monkeypatch):
     app = create_app()
     client = TestClient(app)
 
+    mock_token = "mock-jwt-demo-cha@customs.com-LICENSED_CHA"
     mock = client.post(
         "/api/v1/bundles",
         json={"reference": "TEST-LIVE-MOCK", "destination_country": "SG"},
-        headers={"Authorization": "Bearer mock-jwt-demo-cha@customs.com-LICENSED_CHA"},
+        headers={"Authorization": f"Bearer {mock_token}"},
     )
     service_only = client.post(
         "/api/v1/bundles",
@@ -123,8 +124,19 @@ def test_live_mode_refuses_mock_tokens_and_service_only_requests(monkeypatch):
         headers={"Authorization": "Bearer service.identity.token"},
     )
 
-    assert mock.status_code == 401
-    assert service_only.status_code == 401
+    mock_end_user_header = client.post(
+        "/api/v1/bundles",
+        json={"reference": "TEST-LIVE-MOCK-HEADER", "destination_country": "SG"},
+        headers={"X-CargoClear-User-Token": mock_token},
+    )
+    mock_cookie = client.post(
+        "/api/v1/bundles",
+        json={"reference": "TEST-LIVE-MOCK-COOKIE", "destination_country": "SG"},
+        headers={"Cookie": f"__session={mock_token}"},
+    )
+
+    for response in (mock, service_only, mock_end_user_header, mock_cookie):
+        assert response.status_code == 401
 
 
 def test_live_settings_require_a_real_identity_configuration():

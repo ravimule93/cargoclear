@@ -11,6 +11,7 @@ import { AssessmentPanel } from "@/components/assess/AssessmentPanel";
 import { DeltaDrawer } from "@/components/delta/DeltaDrawer";
 import { useMeta } from "@/lib/hooks/useMeta";
 import { useWorkbench } from "@/lib/hooks/useWorkbench";
+import { demoSignIn, signOut } from "@/lib/session";
 
 interface WorkbenchPageProps {
   params: Promise<{ bundleId: string }>;
@@ -67,16 +68,9 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
             <UserMenu
               user={meta?.user ?? null}
               onLogin={(email) => {
-                const token = `mock-jwt-${email}-LICENSED_CHA`;
-                document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
-                document.cookie = `cargoclear_session_token=${token}; path=/; max-age=86400; SameSite=Lax`;
-                window.location.reload();
+                if (demoSignIn(email, meta?.app_mode)) window.location.reload();
               }}
-              onLogout={() => {
-                document.cookie = "__session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-                document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-                window.location.href = "/api/auth/logout";
-              }}
+              onLogout={signOut}
             />
           </div>
         </div>
@@ -112,16 +106,9 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         onRun={wb.runAnalysis}
         onFilesSelected={wb.uploadFiles}
         onLogin={(email) => {
-          const token = `mock-jwt-${email}-LICENSED_CHA`;
-          document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
-          document.cookie = `cargoclear_session_token=${token}; path=/; max-age=86400; SameSite=Lax`;
-          window.location.reload();
+          if (demoSignIn(email, meta?.app_mode)) window.location.reload();
         }}
-        onLogout={() => {
-          document.cookie = "__session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-          document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-          window.location.href = "/api/auth/logout";
-        }}
+        onLogout={signOut}
       />
 
       <nav className="cc-tabs" role="tablist" aria-label="Workbench sections">

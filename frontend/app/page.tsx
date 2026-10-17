@@ -9,6 +9,7 @@ import { useMeta } from "@/lib/hooks/useMeta";
 import { ModeBadge } from "@/components/shell/ModeBadge";
 import { UserMenu } from "@/components/shell/UserMenu";
 import { StatusPill } from "@/components/assess/StatusPill";
+import { DEMO_ACCOUNTS, demoSignIn, signOut } from "@/lib/session";
 import type { Bundle } from "@/lib/types";
 
 type Pending = "empty" | "demo" | "demo-d" | null;
@@ -198,16 +199,9 @@ export default function Home() {
             <UserMenu
               user={meta?.user ?? null}
               onLogin={(email) => {
-                const token = `mock-jwt-${email}-LICENSED_CHA`;
-                document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
-                document.cookie = `cargoclear_session_token=${token}; path=/; max-age=86400; SameSite=Lax`;
-                window.location.reload();
+                if (demoSignIn(email, meta?.app_mode)) window.location.reload();
               }}
-              onLogout={() => {
-                document.cookie = "__session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-                document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-                window.location.href = "/api/auth/logout";
-              }}
+              onLogout={signOut}
             />
           </div>
         </div>
@@ -268,42 +262,16 @@ export default function Home() {
 
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
             <span className="text-[10px] text-[var(--cc-text-muted)]">1-Click presets:</span>
-            <button
-              type="button"
-              onClick={() => {
-                const token = "mock-jwt-demo-cha@customs.com-LICENSED_CHA";
-                document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
-                document.cookie = `cargoclear_session_token=${token}; path=/; max-age=86400; SameSite=Lax`;
-                window.location.reload();
-              }}
-              className="text-[10px] rounded bg-[var(--cc-surface)] border border-[var(--cc-border)] px-2 py-0.5 text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
-            >
-              🏢 customs.com
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const token = "mock-jwt-agent@dhl.com-LICENSED_CHA";
-                document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
-                document.cookie = `cargoclear_session_token=${token}; path=/; max-age=86400; SameSite=Lax`;
-                window.location.reload();
-              }}
-              className="text-[10px] rounded bg-[var(--cc-surface)] border border-[var(--cc-border)] px-2 py-0.5 text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
-            >
-              📦 dhl.com
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const token = "mock-jwt-broker@fedex.com-LICENSED_CHA";
-                document.cookie = `__session=${token}; path=/; max-age=86400; SameSite=Lax`;
-                document.cookie = `cargoclear_session_token=${token}; path=/; max-age=86400; SameSite=Lax`;
-                window.location.reload();
-              }}
-              className="text-[10px] rounded bg-[var(--cc-surface)] border border-[var(--cc-border)] px-2 py-0.5 text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
-            >
-              ✈️ fedex.com
-            </button>
+            {DEMO_ACCOUNTS.map((account) => (
+              <button
+                key={account.email}
+                type="button"
+                onClick={() => { if (demoSignIn(account.email, meta?.app_mode)) window.location.reload(); }}
+                className="text-[10px] rounded bg-[var(--cc-surface)] border border-[var(--cc-border)] px-2 py-0.5 text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
+              >
+                {account.label}
+              </button>
+            ))}
             </div>
           </>}
         </div>
@@ -322,11 +290,7 @@ export default function Home() {
           </div>
           <button
             type="button"
-            onClick={() => {
-              document.cookie = "__session=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-              document.cookie = "cargoclear_session_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-              window.location.href = "/api/auth/logout";
-            }}
+            onClick={signOut}
             className="text-[11px] text-[var(--cc-text-muted)] hover:text-red-500 underline cursor-pointer shrink-0"
           >
             Sign out

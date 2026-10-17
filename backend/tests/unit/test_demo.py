@@ -80,12 +80,15 @@ async def test_second_call_creates_a_different_bundle() -> None:
 async def test_404_when_app_mode_is_live(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "app_mode", "live")  # monkeypatch restores the original on teardown
     async with _client() as client:
-        post = await client.post("/api/v1/demo/case-c")
-        get = await client.get("/api/v1/demo/case-c/mtc")
-    assert post.status_code == 404
-    assert post.json()["code"] == "NOT_FOUND"
-    assert get.status_code == 404
-    assert get.json()["code"] == "NOT_FOUND"
+        for headers in ({}, {"Authorization": "Bearer mock-jwt-demo-cha@customs.com-LICENSED_CHA"}):
+            for method, path in (
+                ("post", "/api/v1/demo/case-c"),
+                ("post", "/api/v1/demo/case-d"),
+                ("get", "/api/v1/demo/case-c/mtc"),
+            ):
+                response = await getattr(client, method)(path, headers=headers)
+                assert response.status_code == 404
+                assert response.json()["code"] == "NOT_FOUND"
 
 
 @pytest.mark.asyncio

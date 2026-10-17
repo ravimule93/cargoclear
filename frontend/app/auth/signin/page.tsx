@@ -5,8 +5,11 @@ import { useState, Suspense } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { toErrorEnvelope } from "@/lib/errors";
+import { useMeta } from "@/lib/hooks/useMeta";
+import { DEMO_ACCOUNTS, demoSignIn, storeDemoSessionToken } from "@/lib/session";
 
 function SignInContent() {
+  const { meta } = useMeta();
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
   const queryError = searchParams.get("error");
@@ -62,10 +65,8 @@ function SignInContent() {
 
   // Save session cookie and navigate
   const finalizeAuth = (token: string) => {
-    const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
-    const secureFlag = isHttps ? "; Secure" : "";
-    document.cookie = `__session=${token}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
-    document.cookie = `cargoclear_session_token=${token}; path=/; max-age=604800; SameSite=Lax${secureFlag}`;
+    if (meta?.app_mode !== "demo") return;
+    storeDemoSessionToken(token);
     window.location.href = returnTo;
   };
 
@@ -143,8 +144,7 @@ function SignInContent() {
   };
 
   const handleQuickDemoLogin = (email: string) => {
-    const clean = email.trim().toLowerCase();
-    finalizeAuth(`mock-jwt-${clean}-LICENSED_CHA`);
+    if (demoSignIn(email, meta?.app_mode)) window.location.href = returnTo;
   };
 
   const handleGoogleSignInWithCustomClient = (e: React.FormEvent) => {
@@ -152,6 +152,27 @@ function SignInContent() {
     if (!customClientId.trim()) return;
     window.location.href = `/api/auth/signin/google?client_id=${encodeURIComponent(customClientId.trim())}&returnTo=${encodeURIComponent(returnTo)}`;
   };
+
+  // Fail closed while /meta is loading or unavailable: only the Google OAuth
+  // entry point is rendered unless the backend has explicitly said "demo".
+  if (meta?.app_mode !== "demo") {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-6 p-3 sm:p-6">
+        <div className="rounded-xl border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-4 sm:p-6 shadow-xl space-y-6 text-center">
+          <h1 className="text-xl font-bold tracking-tight text-[var(--cc-text)]">CargoClear Commercial Identity</h1>
+          {queryError && <p role="alert" className="text-xs text-red-500">{getErrorMessage(queryError)}</p>}
+          <p className="text-xs text-[var(--cc-text-muted)]">Sign in with your corporate Google Workspace account.</p>
+          <a
+            href={`/api/auth/signin/google?returnTo=${encodeURIComponent(returnTo)}`}
+            className="flex items-center justify-center rounded-lg border border-[var(--cc-border-strong)] bg-white dark:bg-[#1f1f1f] py-2.5 px-4 text-xs font-semibold text-gray-800 dark:text-gray-100"
+          >
+            Continue with Google SSO
+          </a>
+          <Link href="/" className="text-[11px] text-[var(--cc-text-muted)] underline">← Back to start</Link>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-6 p-3 sm:p-6">
@@ -330,27 +351,16 @@ function SignInContent() {
                 Quick demo presets (1-click sign in):
               </span>
               <div className="flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin("demo-cha@customs.com")}
-                  className="rounded bg-[var(--cc-surface-2)] border border-[var(--cc-border)] px-2.5 py-1 text-[11px] font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
-                >
-                  🏢 customs.com
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin("agent@dhl.com")}
-                  className="rounded bg-[var(--cc-surface-2)] border border-[var(--cc-border)] px-2.5 py-1 text-[11px] font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
-                >
-                  📦 dhl.com
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickDemoLogin("broker@fedex.com")}
-                  className="rounded bg-[var(--cc-surface-2)] border border-[var(--cc-border)] px-2.5 py-1 text-[11px] font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
-                >
-                  ✈️ fedex.com
-                </button>
+                {DEMO_ACCOUNTS.map((account) => (
+                  <button
+                    key={account.email}
+                    type="button"
+                    onClick={() => handleQuickDemoLogin(account.email)}
+                    className="rounded bg-[var(--cc-surface-2)] border border-[var(--cc-border)] px-2.5 py-1 text-[11px] font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
+                  >
+                    {account.label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
