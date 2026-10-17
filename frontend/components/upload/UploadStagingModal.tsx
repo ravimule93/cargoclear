@@ -292,6 +292,7 @@ export function UploadStagingModal({
             multiple
             accept="application/pdf,.pdf"
             className="hidden"
+            data-testid="staging-file-input"
             onChange={(e) => handleAddMoreFiles(e.target.files)}
           />
 

@@ -56,21 +56,25 @@ test.describe("Documents: remove one, and say what a file is", () => {
   test("a declared type labels one file; the assessment warns when the model reads another type", async ({ page }) => {
     await page.goto("/");
     await Promise.all([page.waitForURL(/\/workbench\/bnd-[A-Za-z0-9_-]+$/), page.getByRole("button", { name: "New empty bundle" }).click()]);
-    const picker = page.getByTestId("declared-type-select");
-    const input = page.getByTestId("upload-input").first();
 
-    // nothing stated: several files may be chosen; a stated type allows one
-    await expect(picker).toHaveValue("");
-    await expect(input).toHaveAttribute("multiple", "");
-    await picker.selectOption("PACKING_LIST");
-    await expect(input).not.toHaveAttribute("multiple", "");
+    // Open multi-file staging and document type classification modal
+    await page.getByTestId("classify-upload-button").click();
+    await expect(page.getByRole("dialog")).toBeVisible();
 
-    // the fixture is read as an invoice, so declaring it a packing list must be flagged
-    await input.setInputFiles(caseCPath(CASE_C_FILES[0]));
+    // Stage the files
+    const stagingInput = page.getByTestId("staging-file-input");
+    await stagingInput.setInputFiles([caseCPath(CASE_C_FILES[0]), caseCPath(CASE_C_FILES[1])]);
+
+    // The fixture CASE_C_FILES[0] is read as an invoice, so explicitly declaring it a packing list must be flagged
+    const typeSelect = page.getByLabel(`Document type for ${CASE_C_FILES[0]}`);
+    await expect(typeSelect).toBeVisible();
+    await typeSelect.selectOption("PACKING_LIST");
+
+    // Upload the staged documents
+    await page.getByRole("button", { name: /Upload \d+ Files/i }).click();
+
+    // Modal closes and rail shows 2 documents
     const rail = page.getByLabel("Documents in this bundle");
-    await expect(rail.getByTestId("document-item")).toHaveCount(1, { timeout: 30_000 });
-    await expect(picker).toHaveValue(""); // cleared: a stale choice never labels the next file
-    await input.setInputFiles(caseCPath(CASE_C_FILES[1]));
     await expect(rail.getByTestId("document-item")).toHaveCount(2, { timeout: 30_000 });
 
     for (let attempt = 0; attempt < 4; attempt++) {

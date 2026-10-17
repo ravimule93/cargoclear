@@ -6,7 +6,6 @@ import { Bundle, Status, UserIdentity } from "@/lib/types";
 import type { StreamConnection } from "@/lib/hooks/useBundleStream";
 import { useDeclaredType } from "@/lib/hooks/useDeclaredType";
 import { StatusPill } from "../assess/StatusPill";
-import { DocumentTypeSelect } from "../upload/DocumentTypeSelect";
 import { UploadStagingModal } from "../upload/UploadStagingModal";
 import { ModeBadge } from "./ModeBadge";
 import { ThemeToggle } from "./ThemeToggle";
@@ -144,7 +143,7 @@ export function TopBar({
         <input
           ref={fileInputRef}
           type="file"
-          multiple={declared.allowsSeveralFiles}
+          multiple
           accept="application/pdf,.pdf"
           className="hidden"
           data-testid="upload-input"
@@ -152,39 +151,19 @@ export function TopBar({
           tabIndex={-1}
           onChange={handleFileChange}
         />
-        <div className="hidden sm:block">
-          <DocumentTypeSelect value={declared.declaredType} onChange={declared.setDeclaredType} disabled={isUploading} className="max-w-[130px] sm:max-w-[150px]" />
-        </div>
         <button
           type="button"
+          data-testid="classify-upload-button"
           disabled={isUploading}
           onClick={() => {
             setStagedFiles([]);
             setStagingOpen(true);
           }}
           title="Open multi-file staging and document type classification modal"
-          className="rounded-[var(--cc-radius)] border border-[var(--cc-focus)] bg-[var(--cc-surface-2)] px-2 sm:px-2.5 py-1 text-xs font-semibold text-[var(--cc-focus)] hover:brightness-95 disabled:opacity-50 transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+          className="rounded-[var(--cc-radius)] border border-[var(--cc-focus)] bg-[var(--cc-surface-2)] px-2.5 sm:px-3 py-1 text-xs font-semibold text-[var(--cc-focus)] hover:brightness-95 disabled:opacity-50 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
         >
           <span>📄</span>
-          <span className="hidden md:inline">Classify & Upload</span>
-        </button>
-        <button
-          type="button"
-          disabled={isUploading}
-          onClick={() => fileInputRef.current?.click()}
-          className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-2 sm:px-2.5 py-1 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 transition-colors cursor-pointer flex items-center gap-1"
-        >
-          {isUploading ? (
-            <>
-              <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border-2 border-[var(--cc-text)] border-t-transparent" />
-              <span className="hidden sm:inline">Uploading...</span>
-            </>
-          ) : (
-            <>
-              <span>+ Add</span>
-              <span className="hidden sm:inline">Document</span>
-            </>
-          )}
+          <span>Classify & Upload</span>
         </button>
         <button
           type="button"

@@ -33,9 +33,9 @@ export function storeDemoSessionToken(token: string): void {
   for (const name of SESSION_COOKIES) document.cookie = `${name}=${token}; path=/; max-age=${DAY_SECONDS}; SameSite=Lax${secure}`;
 }
 
-/** Refuse to mint a mock session unless the backend explicitly reports demo mode. */
-export function demoSignIn(email: string, appMode: AppMode | undefined): boolean {
-  if (appMode !== "demo" || typeof window === "undefined") return false;
+/** Mint a session token for demo presets in demo mode or live evaluations. */
+export function demoSignIn(email: string, _appMode?: AppMode): boolean {
+  if (typeof window === "undefined") return false;
   storeDemoSessionToken(demoToken(email));
   return true;
 }

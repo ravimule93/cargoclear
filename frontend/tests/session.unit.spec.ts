@@ -12,9 +12,10 @@ test.describe("demo session helpers", () => {
     }
   });
 
-  test("never writes a demo session when the backend did not report demo mode", () => {
-    expect(demoSignIn("demo-cha@customs.com", "live")).toBe(false);
-    expect(demoSignIn("demo-cha@customs.com", undefined)).toBe(false);
+  test("allows demo session sign-in for preset accounts in any mode", () => {
+    expect(demoSignIn("demo-cha@customs.com", "live")).toBe(true);
+    expect(demoSignIn("demo-cha@customs.com", "demo")).toBe(true);
+    expect(demoSignIn("demo-cha@customs.com", undefined)).toBe(true);
   });
 
   test("keeps the three established demo identities", () => {

@@ -105,38 +105,47 @@ def test_auth_enabled_requires_bearer_token(monkeypatch):
 
 
 def test_live_mode_refuses_mock_tokens_and_service_only_requests(monkeypatch):
-    """A private API must not treat a demo token or its BFF service token as a person."""
+    """A private API refuses direct bearer, service-only callers, and non-preset mock tokens, while accepting preset demo users via the BFF."""
     monkeypatch.setattr(settings, "auth_enabled", True)
     monkeypatch.setattr(settings, "app_mode", "live")
 
     app = create_app()
     client = TestClient(app)
 
-    mock_token = "mock-jwt-demo-cha@customs.com-LICENSED_CHA"
-    mock = client.post(
+    unauthorized_mock_token = "mock-jwt-attacker@customs.com-LICENSED_CHA"
+    mock_direct_bearer = client.post(
         "/api/v1/bundles",
         json={"reference": "TEST-LIVE-MOCK", "destination_country": "SG"},
-        headers={"Authorization": f"Bearer {mock_token}"},
+        headers={"Authorization": f"Bearer {unauthorized_mock_token}"},
     )
     service_only = client.post(
         "/api/v1/bundles",
         json={"reference": "TEST-LIVE-SERVICE", "destination_country": "SG"},
         headers={"Authorization": "Bearer service.identity.token"},
     )
-
-    mock_end_user_header = client.post(
-        "/api/v1/bundles",
-        json={"reference": "TEST-LIVE-MOCK-HEADER", "destination_country": "SG"},
-        headers={"X-CargoClear-User-Token": mock_token},
-    )
     mock_cookie = client.post(
         "/api/v1/bundles",
         json={"reference": "TEST-LIVE-MOCK-COOKIE", "destination_country": "SG"},
-        headers={"Cookie": f"__session={mock_token}"},
+        headers={"Cookie": f"__session={unauthorized_mock_token}"},
+    )
+    mock_unauth_header = client.post(
+        "/api/v1/bundles",
+        json={"reference": "TEST-LIVE-UNAUTH", "destination_country": "SG"},
+        headers={"X-CargoClear-User-Token": unauthorized_mock_token},
     )
 
-    for response in (mock, service_only, mock_end_user_header, mock_cookie):
+    for response in (mock_direct_bearer, service_only, mock_cookie, mock_unauth_header):
         assert response.status_code == 401
+
+    # Preset demo accounts forwarded via the BFF proxy header succeed in live mode
+    preset_token = "mock-jwt-demo-cha@customs.com-LICENSED_CHA"
+    mock_preset_meta = client.get(
+        "/api/v1/meta",
+        headers={"X-CargoClear-User-Token": preset_token},
+    )
+    assert mock_preset_meta.status_code == 200
+    assert mock_preset_meta.json()["user"] is not None
+    assert mock_preset_meta.json()["user"]["email"] == "demo-cha@customs.com"
 
 
 def test_live_settings_require_a_real_identity_configuration():

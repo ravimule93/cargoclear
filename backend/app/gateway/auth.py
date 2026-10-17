@@ -105,8 +105,6 @@ def get_current_user(request: Request) -> UserIdentity:
 
         # In local testing or simulated SSO token mode
         if token.startswith("mock-jwt-"):
-            if settings.app_mode != "demo":
-                raise AuthenticationError("Demo session tokens are not accepted outside demo mode.")
             payload = token[len("mock-jwt-"):]
             possible_roles = {"LICENSED_CHA", "OPERATOR", "AUDITOR", "SYSTEM"}
             email = payload
@@ -123,6 +121,12 @@ def get_current_user(request: Request) -> UserIdentity:
                     role = maybe_role
             if not email:
                 email = "demo-cha@customs.com"
+
+            # In live mode, only intended preset demo accounts are accepted with mock tokens
+            preset_emails = {"demo-cha@customs.com", "agent@dhl.com", "broker@fedex.com"}
+            if settings.app_mode != "demo" and email.lower() not in preset_emails:
+                raise AuthenticationError("Only preset demo accounts are accepted with demo tokens outside demo mode.")
+
             claims = {
                 "email": email,
                 "sub": f"usr-{email}",
