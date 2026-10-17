@@ -347,16 +347,16 @@ export function CheckList({
     <div className="flex flex-col gap-3">
       {/* Issues Requiring Action (Material Contradictions & Warnings) */}
       {issues.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[var(--cc-err)] uppercase tracking-wider flex items-center gap-1.5">
-              <span>⚠️ Discrepancies & Warnings ({issues.length})</span>
-            </span>
+        <details open className="group rounded-[var(--cc-radius)] border border-[var(--cc-border)] bg-[var(--cc-surface)]">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-2.5 text-xs font-bold text-[var(--cc-err)] uppercase tracking-wider">
+            <span>⚠️ Findings requiring attention ({issues.length})</span>
+            <span className="text-[10px] text-[var(--cc-text-muted)] group-open:hidden">Show</span>
+            <span className="hidden text-[10px] text-[var(--cc-text-muted)] group-open:inline">Hide</span>
+          </summary>
+          <div className="border-t border-[var(--cc-border)] p-2">
+            <ul className="flex flex-col gap-2" aria-label="Discrepancies and warnings">{issues.map((check, i) => renderCheckItem(check, i, "issue"))}</ul>
           </div>
-          <ul className="flex flex-col gap-2" aria-label="Discrepancies and warnings">
-            {issues.map((check, i) => renderCheckItem(check, i, "issue"))}
-          </ul>
-        </div>
+        </details>
       )}
 
       {/* Passed Checks (Accordion) */}
