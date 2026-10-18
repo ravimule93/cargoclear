@@ -36,11 +36,11 @@ Welcome to the **CargoClear-JAPAC** submission package for the **Google Cloud AI
 - **Main Production Web Application:** [https://cargoclear-app.web.app](https://cargoclear-app.web.app) (Firebase Hosting)
 - **Direct Cloud Run UI Service:** [https://cargoclear-ui-448522365737.asia-south1.run.app](https://cargoclear-ui-448522365737.asia-south1.run.app) (`minScale: 0`)
 - **Direct Cloud Run API Service:** [https://cargoclear-api-448522365737.asia-south1.run.app](https://cargoclear-api-448522365737.asia-south1.run.app) (`minScale: 0`)
-- **GitHub Public Repository:** [https://github.com/ravimule93/cargoclear](https://github.com/ravimule93/cargoclear) (branch: `improvement-plan`)
+- **GitHub Public Repository:** [https://github.com/ravimule93/cargoclear](https://github.com/ravimule93/cargoclear) (branch: `main`)
 
 > [!IMPORTANT]
 > **3-Minute Demo Video Recording:**
-> - **Video Link:** `[DEMO VIDEO LINK — Insert YouTube / Google Drive / Loom URL here]`
+> - **Video File:** [`CargoClear_AI_Builder_Cup_Demo.mp4`](CargoClear_AI_Builder_Cup_Demo.mp4) (High-Definition 1440x900 MP4 with synchronized neural voiceover narration)
 > - **Narrative Talk Track:** Fully scripted second-by-second in [`SUBMISSION_DOSSIER.md` Section 13](SUBMISSION_DOSSIER.md#13-three-minute-demo-video-script-000--300) (0:00–3:00) covering Case D, Gemini 2.5 Flash extraction, metallurgy verification, indicative anti-dumping duty calculation, and cryptographic SHA-256 / ECDSA audit ledger.
 
 ---

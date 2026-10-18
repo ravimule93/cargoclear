@@ -1,28 +1,23 @@
 # CargoClear-JAPAC
 
-<<<<<<< HEAD
-> **Google Cloud AI Builder Cup 2026 Submission**  
+> **Pre-Submission Multimodal Customs Assessment Workbench**  
+> **Google Cloud AI Builder Cup 2026 Submission** | Track: Intelligent Document Processing & Enterprise AI  
 > **Team:** CargoClear (`Ravi Mule`, `Nikhil Pande`)  
 > **Live Web App:** [https://cargoclear-app.web.app](https://cargoclear-app.web.app) | **API:** [https://cargoclear-api-448522365737.asia-south1.run.app](https://cargoclear-api-448522365737.asia-south1.run.app)  
 > **Submission Dossier:** [`submission/SUBMISSION_DOSSIER.md`](submission/SUBMISSION_DOSSIER.md) | **Submission Package:** [`submission/README.md`](submission/README.md)
 
 CargoClear is a pre-submission, evidence-oriented customs assessment workbench for JAPAC trade bundles. It is **decision support only**: it does not submit to government portals, make legal determinations, collect or pay duty, or replace the authorised Custom House Agent. It does give an **indicative duty estimate** (an assessable value and the duties on it, with every assumption listed); that estimate is information, never an amount payable and never the assessment status.
-=======
-> **Pre-Submission Multimodal Customs Assessment Workbench**  
-> **Google Cloud AI Builder Cup 2026 Submission** | Track: Intelligent Document Processing & Enterprise AI
->>>>>>> ffcede2 (demo recording)
 
-[![Live App](https://img.shields.io/badge/Demo%20UI-Live%20on%20Cloud%20Run-brightgreen?logo=google-cloud)](https://cargoclear-ui-5ho4zmc74q-el.a.run.app)
-[![API](https://img.shields.io/badge/Backend%20API-Private%20Cloud%20Run-blue?logo=fastapi)](https://cargoclear-api-5ho4zmc74q-el.a.run.app)
+[![Live App](https://img.shields.io/badge/Demo%20UI-Live%20on%20Cloud%20Run-brightgreen?logo=google-cloud)](https://cargoclear-app.web.app)
+[![API](https://img.shields.io/badge/Backend%20API-Private%20Cloud%20Run-blue?logo=fastapi)](https://cargoclear-api-448522365737.asia-south1.run.app)
 [![Region](https://img.shields.io/badge/GCP%20Region-asia--south1%20(Mumbai)-orange?logo=google-cloud)](#infrastructure--deployment)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 
-<<<<<<< HEAD
 - **Tripartite Clearance Workbench**: Next.js 15 workbench with a 3-way layout switcher (`⊞ Split` side-by-side, `📄 Viewer` focus, `⚖️ Decision` focus), auto-hiding PDF view during analysis with automated focus scrolling to the live progress bar, SVG bounding box overlays, Reasoning Delta, and hash-verified audit chain.
 - **Commercial Auth & Multi-Tenancy**: Google Workspace SSO (OAuth 2.0 / OIDC) with cryptographic RSA token validation, plus commercial user registration/sign-in backed directly by Google Cloud Firestore (`users` collection & audit subcollection) with salted PBKDF2-HMAC-SHA256 password hashing.
 - **Document Staging & Classification**: Pre-upload customs document classification modal (`UploadStagingModal` portaled to document root at `z-[9999]`) enabling brokers to assign document types (`COMMERCIAL_INVOICE`, `BILL_OF_LADING`, `PACKING_LIST`, `MILL_TEST_CERTIFICATE`, `CERTIFICATE_OF_ORIGIN`) before ingestion.
 - **User Profile & Appearance Management**: Interactive user profile dropdown with tenant domain badge, customs role indicator, live sign-out action, and integrated 3-way theme switcher (`Light`, `Dark`, `System`).
-- **Executive KPI Dashboard**: Live landing page with real-time portfolio metrics (Compliance Rate, Flagged Contradictions, Average Assessment Latency, Indicative Duty Exposure) and direct bundle ingestion.
+- **Executive KPI Dashboard**: Live landing page with portfolio metrics (Compliance Rate, Flagged Contradictions, Average Assessment Latency, Indicative Duty Exposure) and direct bundle ingestion.
 - **A FastAPI pipeline**: Preprocesses PDFs, extracts evidence via Vertex AI Gemini 2.5 Flash, performs deterministic checks, grounds HS requirements, and creates immutable assessment iterations.
 - **Deterministic checks beyond weights and HS codes**: Invoice arithmetic (quantity × price, totals, currency), the **Mill Test Certificate against the declaration** (alloy status under HS Chapter 72 Note 1, carbon equivalent, chemistry and strength limits of the certificate's own standard, heat-number traceability to the packing list), country-of-origin consistency, and anti-dumping / circumvention flags. The rules come from curated tables in `backend/app/reference/` (labelled `demo-curated`, unverified until a reviewer says otherwise: see its README).
 - **Two demo journeys**: **Case C** (India → Singapore): Invoice + Bill of Lading + Packing List give `MISSING_EVIDENCE`; adding the sample Mill Test Certificate reassesses to `COMPLIANT_FOR_SUBMISSION`. **Case D** (an import into India): all four documents are loaded and the certificate's chemistry (0.35 % chromium) contradicts the declared non-alloy HS code, giving `MATERIAL_CONTRADICTION`, an anti-dumping warning and an indicative duty estimate.
@@ -32,9 +27,8 @@ CargoClear is a pre-submission, evidence-oriented customs assessment workbench f
 - **A signed audit trail**: After each completed assessment the head of the hash-chained audit trail is signed (Cloud KMS; a labelled throwaway key in demo mode). With a KMS key, a history rewritten consistently still fails verification (the demo key proves less and is refused where KMS is configured). Tamper-evident under the operator's key; not legal non-repudiation.
 - **Better page preparation**: A sideways scan is turned (even a crooked one), an optional reversible deskew straightens skewed pages while evidence boxes still land on the original page, the model's input can be 1-bit or grayscale (an A/B is tooled), and the page image the model was shown is kept and linked ("What the model saw").
 - Demo extraction is deliberately synthetic and filename-keyed. It does **not** read the sample PDFs. Live mode uses GCS, Firestore, BigQuery, and Gemini instead.
-=======
+
 ---
->>>>>>> ffcede2 (demo recording)
 
 ## Executive Summary
 
@@ -51,11 +45,11 @@ Cross-border trade across the JAPAC (Japan, Asia-Pacific) corridor is fraught wi
 
 | Component | Live Endpoint | Hosting & Region | Access Policy |
 | :--- | :--- | :--- | :--- |
-| **Frontend Web App** | [https://cargoclear-ui-5ho4zmc74q-el.a.run.app](https://cargoclear-ui-5ho4zmc74q-el.a.run.app) | Cloud Run (`asia-south1`) | Public (`allow-unauthenticated`) |
-| **Alternative UI** | [https://cargoclear-app.web.app](https://cargoclear-app.web.app) | Firebase Hosting CDN | Public (`allow-unauthenticated`) |
-| **Backend API** | `https://cargoclear-api-5ho4zmc74q-el.a.run.app` | Cloud Run (`asia-south1`) | Private (UI Service Account only via Google ID token) |
+| **Frontend Web App** | [https://cargoclear-app.web.app](https://cargoclear-app.web.app) | Firebase Hosting CDN | Public (`allow-unauthenticated`) |
+| **Direct Cloud Run UI** | [https://cargoclear-ui-448522365737.asia-south1.run.app](https://cargoclear-ui-448522365737.asia-south1.run.app) | Cloud Run (`asia-south1`) | Public (`allow-unauthenticated`) |
+| **Backend API** | `https://cargoclear-api-448522365737.asia-south1.run.app` | Cloud Run (`asia-south1`) | Private (UI Service Account only via Google ID token) |
 
-> **Scale-to-Zero Guarantee**: Both services are configured with `min-instances: 0` and active CPU throttling. When idle, container instances automatically scale to zero, maintaining **$0 idle compute cost**.
+> **Scale-to-Zero Deployment**: Both services are configured with `min-instances: 0` and active CPU throttling. When idle, container instances automatically scale to zero, eliminating idle compute costs.
 
 ---
 
@@ -125,7 +119,7 @@ flowchart TD
 ### 1. Multimodal Document Grounding ("What the Model Saw")
 Every extracted fact is mapped back to physical page coordinates and rendered as a visual bounding box on the original document in the PDF viewer.
 
-### 2. Deterministic Compliance Engine (Zero Hallucination)
+### 2. Deterministic Compliance Engine (Rule-Based Verification)
 While Gemini handles multimodal extraction, **all legal determinations and calculations are strictly deterministic**:
 - **Alloy Status (HS Chapter 72 Note 1)**: Computes steel alloy qualification against international thresholds ($\text{Cr} \ge 0.30\%$, $\text{Ni} \ge 0.30\%$, $\text{Mo} \ge 0.08\%$, $\text{Mn} \ge 1.65\%$, $\text{Si} \ge 0.60\%$).
 - **Carbon Equivalent Value (CEV)**: Calculates weldability index:
@@ -135,7 +129,7 @@ While Gemini handles multimodal extraction, **all legal determinations and calcu
 - **Anti-Dumping & Circumvention**: Flags trade remedy orders matching manufacturing country vs. declared exporter.
 
 ### 3. Human-in-the-Loop Corrections with Zero-LLM Cost
-When a customs specialist corrects an OCR/extraction value in-place, CargoClear recalculates all rules **instantly without re-invoking Gemini**, preventing redundant token spend and eliminating latency.
+When a customs specialist corrects an OCR/extraction value in-place, CargoClear recalculates all rules **directly without re-invoking Gemini**, preventing redundant token spend and eliminating latency.
 
 ### 4. Cryptographic Tamper-Evident Audit Chain
 Every operation is recorded in a SHA-256 hash-chained log ($parent\_hash = \text{SHA256}(previous\_event)$). The head of each completed iteration is signed by a Google Cloud KMS asymmetric private key.
@@ -147,7 +141,7 @@ Generates a verifiable customs declaration pre-fill package in both documented J
 
 ## Guided Demo Walkthrough
 
-Access the live app at [https://cargoclear-ui-5ho4zmc74q-el.a.run.app](https://cargoclear-ui-5ho4zmc74q-el.a.run.app) and sign in using Google SSO or any demo preset:
+Access the live app at [https://cargoclear-app.web.app](https://cargoclear-app.web.app) and sign in using Google SSO or any demo preset:
 
 ### Journey 1: Case C (India $\to$ Singapore Export — Missing Evidence)
 1. Select **Start Case C demo**.
@@ -166,7 +160,7 @@ Access the live app at [https://cargoclear-ui-5ho4zmc74q-el.a.run.app](https://c
    - Click **Edit** on the evidence chip `TH-77121: Cr 0.35%`.
    - Update value to `0.28%` with reason *"Lab re-test cert confirms Cr 0.28%"*.
    - Click **Save correction** and **Recompute with corrections**.
-   - Rule `M-001` passes instantly with zero LLM calls; status transitions to `SPECIALIST_REVIEW_REQUIRED`.
+   - Rule `M-001` passes without LLM calls; status transitions to `SPECIALIST_REVIEW_REQUIRED`.
 4. Click **Download Pre-Fill Pack** to inspect the generated JSON and PDF declaration documentation.
 
 ---
@@ -175,7 +169,7 @@ Access the live app at [https://cargoclear-ui-5ho4zmc74q-el.a.run.app](https://c
 
 Detailed architecture, code walkthroughs, and technical specifications for each tier are located in their respective subdirectories:
 
-- 🖥️ **[Frontend UI Documentation](frontend/README.md)**: Next.js 15 App Router, BFF proxy, PDF.js canvas bounding boxes, and real-time SSE streaming.
+- 🖥️ **[Frontend UI Documentation](frontend/README.md)**: Next.js 15 App Router, BFF proxy, PDF.js canvas bounding boxes, and SSE streaming.
 - ⚙️ **[Backend Engine Documentation](backend/README.md)**: FastAPI clean architecture, Gemini multimodal agent, deterministic metallurgy formulas, and test suite.
 - ☁️ **[Infrastructure & Deployment Documentation](infra/README.md)**: GCP serverless architecture, Cloud Run scale-to-zero, IAM security matrix, and automated scripts.
 
@@ -230,6 +224,12 @@ npm run typecheck
 npm run lint
 npm run test:unit
 ```
+
+## What may be claimed, and the numbers
+
+[`docs/CLAIMS.md`](docs/CLAIMS.md) labels every claim about this project PROVEN, STUBBED or ASSUMED, with its evidence, and a test keeps it honest. Speed and accuracy numbers come from one generated page, [`docs/MEASURED_RESULTS.md`](docs/MEASURED_RESULTS.md); today it holds demo-mode runs only (which are **not** the live product's latency) and lists what has not been measured.
+
+- **Verification boundary**: Nothing in this repository has been verified against a real project since these changes without following [docs/GCP_VERIFICATION.md](docs/GCP_VERIFICATION.md).
 
 ---
 

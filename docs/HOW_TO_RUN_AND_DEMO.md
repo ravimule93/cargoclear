@@ -174,7 +174,7 @@ It starts backend and frontend development servers. It cannot run in an environm
 For an authorised Cloud Run deployment, the static configuration expects:
 
 - a **private** API: only the UI's service account may invoke it, and the UI's proxy sends a Google ID token (`API_AUTH_MODE=google-id-token`);
-- scale-to-zero enabled on both services (`--min-instances 0`, `--max-instances 1`, `RUN_DISPATCH=local`) providing $0.00 idle compute cost;
+- scale-to-zero enabled on both services (`--min-instances 0`, `--max-instances 1`, `RUN_DISPATCH=local`) providing zero idle compute cost;
 - API/UI request timeouts of 300 seconds and API CPU retained during active execution;
 - runtime-only `API_BASE` supplied to the UI after the API service URL exists;
 - supplied `RUNTIME_SERVICE_ACCOUNT` and `UI_SERVICE_ACCOUNT`, with the deployer authorised to act as both;

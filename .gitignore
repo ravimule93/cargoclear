@@ -102,5 +102,8 @@ demo-recordings/
 *.orig
 *.rej
 
+# Audio intermediate files
+*.wav
+
 # Claude Code: personal settings stay local (a shared .claude/launch.json may be committed)
 .claude/settings.local.json
