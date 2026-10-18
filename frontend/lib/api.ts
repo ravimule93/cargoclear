@@ -21,6 +21,7 @@ import {
   ExecutionModeStatus,
 } from "./types";
 import type { ExtractedDoc } from "./corrections";
+import { AUTHENTICATION_REQUIRED_MESSAGE } from "./errors";
 
 /** Browser calls go through the Next route handler, which forwards to the FastAPI backend. */
 const PROXY_PREFIX = "/api/proxy";
@@ -28,19 +29,20 @@ const PROXY_PREFIX = "/api/proxy";
 /** Name the backend/pipeline expects for the sample Mill Test Certificate (filename-keyed fixtures). */
 export const SAMPLE_MTC_FILENAME = "mtc_pipe_test_cert.pdf";
 
-async function toErrorEnvelope(response: Response): Promise<ErrorEnvelope> {
+async function toErrorEnvelope(response: Response, preserveAuthMessage = false): Promise<ErrorEnvelope> {
+  const authenticationRequired = response.status === 401 && !preserveAuthMessage;
   try {
     const data = await response.json();
     return {
       code: data.code || `HTTP_${response.status}`,
-      message: data.message || response.statusText || "Request failed",
+      message: authenticationRequired ? AUTHENTICATION_REQUIRED_MESSAGE : data.message || response.statusText || "Request failed",
       detail: data.detail ?? null,
       request_id: data.request_id,
     };
   } catch {
     return {
       code: `HTTP_${response.status}`,
-      message: response.statusText || "Request failed",
+      message: authenticationRequired ? AUTHENTICATION_REQUIRED_MESSAGE : response.statusText || "Request failed",
       detail: null,
     };
   }
@@ -51,7 +53,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     // Thrown as a plain envelope object (not an Error); callers branch on `code`.
-    throw await toErrorEnvelope(response);
+    throw await toErrorEnvelope(response, path === "/auth/signin" || path === "/auth/signup");
   }
 
   return response.json() as Promise<T>;

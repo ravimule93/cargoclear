@@ -24,7 +24,12 @@ test.describe("Documents: remove one, and say what a file is", () => {
     await expect(rail.getByTestId("document-item")).toHaveCount(3);
 
     await rail.getByTestId("remove-document").click();
-    await rail.getByTestId("confirm-remove-document").click();
+    const [removed] = await Promise.all([
+      page.waitForResponse((response) => response.request().method() === "DELETE" && /\/api\/proxy\/bundles\/[^/]+\/documents\/[^/]+$/.test(new URL(response.url()).pathname)),
+      rail.getByTestId("confirm-remove-document").click(),
+    ]);
+    expect(removed.status()).toBe(200);
+    expect(await removed.json()).toMatchObject({ filename: "packing_list.pdf", in_latest_assessment: true });
     await expect(rail.getByTestId("document-item")).toHaveCount(2, { timeout: 15_000 });
     await expect(rail).not.toContainText("packing_list.pdf");
 
@@ -71,7 +76,13 @@ test.describe("Documents: remove one, and say what a file is", () => {
     await typeSelect.selectOption("PACKING_LIST");
 
     // Upload the staged documents
-    await page.getByRole("button", { name: /Upload \d+ Files/i }).click();
+    const [uploadedInvoice] = await Promise.all([
+      page.waitForResponse((response) => response.request().method() === "POST" && /\/api\/proxy\/bundles\/[^/]+\/documents$/.test(new URL(response.url()).pathname)),
+      page.getByRole("button", { name: /Upload \d+ Files/i }).click(),
+    ]);
+    expect(uploadedInvoice.status()).toBe(201);
+    expect(await uploadedInvoice.request().headerValue("content-type")).toMatch(/^multipart\/form-data; boundary=/);
+    expect(await uploadedInvoice.json()).toMatchObject({ filename: CASE_C_FILES[0], declared_type: "PACKING_LIST" });
 
     // Modal closes and rail shows 2 documents
     const rail = page.getByLabel("Documents in this bundle");

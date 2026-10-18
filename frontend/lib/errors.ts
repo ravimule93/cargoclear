@@ -1,5 +1,7 @@
 import type { ErrorEnvelope } from "./types";
 
+export const AUTHENTICATION_REQUIRED_MESSAGE = "Authentication required. Please sign in to continue.";
+
 /** Narrow an unknown thrown value to the backend error envelope that lib/api.ts throws. */
 export function isErrorEnvelope(value: unknown): value is ErrorEnvelope {
   return (

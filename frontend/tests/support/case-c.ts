@@ -5,7 +5,7 @@ export async function openCaseCDemoWorkbench(page: Page): Promise<void> {
   await page.goto("/");
   await expect(page.getByRole("button", { name: "Start Case C demo" })).toBeVisible();
   await expect(
-    page.getByText("Extraction uses synthetic fixtures keyed on filename, not a real document reading.")
+    page.getByText(/Synthetic examples of the evidence-resolution workflow\. Extraction uses filename-keyed fixtures, not real PDF reading\./)
   ).toBeVisible();
 
   await Promise.all([

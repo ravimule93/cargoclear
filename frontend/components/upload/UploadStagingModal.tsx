@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useId } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { api } from "@/lib/api";
 import { toErrorEnvelope } from "@/lib/errors";
 import {
@@ -48,79 +49,42 @@ export function UploadStagingModal({
   const [isUploading, setIsUploading] = useState(false);
   const [overallProgress, setOverallProgress] = useState<{ current: number; total: number; name?: string } | null>(null);
   const [generalError, setGeneralError] = useState<string | null>(null);
+  const [uploadStatus, setUploadStatus] = useState("");
   const additionalInputRef = useRef<HTMLInputElement>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
-  const isUploadingRef = useRef(isUploading);
-  const onCloseRef = useRef(onClose);
+  const wasOpenRef = useRef(false);
+  const uploadInFlight = useRef(false);
+  const pickerId = useId();
 
+  // A new opening is a new batch. Parent refreshes must not reset a batch with failed files.
   useEffect(() => {
-    isUploadingRef.current = isUploading;
-  }, [isUploading]);
-
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    closeButtonRef.current?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isUploadingRef.current) {
-        event.preventDefault();
-        onCloseRef.current();
-        return;
-      }
-      if (event.key !== "Tab" || !dialogRef.current) return;
-      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href]'
-      ));
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      returnFocusRef.current?.focus();
-    };
-  }, [isOpen]);
-
-  // Initialize staged files when modal opens with new initialFiles
-  useEffect(() => {
-    if (initialFiles.length > 0) {
-      const items: StagedFileItem[] = initialFiles.map((file, idx) => ({
-        id: `${file.name}-${file.size}-${idx}-${Date.now()}`,
+    if (isOpen && !wasOpenRef.current) {
+      const items: StagedFileItem[] = initialFiles.map((file) => ({
+        id: crypto.randomUUID(),
         file,
         declaredType: suggestDocumentType(file.name),
         status: "staged",
       }));
       setStagedFiles(items);
       setGeneralError(null);
+      setOverallProgress(null);
+      setUploadStatus("");
     }
-  }, [initialFiles]);
+    wasOpenRef.current = isOpen;
+  }, [isOpen, initialFiles]);
 
-  if (!isOpen) return null;
-
-  const handleAddMoreFiles = (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const newItems: StagedFileItem[] = Array.from(files).map((file, idx) => ({
-      id: `${file.name}-${file.size}-${idx}-${Date.now()}`,
+  const handleAddMoreFiles = (files: File[]) => {
+    if (uploadInFlight.current || files.length === 0) return;
+    const newItems: StagedFileItem[] = files.map((file) => ({
+      id: crypto.randomUUID(),
       file,
       declaredType: suggestDocumentType(file.name),
       status: "staged",
     }));
     setStagedFiles((prev) => [...prev, ...newItems]);
+    setGeneralError(null);
+    setUploadStatus(`${files.length} ${files.length === 1 ? "file added" : "files added"} to the batch.`);
   };
 
   const handleRemoveItem = (id: string) => {
@@ -135,34 +99,36 @@ export function UploadStagingModal({
   };
 
   const handleSetAll = (type: DeclarableDocumentType | "") => {
-    setStagedFiles((prev) => prev.map((item) => ({ ...item, declaredType: type })));
+    setStagedFiles((prev) => prev.map((item) => item.status === "success" ? item : { ...item, declaredType: type }));
   };
 
   const handleUploadAll = async () => {
-    if (stagedFiles.length === 0) return;
+    if (uploadInFlight.current || stagedFiles.length === 0) return;
+    uploadInFlight.current = true;
     setIsUploading(true);
     setGeneralError(null);
-    setOverallProgress({ current: 0, total: stagedFiles.length });
+    const pendingCount = stagedFiles.filter((item) => item.status !== "success").length;
 
-    let successfulCount = 0;
-    const updated = [...stagedFiles];
+    let uploadedCount = 0;
+    let pendingIndex = 0;
+    const updated = stagedFiles.map((item) => ({ ...item }));
 
     for (let i = 0; i < updated.length; i++) {
       const item = updated[i];
-      if (item.status === "success") {
-        successfulCount++;
-        continue;
-      }
+      if (item.status === "success") continue;
 
-      setOverallProgress({ current: i + 1, total: updated.length, name: item.file.name });
+      pendingIndex += 1;
+      setOverallProgress({ current: pendingIndex, total: pendingCount, name: item.file.name });
+      setUploadStatus(`Uploading ${item.file.name}, file ${pendingIndex} of ${pendingCount}.`);
       item.status = "uploading";
+      item.error = undefined;
       setStagedFiles([...updated]);
 
       try {
         await api.uploadDocument(bundleId, item.file, item.declaredType || null);
         item.status = "success";
         item.error = undefined;
-        successfulCount++;
+        uploadedCount++;
       } catch (err: unknown) {
         const env = toErrorEnvelope(err);
         item.status = "error";
@@ -171,42 +137,62 @@ export function UploadStagingModal({
       setStagedFiles([...updated]);
     }
 
+    uploadInFlight.current = false;
     setIsUploading(false);
     setOverallProgress(null);
 
+    const successfulCount = updated.filter((item) => item.status === "success").length;
     if (successfulCount === stagedFiles.length) {
-      onUploaded();
+      setUploadStatus(`All ${successfulCount} files uploaded successfully.`);
+      if (uploadedCount > 0) onUploaded();
       onClose();
-    } else if (successfulCount > 0) {
-      onUploaded();
-      setGeneralError(`Uploaded ${successfulCount} of ${stagedFiles.length} files. Review errors below.`);
     } else {
-      setGeneralError("Upload failed for all selected files. Please check file format and limits.");
+      setUploadStatus("");
+      setGeneralError(`${successfulCount} of ${stagedFiles.length} files uploaded. Review the errors below and retry. Completed files will not be uploaded again.`);
+      if (uploadedCount > 0) onUploaded();
     }
   };
 
   // Determine which document types are fulfilled either by existing documents or staged files
   const existingTypes = new Set(existingDocuments.map((d) => d.declared_type || d.doc_type));
   const stagedTypes = new Set(stagedFiles.map((f) => f.declaredType).filter(Boolean));
+  const pendingCount = stagedFiles.filter((item) => item.status !== "success").length;
+  const hasErrors = stagedFiles.some((item) => item.status === "error");
 
   return (
-    <div
-      ref={dialogRef}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Upload and Classify Trade Documents"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-in fade-in duration-150"
+    <Dialog.Root
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open && !uploadInFlight.current) onClose();
+      }}
     >
-      <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-xl border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] shadow-2xl text-[var(--cc-text)] overflow-hidden">
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150" />
+        <Dialog.Content
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+            closeButtonRef.current?.focus();
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            if (returnFocusRef.current?.isConnected) returnFocusRef.current.focus();
+          }}
+          onEscapeKeyDown={(event) => {
+            if (uploadInFlight.current) event.preventDefault();
+          }}
+          onInteractOutside={(event) => event.preventDefault()}
+          className="fixed left-1/2 top-1/2 z-50 w-[calc(100%_-_1.5rem)] max-w-2xl max-h-[90dvh] -translate-x-1/2 -translate-y-1/2 flex flex-col rounded-xl border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] shadow-2xl text-[var(--cc-text)] overflow-hidden"
+        >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[var(--cc-border)] p-4 bg-[var(--cc-surface-2)]">
           <div>
-            <h2 className="text-base font-bold flex items-center gap-2">
-              <span>📄</span> Add & Classify Trade Documents
-            </h2>
-            <p className="text-xs text-[var(--cc-text-muted)] mt-0.5">
+            <Dialog.Title className="text-base font-bold flex items-center gap-2">
+              <span aria-hidden="true">📄</span> Add & Classify Trade Documents
+            </Dialog.Title>
+            <Dialog.Description className="text-xs text-[var(--cc-text-muted)] mt-0.5">
               Bundle: <code className="font-mono font-semibold">{bundleId}</code> • Assign customs document types before upload
-            </p>
+            </Dialog.Description>
           </div>
           <button
             ref={closeButtonRef}
@@ -214,7 +200,7 @@ export function UploadStagingModal({
             disabled={isUploading}
             onClick={onClose}
             aria-label="Close dialog"
-            className="rounded p-1.5 text-[var(--cc-text-muted)] hover:text-[var(--cc-text)] hover:bg-[var(--cc-surface)] disabled:opacity-50 cursor-pointer"
+            className="min-h-9 min-w-9 rounded p-1.5 text-[var(--cc-text-muted)] hover:text-[var(--cc-text)] hover:bg-[var(--cc-surface)] disabled:opacity-50 cursor-pointer"
           >
             ✕
           </button>
@@ -241,8 +227,9 @@ export function UploadStagingModal({
                         : "bg-[var(--cc-surface)] text-[var(--cc-text-muted)] border-[var(--cc-border)]"
                     }`}
                   >
-                    <span>{isFulfilled ? "✓" : req.required ? "⚠️" : "○"}</span>
+                    <span aria-hidden="true">{isFulfilled ? "✓" : req.required ? "⚠️" : "○"}</span>
                     <span>{req.label}</span>
+                    <span className="sr-only">{isFulfilled ? ": present or staged" : req.required ? ": required, not yet included" : ": optional, not included"}</span>
                     {req.required && !isFulfilled && <span className="text-[9px] font-bold uppercase">(Req)</span>}
                   </span>
                 );
@@ -262,7 +249,7 @@ export function UploadStagingModal({
                   <button
                     type="button"
                     onClick={() => handleSetAll(NO_DECLARED_TYPE)}
-                    className="hover:underline text-[var(--cc-focus)] cursor-pointer"
+                    className="min-h-9 hover:underline text-[var(--cc-focus)] cursor-pointer"
                   >
                     Auto-detect all
                   </button>
@@ -276,7 +263,7 @@ export function UploadStagingModal({
                 <button
                   type="button"
                   onClick={() => additionalInputRef.current?.click()}
-                  className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 font-semibold text-white hover:brightness-90 cursor-pointer"
+                  className="min-h-9 rounded-[var(--cc-radius)] bg-[var(--cc-action)] px-3 py-1.5 font-semibold text-white hover:brightness-90 cursor-pointer"
                 >
                   Choose PDF Files
                 </button>
@@ -284,7 +271,7 @@ export function UploadStagingModal({
             ) : (
               <div className="divide-y divide-[var(--cc-border)] rounded-lg border border-[var(--cc-border)] bg-[var(--cc-surface)] max-h-64 overflow-y-auto">
                 {stagedFiles.map((item) => (
-                  <div key={item.id} className="p-2.5 flex items-center justify-between gap-3 text-xs">
+                  <div key={item.id} data-testid="staged-file-row" className="p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <span aria-hidden="true" className="text-base shrink-0">
                         {item.status === "success" ? "✅" : item.status === "error" ? "❌" : "📄"}
@@ -293,20 +280,23 @@ export function UploadStagingModal({
                         <p className="font-semibold text-[var(--cc-text)] truncate" title={item.file.name}>
                           {item.file.name}
                         </p>
-                        <p className="text-[10px] text-[var(--cc-text-muted)]">
+                        <p className="text-[11px] text-[var(--cc-text-muted)]">
                           {(item.file.size / 1024).toFixed(1)} KB
-                          {item.error && <span className="text-[var(--cc-err)] font-bold ml-1.5">— {item.error}</span>}
+                        </p>
+                        <p id={`${pickerId}-${item.id}-status`} className={`mt-0.5 text-[11px] ${item.status === "error" ? "text-[var(--cc-err)]" : "text-[var(--cc-text-muted)]"}`}>
+                          {item.status === "success" ? "Uploaded" : item.status === "uploading" ? "Uploading…" : item.status === "error" ? `Upload failed: ${item.error}` : "Ready to upload"}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 max-w-full">
                       <select
                         aria-label={`Document type for ${item.file.name}`}
+                        aria-describedby={`${pickerId}-${item.id}-status`}
                         disabled={isUploading || item.status === "success"}
                         value={item.declaredType}
                         onChange={(e) => handleChangeType(item.id, e.target.value as DeclarableDocumentType | "")}
-                        className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] bg-[var(--cc-surface-2)] px-2 py-1 text-xs text-[var(--cc-text)] cursor-pointer disabled:opacity-50"
+                        className="min-h-9 min-w-0 max-w-full rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] bg-[var(--cc-surface-2)] px-2 py-1 text-xs text-[var(--cc-text)] cursor-pointer disabled:opacity-50"
                       >
                         <option value={NO_DECLARED_TYPE}>Type: Auto-detect by AI</option>
                         {DECLARABLE_DOCUMENT_TYPES.map((t) => (
@@ -321,7 +311,7 @@ export function UploadStagingModal({
                           type="button"
                           onClick={() => handleRemoveItem(item.id)}
                           aria-label={`Remove ${item.file.name}`}
-                          className="text-[var(--cc-text-muted)] hover:text-[var(--cc-err)] p-1 text-xs cursor-pointer"
+                          className="min-h-9 min-w-9 text-[var(--cc-text-muted)] hover:text-[var(--cc-err)] p-1 text-xs cursor-pointer"
                         >
                           ✕
                         </button>
@@ -335,20 +325,30 @@ export function UploadStagingModal({
 
           {/* Add more files picker */}
           <input
+            id={pickerId}
             ref={additionalInputRef}
             type="file"
             multiple
             accept="application/pdf,.pdf"
             className="hidden"
+            tabIndex={-1}
+            aria-label="Choose PDF files to stage"
+            aria-describedby={`${pickerId}-hint`}
+            disabled={isUploading}
             data-testid="staging-file-input"
-            onChange={(e) => handleAddMoreFiles(e.target.files)}
+            onChange={(e) => {
+              const files = Array.from(e.currentTarget.files ?? []);
+              e.currentTarget.value = "";
+              handleAddMoreFiles(files);
+            }}
           />
+          <p id={`${pickerId}-hint`} className="text-[11px] text-[var(--cc-text-muted)]">PDF files only. You can review and change each document type before uploading.</p>
 
           {stagedFiles.length > 0 && !isUploading && (
             <button
               type="button"
               onClick={() => additionalInputRef.current?.click()}
-              className="inline-flex items-center gap-1 text-xs text-[var(--cc-focus)] font-medium hover:underline cursor-pointer"
+              className="min-h-9 inline-flex items-center gap-1 text-xs text-[var(--cc-focus)] font-medium hover:underline cursor-pointer"
             >
               <span>+ Add more files to batch</span>
             </button>
@@ -362,13 +362,17 @@ export function UploadStagingModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between border-t border-[var(--cc-border)] p-3 sm:p-4 bg-[var(--cc-surface-2)]">
-          <div className="text-xs text-[var(--cc-text-muted)]">
+        <div className="flex flex-wrap gap-3 items-center justify-between border-t border-[var(--cc-border)] p-3 sm:p-4 bg-[var(--cc-surface-2)]">
+          <div className="min-w-0 text-xs text-[var(--cc-text-muted)]">
+            <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">{uploadStatus}</p>
             {overallProgress && (
-              <span className="font-medium text-[var(--cc-text)] flex items-center gap-1.5">
-                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[var(--cc-focus)] border-t-transparent" />
-                Uploading {overallProgress.current} of {overallProgress.total}...
-              </span>
+              <div>
+                <span className="font-medium text-[var(--cc-text)] flex items-center gap-1.5">
+                  <span aria-hidden="true" className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-[var(--cc-focus)] border-t-transparent" />
+                  Uploading {overallProgress.current} of {overallProgress.total}...
+                </span>
+                <progress className="mt-1 h-1.5 w-full accent-[var(--cc-focus)]" max={overallProgress.total} value={overallProgress.current - 1} aria-label="Files processed in this batch" />
+              </div>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -376,21 +380,22 @@ export function UploadStagingModal({
               type="button"
               disabled={isUploading}
               onClick={onClose}
-              className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-3 py-1.5 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface)] disabled:opacity-50 cursor-pointer"
+              className="min-h-9 rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-3 py-1.5 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface)] disabled:opacity-50 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="button"
-              disabled={isUploading || stagedFiles.length === 0}
+              disabled={isUploading || pendingCount === 0}
               onClick={handleUploadAll}
-              className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:brightness-90 disabled:opacity-50 transition-all cursor-pointer flex items-center gap-1.5"
+              className="min-h-9 rounded-[var(--cc-radius)] bg-[var(--cc-action)] px-4 py-1.5 text-xs font-semibold text-white shadow-xs hover:brightness-90 disabled:opacity-50 transition-all cursor-pointer flex items-center gap-1.5"
             >
-              {isUploading ? "Uploading..." : `Upload ${stagedFiles.length} ${stagedFiles.length === 1 ? "File" : "Files"}`}
+              {isUploading ? "Uploading..." : `${hasErrors ? "Retry" : "Upload"} ${pendingCount} ${pendingCount === 1 ? "File" : "Files"}`}
             </button>
           </div>
         </div>
-      </div>
-    </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

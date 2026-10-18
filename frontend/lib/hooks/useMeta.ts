@@ -34,28 +34,16 @@ function loadMeta(force: boolean): Promise<Meta> {
   return cached;
 }
 
-const DEFAULT_META: Meta = {
-  app_mode: "live",
-  data_source_policy: "live",
-  pipeline_engine: "native",
-  auth: {
-    enabled: true,
-    oauth_client_id: "448522365737-41s34pmlanitloca4vd4qesoefa060j9.apps.googleusercontent.com",
-    oauth_issuer: "https://accounts.google.com",
-    allowed_email_domains: ["*"],
-  },
-  user: undefined,
-};
-
 export function useMeta(): MetaState {
-  const [meta, setMeta] = useState<Meta | null>(DEFAULT_META);
-  const [loading, setLoading] = useState(false);
+  const [meta, setMeta] = useState<Meta | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setError(null);
+    setLoading(true);
     loadMeta(attempt > 0)
       .then((value) => {
         if (cancelled) return;

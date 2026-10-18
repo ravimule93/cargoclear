@@ -173,7 +173,7 @@ class Settings(BaseSettings):
     )
 
     # Authentication & Multi-Tenancy (gateway/auth.py)
-    auth_enabled: bool = Field(default=False, alias="AUTH_ENABLED")
+    auth_enabled: bool = Field(default=True, alias="AUTH_ENABLED")
     oauth_client_id: str | None = Field(default=None, alias="OAUTH_CLIENT_ID")
     oauth_issuer: str = Field(default="https://accounts.google.com", alias="OAUTH_ISSUER")
     allowed_email_domains: str = Field(default="*", alias="ALLOWED_EMAIL_DOMAINS")

@@ -41,7 +41,7 @@ Terminal A:
 
 ```bash
 cd backend
-APP_MODE=demo .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8080
+APP_MODE=demo AUTH_ENABLED=true .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8080
 ```
 
 Terminal B:
@@ -52,6 +52,8 @@ API_BASE=http://127.0.0.1:8080 npm run dev
 ```
 
 Open `http://localhost:3000`.
+
+Sign in or select an approved demo preset before creating or opening a bundle. Normal development requires authentication; isolated automated fixtures opt out explicitly with `AUTH_ENABLED=false`. After changing backend configuration, restart the backend as well as the frontend and reload the browser.
 
 The Next.js application proxies both ordinary API requests and SSE through same-origin `/api/proxy/...`. `API_BASE` is server-only. Do not use the retired `NEXT_PUBLIC_API_BASE` setting or configure a direct browser-to-backend URL.
 

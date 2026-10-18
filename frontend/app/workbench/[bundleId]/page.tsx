@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent, use, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { TopBar } from "@/components/shell/TopBar";
 import { UserMenu } from "@/components/shell/UserMenu";
@@ -12,6 +12,9 @@ import { DeltaDrawer } from "@/components/delta/DeltaDrawer";
 import { useMeta } from "@/lib/hooks/useMeta";
 import { useWorkbench } from "@/lib/hooks/useWorkbench";
 import { demoSignIn, signOut } from "@/lib/session";
+import { AUTHENTICATION_REQUIRED_MESSAGE } from "@/lib/errors";
+import type { SourceRequest } from "@/lib/highlights";
+import type { BBox, Meta } from "@/lib/types";
 
 interface WorkbenchPageProps {
   params: Promise<{ bundleId: string }>;
@@ -19,11 +22,70 @@ interface WorkbenchPageProps {
 
 export default function WorkbenchPage({ params }: WorkbenchPageProps) {
   const { bundleId } = use(params);
+  const { meta, loading, error, retry } = useMeta();
+
+  if (loading) {
+    return <main className="cc-state" aria-busy="true"><p role="status">Checking sign-in...</p></main>;
+  }
+
+  if (error || !meta) {
+    return (
+      <main className="cc-state">
+        <p role="alert" className="text-sm text-[var(--cc-err)]">Could not verify sign-in: {error ?? "Backend information is unavailable."}</p>
+        <button type="button" onClick={retry} className="cc-button cc-button-primary">Retry</button>
+        <Link href="/" className="underline">Back to start</Link>
+      </main>
+    );
+  }
+
+  if (meta.auth?.enabled && !meta.user) {
+    return (
+      <main className="cc-state">
+        <div role="alert"><h1 className="text-sm font-semibold text-[var(--cc-err)]">{AUTHENTICATION_REQUIRED_MESSAGE}</h1></div>
+        <Link href={`/auth/signin?returnTo=${encodeURIComponent(`/workbench/${bundleId}`)}`} className="cc-button cc-button-primary">Sign in</Link>
+        <Link href="/" className="underline">Back to start</Link>
+      </main>
+    );
+  }
+
+  return <WorkbenchContent bundleId={bundleId} meta={meta} />;
+}
+
+function WorkbenchContent({ bundleId, meta }: { bundleId: string; meta: Meta }) {
   const wb = useWorkbench(bundleId);
-  const { meta } = useMeta();
   const [activeTab, setActiveTab] = useState<"assess" | "viewer" | "rail" | "drawer">("assess");
   const [viewerOpen, setViewerOpen] = useState(false);
   const [drawerCollapsed, setDrawerCollapsed] = useState(true);
+  const [compact, setCompact] = useState(false);
+  const [sourceRequest, setSourceRequest] = useState<SourceRequest | null>(null);
+  const [sourceWidth, setSourceWidth] = useState(46);
+  const viewerRef = useRef<HTMLElement>(null);
+  const sourceTrigger = useRef<HTMLElement | null>(null);
+  const sourceOriginTab = useRef<"assess" | "rail" | "drawer">("assess");
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1023px)");
+    const update = () => setCompact(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (!viewerOpen || !sourceRequest) return;
+    viewerRef.current?.focus({ preventScroll: true });
+  }, [viewerOpen, sourceRequest]);
+
+  const closeViewer = () => {
+    setViewerOpen(false);
+    const returnTab = compact ? sourceOriginTab.current : "assess";
+    setActiveTab(returnTab);
+    requestAnimationFrame(() => {
+      const trigger = sourceTrigger.current;
+      if (trigger?.isConnected && trigger.getClientRects().length) trigger.focus({ preventScroll: true });
+      else document.getElementById(compact ? `tab-btn-${returnTab}` : "source-toggle")?.focus();
+    });
+  };
 
   if (wb.loadState === "loading") {
     return (
@@ -63,7 +125,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
             <button
               type="button"
               onClick={wb.retry}
-              className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-90 cursor-pointer"
+              className="rounded-[var(--cc-radius)] bg-[var(--cc-action)] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-90 cursor-pointer"
             >
               Retry
             </button>
@@ -84,10 +146,22 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
   const actionError = wb.actionError ?? wb.streamError;
   const auditRefreshKey = `${assessment?.iteration ?? 0}:${wb.run?.run_id ?? ""}:${wb.run?.state ?? ""}:${wb.documents.length}:${wb.corrections?.corrections.length ?? 0}`;
 
-  const handleSelectDocument = (docId: string) => {
+  const handleSelectDocument = (docId: string, page?: number, field?: string, bbox?: BBox | null) => {
+    sourceTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (activeTab !== "viewer") sourceOriginTab.current = activeTab;
     wb.selectDocument(docId);
+    setSourceRequest((previous) => ({ page, field, bbox, sequence: (previous?.sequence ?? 0) + 1 }));
     setViewerOpen(true);
     setActiveTab("viewer");
+  };
+
+  const activateTab = (tab: typeof activeTab) => {
+    if (tab === "viewer" && activeTab !== "viewer") {
+      sourceOriginTab.current = activeTab;
+      sourceTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
+    setActiveTab(tab);
+    if (tab === "drawer") setDrawerCollapsed(false);
   };
 
   const handleWorkbenchTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, current: typeof activeTab) => {
@@ -97,7 +171,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
     const currentIndex = tabs.indexOf(current);
     const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
     const next = tabs[nextIndex];
-    setActiveTab(next);
+    activateTab(next);
     document.getElementById(`tab-btn-${next}`)?.focus();
   };
 
@@ -106,10 +180,22 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
   return (
     <div
       className="cc-workbench"
+      style={{ "--cc-source-width": `${sourceWidth}%` } as CSSProperties}
       data-tab={activeTab}
       data-viewer-collapsed={viewerOpen ? undefined : "true"}
       data-drawer-collapsed={drawerCollapsed ? "true" : undefined}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && !event.defaultPrevented && (compact ? activeTab === "viewer" : viewerOpen) && !(event.target instanceof Element && event.target.closest('[role="dialog"]'))) {
+          event.preventDefault();
+          closeViewer();
+        }
+      }}
     >
+      <a className="cc-skip-link" href="#panel-assess" onClick={(event) => {
+        event.preventDefault();
+        setActiveTab("assess");
+        requestAnimationFrame(() => document.getElementById("panel-assess")?.focus());
+      }}>Skip to assessment</a>
       <DemoBanner appMode={meta?.app_mode} dataSource={assessment?.data_source} />
 
       <TopBar
@@ -117,6 +203,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         status={assessment?.status ?? null}
         user={meta?.user ?? null}
         isRunning={wb.isRunning}
+        run={wb.run}
         isUploading={wb.isUploading}
         uploadProgress={wb.uploadProgress}
         runMode={wb.runMode}
@@ -130,7 +217,10 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         }}
         onLogout={signOut}
         viewerOpen={viewerOpen}
-        onToggleViewer={() => setViewerOpen((open) => !open)}
+        onToggleViewer={() => {
+          if (viewerOpen) closeViewer();
+          else if (wb.activeDocumentId) handleSelectDocument(wb.activeDocumentId);
+        }}
       />
 
       <nav className="cc-tabs" role="tablist" aria-label="Workbench sections">
@@ -139,9 +229,10 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           role="tab"
           id="tab-btn-assess"
           aria-selected={activeTab === "assess"}
+          tabIndex={activeTab === "assess" ? 0 : -1}
           aria-controls="panel-assess"
           className="cc-tab-btn"
-          onClick={() => setActiveTab("assess")}
+          onClick={() => activateTab("assess")}
           onKeyDown={(event) => handleWorkbenchTabKeyDown(event, "assess")}
         >
           <span>⚖️ Assessment</span>
@@ -161,9 +252,10 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           role="tab"
           id="tab-btn-viewer"
           aria-selected={activeTab === "viewer"}
+          tabIndex={activeTab === "viewer" ? 0 : -1}
           aria-controls="panel-viewer"
           className="cc-tab-btn"
-          onClick={() => setActiveTab("viewer")}
+          onClick={() => activateTab("viewer")}
           onKeyDown={(event) => handleWorkbenchTabKeyDown(event, "viewer")}
         >
           <span>🔍 Viewer</span>
@@ -179,9 +271,10 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           role="tab"
           id="tab-btn-rail"
           aria-selected={activeTab === "rail"}
+          tabIndex={activeTab === "rail" ? 0 : -1}
           aria-controls="panel-rail"
           className="cc-tab-btn"
-          onClick={() => setActiveTab("rail")}
+          onClick={() => activateTab("rail")}
           onKeyDown={(event) => handleWorkbenchTabKeyDown(event, "rail")}
         >
           <span>📁 Files</span>
@@ -193,9 +286,10 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           role="tab"
           id="tab-btn-drawer"
           aria-selected={activeTab === "drawer"}
+          tabIndex={activeTab === "drawer" ? 0 : -1}
           aria-controls="panel-drawer"
           className="cc-tab-btn"
-          onClick={() => setActiveTab("drawer")}
+          onClick={() => activateTab("drawer")}
           onKeyDown={(event) => handleWorkbenchTabKeyDown(event, "drawer")}
         >
           <span>📜 Audit & Delta</span>
@@ -205,7 +299,9 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         </button>
       </nav>
 
-      <aside id="panel-rail" role="tabpanel" aria-labelledby="tab-btn-rail" tabIndex={-1} className="cc-rail" aria-label="Documents in this bundle">
+      <main className="cc-main-workspace">
+      <h1 className="sr-only">Trade bundle assessment</h1>
+      <aside id="panel-rail" role={compact ? "tabpanel" : "region"} tabIndex={-1} className="cc-rail" aria-label="Bundle files">
         <DocumentRail
           documents={wb.documents}
           checks={assessment?.checks ?? []}
@@ -217,24 +313,31 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
         />
       </aside>
 
-      <main id="panel-viewer" role="tabpanel" aria-labelledby="tab-btn-viewer" tabIndex={-1} className="cc-viewer" aria-label="Document viewer and annotations">
+      <section ref={viewerRef} id="panel-viewer" role={compact ? "tabpanel" : "region"} tabIndex={-1} className="cc-viewer" aria-label="Document viewer and annotations">
+        <div className="cc-source-heading">
+          <h2>Source document</h2>
+          <label className="cc-source-resize">Width
+            <input aria-label="Source panel width" type="range" min="36" max="48" value={sourceWidth} onChange={(event) => setSourceWidth(Number(event.target.value))} />
+          </label>
+          <button type="button" className="cc-button" onClick={closeViewer} aria-label="Close source PDF">Close PDF <span aria-hidden="true">×</span></button>
+        </div>
         <DocumentViewer
           bundleId={bundleId}
           documents={wb.documents}
           activeDocumentId={wb.activeDocumentId}
           highlights={wb.highlights}
           iteration={assessment?.iteration ?? null}
-          isVisible={activeTab === "viewer"}
+          isVisible={compact ? activeTab === "viewer" : viewerOpen}
+          sourceRequest={sourceRequest}
         />
-      </main>
+      </section>
 
-      <section id="panel-assess" role="tabpanel" aria-labelledby="tab-btn-assess" tabIndex={-1} className="cc-assess" aria-label="Compliance assessment and actions">
+      <section id="panel-assess" role={compact ? "tabpanel" : "region"} tabIndex={-1} className="cc-assess" aria-label="Compliance assessment and actions">
         <AssessmentPanel
           assessment={assessment}
           bundleId={bundleId}
           documents={wb.documents}
           onSelectDocument={handleSelectDocument}
-          run={wb.run}
           isRunning={wb.isRunning}
           actionError={actionError}
           appMode={meta?.app_mode}
@@ -244,10 +347,12 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           onCorrect={wb.submitCorrection}
           onRevertCorrection={wb.revertCorrection}
           onRecompute={wb.recompute}
+          onRun={wb.runAnalysis}
+          onAddDocuments={() => document.getElementById("add-documents-button")?.click()}
         />
       </section>
 
-      <section id="panel-drawer" role="tabpanel" aria-labelledby="tab-btn-drawer" tabIndex={-1} className="cc-drawer" aria-label="Reasoning delta and audit trail">
+      <section id="panel-drawer" role={compact ? "tabpanel" : "region"} tabIndex={-1} className="cc-drawer" aria-label="Reasoning delta and audit trail">
         <DeltaDrawer
           bundleId={bundleId}
           iterations={wb.iterations}
@@ -256,6 +361,7 @@ export default function WorkbenchPage({ params }: WorkbenchPageProps) {
           onCollapsedChange={setDrawerCollapsed}
         />
       </section>
+      </main>
     </div>
   );
 }

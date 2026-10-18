@@ -24,13 +24,21 @@ export function DeltaDrawer({ bundleId, iterations, auditRefreshKey, isCollapsed
   const latestIteration = iterations[iterations.length - 1];
 
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
-    if (e.key === "ArrowRight") {
+    if (["ArrowRight", "ArrowLeft", "Home", "End"].includes(e.key)) e.preventDefault();
+    if (e.key === "Home" || e.key === "End") {
+      const next = TABS[e.key === "Home" ? 0 : TABS.length - 1];
+      setActiveTab(next.id);
+      onCollapsedChange(false);
+      document.getElementById(`tab-${next.id}`)?.focus();
+    } else if (e.key === "ArrowRight") {
       const nextIndex = (index + 1) % TABS.length;
       setActiveTab(TABS[nextIndex].id);
+      onCollapsedChange(false);
       document.getElementById(`tab-${TABS[nextIndex].id}`)?.focus();
     } else if (e.key === "ArrowLeft") {
       const prevIndex = (index - 1 + TABS.length) % TABS.length;
       setActiveTab(TABS[prevIndex].id);
+      onCollapsedChange(false);
       document.getElementById(`tab-${TABS[prevIndex].id}`)?.focus();
     }
   };

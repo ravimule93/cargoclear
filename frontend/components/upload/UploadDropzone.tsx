@@ -1,12 +1,13 @@
 "use client";
 
-import { DragEvent, useRef, useState } from "react";
+import { type DragEvent, lazy, Suspense, useId, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { toErrorEnvelope } from "@/lib/errors";
 import { useDeclaredType } from "@/lib/hooks/useDeclaredType";
 import { DocumentTypeSelect } from "./DocumentTypeSelect";
-import { UploadStagingModal } from "./UploadStagingModal";
 import type { DocumentRecord } from "@/lib/types";
+
+const UploadStagingModal = lazy(() => import("./UploadStagingModal").then((module) => ({ default: module.UploadStagingModal })));
 
 interface UploadDropzoneProps {
   bundleId: string;
@@ -26,27 +27,38 @@ export function UploadDropzone({
   const [isDragOver, setIsDragOver] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [stagingOpen, setStagingOpen] = useState(false);
+  const [stagingRequested, setStagingRequested] = useState(false);
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
+  const [uploadStatus, setUploadStatus] = useState("");
   const declared = useDeclaredType(); // what the NEXT file is, if the person says (one file; cleared by every upload)
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const inputId = `upload-input-${bundleId}`;
+  const uploadInFlight = useRef(false);
+  const inputId = useId();
   const hintId = `${inputId}-hint`;
   const errorId = `${inputId}-error`;
 
-  const handleFiles = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
+  const handleFiles = async (files: File[]) => {
+    if (uploadInFlight.current || stagingOpen || files.length === 0) return;
+    setErrorMessage(null);
+    setUploadStatus("");
 
     // If multiple files are provided, open the staging modal so user can assign per-file document types
     if (files.length > 1) {
-      setStagedFiles(Array.from(files));
+      if (declared.stated) {
+        setErrorMessage("Choose one PDF for the selected document type, or use multi-file staging to classify each file.");
+        return;
+      }
+      setStagedFiles(files);
+      setStagingRequested(true);
       setStagingOpen(true);
       return;
     }
 
     const declaredType = declared.take();
+    uploadInFlight.current = true;
     setUploading(true);
     setUploadProgress({ current: 0, total: files.length, name: files[0]?.name });
-    setErrorMessage(null);
+    setUploadStatus(`Uploading ${files[0].name}.`);
 
     let uploaded = 0;
     try {
@@ -55,10 +67,12 @@ export function UploadDropzone({
         await api.uploadDocument(bundleId, files[i], declaredType);
         uploaded += 1;
       }
+      setUploadStatus(`${files[0].name} uploaded successfully.`);
     } catch (err: unknown) {
       console.error("Upload error", err);
       setErrorMessage(toErrorEnvelope(err).message || "Failed to upload file");
     } finally {
+      uploadInFlight.current = false;
       setUploading(false);
       setUploadProgress(null);
     }
@@ -66,8 +80,12 @@ export function UploadDropzone({
     if (uploaded > 0) onUploaded?.();
   };
 
-  const onDragOver = (e: DragEvent<HTMLLabelElement>) => {
+  const onDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    if (uploading || stagingOpen) {
+      e.dataTransfer.dropEffect = "none";
+      return;
+    }
     setIsDragOver(true);
   };
 
@@ -75,10 +93,10 @@ export function UploadDropzone({
     setIsDragOver(false);
   };
 
-  const onDrop = (e: DragEvent<HTMLLabelElement>) => {
+  const onDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragOver(false);
-    handleFiles(e.dataTransfer.files);
+    if (!uploading && !stagingOpen) void handleFiles(Array.from(e.dataTransfer.files));
   };
 
   return (
@@ -87,22 +105,23 @@ export function UploadDropzone({
         <DocumentTypeSelect value={declared.declaredType} onChange={declared.setDeclaredType} disabled={uploading} className="self-start" />
         <button
           type="button"
+          disabled={uploading}
           onClick={() => {
             setStagedFiles([]);
+            setStagingRequested(true);
             setStagingOpen(true);
           }}
-          className="text-[11px] font-semibold text-[var(--cc-focus)] hover:underline cursor-pointer"
+          className="min-h-9 text-[11px] font-semibold text-[var(--cc-focus)] hover:underline cursor-pointer disabled:opacity-50"
         >
           📄 Multi-file Staging & Classification
         </button>
       </div>
 
-      <label
-        htmlFor={inputId}
+      <div
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
-        className={`border-2 border-dashed rounded-[var(--cc-radius)] p-4 text-center cursor-pointer transition-all ${
+        className={`border-2 border-dashed rounded-[var(--cc-radius)] text-center transition-all ${
           isDragOver
             ? "border-[var(--cc-focus)] bg-[var(--cc-surface-2)] scale-[1.01]"
             : "border-[var(--cc-border-strong)] hover:border-[var(--cc-focus)] hover:bg-[var(--cc-surface-2)]"
@@ -113,49 +132,61 @@ export function UploadDropzone({
           ref={fileInputRef}
           type="file"
           multiple={declared.allowsSeveralFiles}
-          accept="application/pdf"
-          className="sr-only"
+          accept="application/pdf,.pdf"
+          className="hidden"
+          tabIndex={-1}
+          disabled={uploading || stagingOpen}
           data-testid="upload-input"
+          aria-label={label}
           aria-describedby={`${hintId}${errorMessage ? ` ${errorId}` : ""}`}
-          onChange={(e) => handleFiles(e.target.files)}
+          onChange={(e) => {
+            const files = Array.from(e.currentTarget.files ?? []);
+            e.currentTarget.value = "";
+            void handleFiles(files);
+          }}
         />
 
-        <div className="flex flex-col items-center gap-1.5">
+        <button
+          type="button"
+          disabled={uploading || stagingOpen}
+          onClick={() => fileInputRef.current?.click()}
+          aria-describedby={`${hintId}${errorMessage ? ` ${errorId}` : ""}`}
+          aria-busy={uploading}
+          className="w-full p-4 flex flex-col items-center gap-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-wait rounded-[var(--cc-radius)]"
+        >
           <span aria-hidden="true" className="text-xl">
             {uploading ? "⏳" : "📄"}
           </span>
-          <div className="text-xs font-semibold text-[var(--cc-text)]">
+          <span className="text-xs font-semibold text-[var(--cc-text)]">
             {uploading
               ? uploadProgress
                 ? `Uploading ${uploadProgress.current} of ${uploadProgress.total}...`
                 : "Uploading document..."
               : label}
-          </div>
-          <p id={hintId} className="text-[11px] text-[var(--cc-text-muted)]">
+          </span>
+          <span id={hintId} className="text-[11px] text-[var(--cc-text-muted)]">
             {uploading && uploadProgress?.name
               ? uploadProgress.name
-              : "Drag & drop trade PDF or browse file"}
-          </p>
-        </div>
+              : "Drag and drop PDFs here, or choose files"}
+          </span>
+        </button>
 
         {errorMessage && (
-          <div id={errorId} role="alert" className="mt-2 text-[11px] text-[var(--cc-err)] font-medium">
+          <div id={errorId} role="alert" className="px-4 pb-3 text-[11px] text-[var(--cc-err)] font-medium">
             {errorMessage}
           </div>
         )}
-      </label>
+      </div>
+      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">{uploadStatus}</p>
 
-      <UploadStagingModal
+      {stagingRequested && <Suspense fallback={<p role="status" className="text-xs">Opening document upload…</p>}><UploadStagingModal
         bundleId={bundleId}
         isOpen={stagingOpen}
         initialFiles={stagedFiles}
         existingDocuments={existingDocuments}
         onClose={() => setStagingOpen(false)}
-        onUploaded={() => {
-          setStagingOpen(false);
-          onUploaded?.();
-        }}
-      />
+        onUploaded={() => onUploaded?.()}
+      /></Suspense>}
     </div>
   );
 }

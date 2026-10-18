@@ -7,6 +7,14 @@ export interface Highlight {
   bbox: BBox;
   severity: CheckResult["severity"];
   label: string;
+  field?: string;
+}
+
+export interface SourceRequest {
+  page?: number;
+  field?: string;
+  bbox?: BBox | null;
+  sequence: number;
 }
 
 /**
@@ -28,6 +36,7 @@ export function buildHighlights(assessment: AssessmentIteration | null): Highlig
         bbox: evidence.bbox,
         severity: check.severity,
         label: check.message,
+        field: evidence.field,
       });
     });
   });

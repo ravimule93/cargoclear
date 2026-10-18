@@ -42,12 +42,12 @@ def hermetic_test_env(tmp_path, monkeypatch):
       (a) Deletes GOOGLE_APPLICATION_CREDENTIALS and K_SERVICE (and undoes any export app.core.mode makes), resets
           settings.google_application_credentials to None, and forces the gcloud ADC-file detection
           (app.core.mode._adc_file_exists) to False.
-      (b) Sets APP_MODE=demo.
+      (b) Sets APP_MODE=demo and explicitly disables authentication for fixture workflows.
       (c) Points LOCAL_STORAGE_PATH at a fresh tmp_path.
       (d) Clears all in-memory stores in firestore.py and audit.py, the SSE wake-up channels and the rate limiter.
 
     The shared ``settings`` singleton is patched through ``monkeypatch.setattr`` so the original
-    ``app_mode`` / ``local_storage_path`` are restored after every test, whatever a test did to them.
+    ``app_mode`` / ``auth_enabled`` / ``local_storage_path`` are restored after every test, whatever a test did to them.
     """
     # Registering the variables with monkeypatch BEFORE deleting them makes monkeypatch restore the original state
     # (absent) at teardown, even if app.core.mode exports GOOGLE_APPLICATION_CREDENTIALS during the test: a bare
@@ -60,11 +60,13 @@ def hermetic_test_env(tmp_path, monkeypatch):
 
     monkeypatch.setattr(mode, "_adc_file_exists", lambda: False)
     monkeypatch.setenv("APP_MODE", "demo")
+    monkeypatch.setenv("AUTH_ENABLED", "false")
     monkeypatch.setenv("LOCAL_STORAGE_PATH", str(tmp_path))
 
     from app.core.config import settings
 
     monkeypatch.setattr(settings, "app_mode", "demo")
+    monkeypatch.setattr(settings, "auth_enabled", False)
     monkeypatch.setattr(settings, "local_storage_path", str(tmp_path))
     monkeypatch.setattr(settings, "google_application_credentials", None)  # never the developer's .env value
     # Audit signing appends an event to every bundle's chain: the tests of everything else assert exact event sequences, so

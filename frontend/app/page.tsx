@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { api } from "@/lib/api";
-import { toErrorEnvelope } from "@/lib/errors";
+import { AUTHENTICATION_REQUIRED_MESSAGE, toErrorEnvelope } from "@/lib/errors";
 import { useMeta } from "@/lib/hooks/useMeta";
 import { ModeBadge } from "@/components/shell/ModeBadge";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
@@ -54,7 +55,7 @@ function RecentBundlesList({
       )}
 
       {error && (
-        <p className="text-xs text-red-500 py-1">{error}</p>
+        <p role="alert" className="text-xs text-[var(--cc-err)] py-1">{error}</p>
       )}
 
       {!loading && bundles.length === 0 && (
@@ -121,7 +122,7 @@ function RecentBundlesList({
                   <td className="py-2 px-2.5 text-right">
                     <Link
                       href={`/workbench/${b.id}`}
-                      className="inline-flex items-center gap-1 rounded bg-[var(--cc-surface)] border border-[var(--cc-border-strong)] px-2.5 py-1 text-[11px] font-medium text-[var(--cc-text)] hover:bg-[var(--cc-focus)] hover:text-white transition-colors"
+                      className="inline-flex items-center gap-1 rounded bg-[var(--cc-surface)] border border-[var(--cc-border-strong)] px-2.5 py-1 text-[11px] font-medium text-[var(--cc-text)] hover:bg-[var(--cc-action)] hover:text-white transition-colors"
                     >
                       Open →
                     </Link>
@@ -141,6 +142,7 @@ export default function Home() {
   const { meta, loading: metaLoading, error: metaError, retry: retryMeta } = useMeta();
   const [pending, setPending] = useState<Pending>(null);
   const [error, setError] = useState<string | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
   const [destination, setDestination] = useState<Destination>("SG");
 
   const [bundles, setBundles] = useState<Bundle[]>([]);
@@ -155,21 +157,24 @@ export default function Home() {
       setBundles(data);
     } catch (err: unknown) {
       console.warn("Could not load recent bundles", err);
-      setBundlesError("Could not load recent bundles");
+      const message = toErrorEnvelope(err).message;
+      setBundlesError(message === AUTHENTICATION_REQUIRED_MESSAGE ? message : "Could not load recent bundles");
     } finally {
       setBundlesLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (!meta?.auth?.enabled || meta?.user) {
+    if (meta && (!meta.auth?.enabled || meta.user)) {
       loadBundles();
     }
   }, [meta, loadBundles]);
 
   const start = async (kind: Exclude<Pending, null>, create: () => Promise<Bundle>) => {
+    if (!meta) return;
     if (meta?.auth?.enabled && !meta?.user) {
-      setError("Authentication required: Please enter your CHA corporate email below to sign in before creating a bundle.");
+      setError(AUTHENTICATION_REQUIRED_MESSAGE);
+      requestAnimationFrame(() => errorRef.current?.focus());
       return;
     }
     setPending(kind);
@@ -179,203 +184,176 @@ export default function Home() {
       router.push(`/workbench/${bundle.id}`);
     } catch (err: unknown) {
       const env = toErrorEnvelope(err);
-      if (env.code === "UNAUTHORIZED") {
-        setError("Authentication required: Please sign in with your corporate email below to continue.");
+      if (env.code === "UNAUTHORIZED" || env.code === "HTTP_401") {
+        setError(AUTHENTICATION_REQUIRED_MESSAGE);
       } else {
         setError(env.message);
       }
       setPending(null);
+      requestAnimationFrame(() => errorRef.current?.focus());
     }
   };
 
   const showDemo = meta?.app_mode === "demo";
+  const needsSignIn = Boolean(meta?.auth?.enabled && !meta.user);
+
+  useEffect(() => {
+    if (!meta || window.location.hash !== "#new-bundle") return;
+    const setup = document.getElementById("new-bundle");
+    setup?.scrollIntoView({ block: "start" });
+    setup?.focus({ preventScroll: true });
+  }, [meta]);
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-6 px-4 py-5 sm:px-6 lg:py-8">
-      <header className="flex flex-col gap-3 border-b border-[var(--cc-border)] pb-5 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[.15em] text-[var(--cc-text-subtle)]">JAPAC customs workspace</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-[var(--cc-text)]">CargoClear</h1>
-            <p className="mt-1 max-w-xl text-sm leading-relaxed text-[var(--cc-text-muted)]">Assess a trade-document bundle, resolve evidence gaps, and prepare a supported declaration.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <ModeBadge />
-            <ThemeToggle showLabel />
-            <UserMenu
-              user={meta?.user ?? null}
-              onLogin={(email) => {
-                if (demoSignIn(email, meta?.app_mode)) window.location.reload();
-              }}
-              onLogout={signOut}
-            />
-          </div>
+      <header className="flex flex-col gap-4 border-b border-[var(--cc-border)] pb-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[.15em] text-[var(--cc-text-subtle)]">JAPAC customs workspace</p>
+          <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold tracking-tight text-[var(--cc-text)]"><Image src="/icon.svg" alt="" width={28} height={28} aria-hidden="true" />CargoClear</h1>
+          <p className="mt-1 max-w-xl text-sm leading-relaxed text-[var(--cc-text-muted)]">Assess a trade-document bundle, resolve evidence gaps, and prepare a supported declaration.</p>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <ModeBadge />
+          <ThemeToggle showLabel />
+          <UserMenu
+            user={meta?.user ?? null}
+            onLogin={(email) => {
+              if (demoSignIn(email, meta?.app_mode)) window.location.reload();
+            }}
+            onLogout={signOut}
+          />
         </div>
       </header>
 
-      {meta?.auth?.enabled && !meta?.user && (
-        <div className="rounded-lg border border-[var(--cc-focus)]/30 bg-[var(--cc-surface-2)] p-4 shadow-xs space-y-3">
-          <div>
-            <h2 className="text-sm font-semibold text-[var(--cc-text)] flex items-center gap-1.5">
-              <span>🔐</span> Commercial Single Sign-On (SSO) & Registration
-            </h2>
-            <p className="text-xs text-[var(--cc-text-muted)] mt-1">
-              Sign in with Google, register a customs workspace account, or use 1-click quick presets below.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-            <Link
-              href="/auth/signin?tab=signin"
-              className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-2.5 text-xs font-semibold text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] transition-colors text-center shadow-2xs"
-            >
-              <span>🔑 Sign In to Account</span>
-            </Link>
-            <Link
-              href="/auth/signin?tab=signup"
-              className="flex items-center justify-center gap-1.5 rounded-lg bg-[var(--cc-focus)] p-2.5 text-xs font-semibold text-white hover:opacity-90 transition-opacity text-center shadow-2xs"
-            >
-              <span>📝 Create New Account</span>
-            </Link>
-          </div>
-
-          <a
-            href="/api/auth/signin/google"
-            className="flex items-center justify-center gap-2.5 w-full rounded-lg border border-[var(--cc-border-strong)] bg-white dark:bg-[#1f1f1f] py-2 px-3 text-xs font-semibold text-gray-800 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-[#2a2a2a] shadow-xs transition-colors cursor-pointer"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-            </svg>
-            <span>Continue with Google SSO</span>
-          </a>
-
-          <div className="relative flex items-center justify-center">
-            <div className="w-full border-t border-[var(--cc-border)]" />
-            <span className="bg-[var(--cc-surface-2)] px-2 text-[10px] uppercase tracking-wider text-[var(--cc-text-muted)] absolute">
-              or quick demo access
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-            <span className="text-[10px] text-[var(--cc-text-muted)]">1-Click presets:</span>
-            {DEMO_ACCOUNTS.map((account) => (
-              <button
-                key={account.email}
-                type="button"
-                onClick={() => { if (demoSignIn(account.email, meta?.app_mode)) window.location.reload(); }}
-                className="text-[10px] rounded bg-[var(--cc-surface)] border border-[var(--cc-border)] px-2 py-0.5 text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] cursor-pointer"
-              >
-                {account.label}
-              </button>
-            ))}
-          </div>
+      {error && (
+        <div ref={errorRef} tabIndex={-1} role="alert" className="flex flex-wrap items-center gap-3 rounded border border-[var(--cc-err)] p-3 text-sm font-medium text-[var(--cc-err)]">
+          <span>{error}</span>
+          {error === AUTHENTICATION_REQUIRED_MESSAGE && (
+            <Link href="/auth/signin?returnTo=%2F" className="font-semibold underline">Sign in</Link>
+          )}
         </div>
       )}
 
       {/* Bundle creation & Assessment Hub */}
-      {(!meta?.auth?.enabled || meta?.user) && (
-        <div className="space-y-4">
+      {meta && (
+        <div className={`grid items-stretch gap-4 ${needsSignIn ? "lg:grid-cols-[minmax(0,1fr)_20rem]" : ""}`}>
           {/* Custom Assessment Card */}
-          <section className="rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 shadow-[var(--cc-shadow-1)]">
-            <p className="text-[10px] font-bold uppercase tracking-[.12em] text-[var(--cc-text-subtle)]">Primary task</p>
-            <h2 className="mt-1 text-lg font-semibold text-[var(--cc-text)]">Start a trade assessment</h2>
-            <p className="mt-1 text-xs text-[var(--cc-text-muted)]">Choose a destination and open a case. Documents and analysis come next.</p>
-            <div className="flex flex-wrap items-center gap-3 mt-3 pt-2 border-t border-[var(--cc-border)]">
-              <label className="flex items-center gap-2 text-xs font-medium text-[var(--cc-text-muted)]">
-                <span>Destination:</span>
-                <select
-                  data-testid="destination-select"
-                  value={destination}
-                  disabled={pending !== null}
-                  onChange={(e) => setDestination(e.target.value as Destination)}
-                  className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] px-2.5 py-1.5 text-xs font-semibold text-[var(--cc-text)] cursor-pointer"
-                >
-                  {DESTINATIONS.map((d) => (
-                    <option key={d.code} value={d.code}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+          <section id="new-bundle" tabIndex={-1} aria-labelledby="start-assessment-heading" className="flex flex-col justify-between gap-5 rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 shadow-[var(--cc-shadow-1)]">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[.12em] text-[var(--cc-text-subtle)]">Primary task</p>
+              <h2 id="start-assessment-heading" className="mt-1 text-lg font-semibold text-[var(--cc-text)]">Start a trade assessment</h2>
+              <p className="mt-1 text-xs leading-relaxed text-[var(--cc-text-muted)]">Choose a destination and open a case. Upload and classify documents, then run an assessment.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-[var(--cc-border)]">
+              <div className="space-y-1">
+                <label className="flex items-center gap-2 text-xs font-medium text-[var(--cc-text-muted)]">
+                  <span>Destination:</span>
+                  <select
+                    data-testid="destination-select"
+                    value={destination}
+                    disabled={pending !== null || needsSignIn}
+                    aria-describedby={needsSignIn ? "destination-sign-in-hint" : undefined}
+                    onChange={(e) => setDestination(e.target.value as Destination)}
+                    className="rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] px-2.5 py-1.5 text-xs font-semibold text-[var(--cc-text)] cursor-pointer"
+                  >
+                    {DESTINATIONS.map((d) => (
+                      <option key={d.code} value={d.code}>
+                        {d.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {needsSignIn && <p id="destination-sign-in-hint" className="text-xs text-[var(--cc-text-muted)]">Sign in to change destination.</p>}
+              </div>
               <button
                 type="button"
                 disabled={pending !== null}
                 onClick={() => start("empty", () => api.createBundle(undefined, destination))}
-                className="rounded-[var(--cc-radius)] bg-[var(--cc-surface)] border border-[var(--cc-border-strong)] px-4 py-1.5 text-xs font-bold text-[var(--cc-text)] hover:bg-[var(--cc-surface-3)] disabled:opacity-50 transition-colors cursor-pointer ml-auto"
+                className="cc-button cc-button-primary ml-auto"
               >
                 {pending === "empty" ? "Creating bundle..." : "New empty bundle"}
               </button>
             </div>
           </section>
 
-          {/* Pre-Configured Benchmark Scenarios */}
-          {showDemo && (
-            <div className="rounded-lg border border-[var(--cc-border)] bg-[var(--cc-surface-2)] p-4 shadow-xs space-y-3">
-              <div>
-                <h2 className="text-sm font-semibold text-[var(--cc-text)] flex items-center gap-1.5">
-                  <span>🧪</span> Pre-Loaded Benchmark Scenarios
-                </h2>
-                <p className="text-xs text-[var(--cc-text-muted)] mt-0.5">
-                  Launch verified cross-border trade packages to evaluate multimodal AI extraction, discrepancy engines, and tariff calculation.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {/* Case C Card */}
-                <div className="rounded-md border border-[var(--cc-border)] bg-[var(--cc-surface)] p-3 flex flex-col justify-between gap-2.5">
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="font-bold text-xs text-[var(--cc-text)]">Case C: Seamless Pipe (SG)</span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border border-amber-500/30">
-                        Missing MTC
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[var(--cc-text-muted)] leading-relaxed">
-                      Invoice, BoL & Packing List for HS 7304. Demonstrates missing regulatory document detection and dynamic upload to achieve compliance.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={pending !== null}
-                    onClick={() => start("demo", () => api.createCaseCDemo())}
-                    className="w-full rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 text-xs font-bold text-white hover:brightness-90 disabled:opacity-50 transition-all cursor-pointer text-center"
-                  >
-                    {pending === "demo" ? "Starting demo..." : "Start Case C demo"}
+        {needsSignIn && (
+          <section aria-labelledby="workspace-access-heading" className="min-w-0 space-y-2 rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface-2)] p-4">
+            <div>
+              <h2 id="workspace-access-heading" className="text-sm font-semibold text-[var(--cc-text)]">Workspace access</h2>
+              <p className="mt-1 text-xs leading-relaxed text-[var(--cc-text-muted)]">Sign in or choose a demo account.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link href="/auth/signin?tab=signin" className="inline-flex min-h-7 items-center text-xs font-semibold text-[var(--cc-focus)] underline underline-offset-2">Sign in to account</Link>
+              <Link href="/auth/signin?tab=signup" className="inline-flex min-h-7 items-center text-xs font-semibold text-[var(--cc-text)] underline underline-offset-2">Create account</Link>
+            </div>
+            <a href="/api/auth/signin/google" className="cc-button w-full">
+              <svg aria-hidden="true" className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+              </svg>
+              Continue with Google SSO
+            </a>
+            <div className="space-y-1.5 border-t border-[var(--cc-border)] pt-2">
+              <p className="text-[11px] text-[var(--cc-text-muted)]">Demo accounts</p>
+              <div className="flex flex-wrap gap-1.5">
+                {DEMO_ACCOUNTS.map((account) => (
+                  <button key={account.email} type="button" onClick={() => { if (demoSignIn(account.email, meta.app_mode)) window.location.reload(); }} className="cc-button min-h-8 px-2">
+                    {account.label}
                   </button>
-                </div>
-
-                {/* Case D Card */}
-                <div className="rounded-md border border-[var(--cc-border)] bg-[var(--cc-surface)] p-3 flex flex-col justify-between gap-2.5">
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="font-bold text-xs text-[var(--cc-text)]">Case D: Line Pipe (IN)</span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-red-100 dark:bg-red-950/60 text-red-900 dark:text-red-200 border border-red-500/30">
-                        Chemistry & Tariff
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[var(--cc-text-muted)] leading-relaxed">
-                      Complete 4-doc package into India. Demonstrates metallurgical chemistry contradiction (HS Note 1), anti-dumping checks, and duty estimate.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={pending !== null}
-                    onClick={() => start("demo-d", () => api.createCaseDDemo())}
-                    className="w-full rounded-[var(--cc-radius)] border border-[var(--cc-focus)] px-3 py-1.5 text-xs font-bold text-[var(--cc-focus)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 transition-all cursor-pointer text-center"
-                  >
-                    {pending === "demo-d" ? "Starting demo..." : "Start Case D demo (India import)"}
-                  </button>
-                </div>
+                ))}
               </div>
             </div>
-          )}
+          </section>
+        )}
         </div>
       )}
 
-      {(!meta?.auth?.enabled || meta?.user) && (
+      {showDemo && (
+        <section aria-labelledby="demo-cases-heading" className="space-y-4">
+          <div className="space-y-1">
+            <h2 id="demo-cases-heading" className="text-base font-semibold text-[var(--cc-text)]">Explore demo cases</h2>
+            <p className="text-xs leading-relaxed text-[var(--cc-text-muted)]">Synthetic examples of the evidence-resolution workflow. Extraction uses filename-keyed fixtures, not real PDF reading.{needsSignIn && " Sign in to start a case."}</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <article aria-labelledby="case-c-heading" className="flex flex-col gap-4 rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 shadow-[var(--cc-shadow-1)]">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-medium text-[var(--cc-text-subtle)]">India → Singapore · HS 7304</p>
+                  <span className="rounded border border-[var(--cc-warn-bd)] bg-[var(--cc-warn-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--cc-warn)]">Missing MTC</span>
+                </div>
+                <h3 id="case-c-heading" className="text-sm font-semibold text-[var(--cc-text)]">Case C: Seamless Pipe (SG)</h3>
+                <p className="text-xs leading-relaxed text-[var(--cc-text-muted)]">Invoice, bill of lading and packing list for a seamless-pipe shipment. Add the mill test certificate and reassess to resolve the missing evidence.</p>
+              </div>
+              <div className="mt-auto space-y-3 border-t border-[var(--cc-border)] pt-3">
+                <p className="text-xs text-[var(--cc-text-subtle)]">3 documents preloaded · Evidence-upload workflow</p>
+                <button type="button" disabled={pending !== null} onClick={() => start("demo", () => api.createCaseCDemo())} className="cc-button cc-button-primary w-full">
+                  {pending === "demo" ? "Starting demo..." : "Start Case C demo"}
+                </button>
+              </div>
+            </article>
+            <article aria-labelledby="case-d-heading" className="flex flex-col gap-4 rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-5 shadow-[var(--cc-shadow-1)]">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-medium text-[var(--cc-text-subtle)]">India import · Chemistry &amp; tariff</p>
+                  <span className="rounded border border-[var(--cc-err-bd)] bg-[var(--cc-err-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--cc-err)]">Material contradiction</span>
+                </div>
+                <h3 id="case-d-heading" className="text-sm font-semibold text-[var(--cc-text)]">Case D: Line Pipe (IN)</h3>
+                <p className="text-xs leading-relaxed text-[var(--cc-text-muted)]">A complete four-document package. Review certificate chemistry against HS Note 1, an anti-dumping warning, and the indicative duty estimate.</p>
+              </div>
+              <div className="mt-auto space-y-3 border-t border-[var(--cc-border)] pt-3">
+                <p className="text-xs text-[var(--cc-text-subtle)]">4 documents preloaded · Contradiction-review workflow</p>
+                <button type="button" disabled={pending !== null} onClick={() => start("demo-d", () => api.createCaseDDemo())} className="cc-button w-full">
+                  {pending === "demo-d" ? "Starting demo..." : "Start Case D demo (India import)"}
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+      )}
+
+      {meta && (!meta.auth?.enabled || meta.user) && (
         <RecentBundlesList
           bundles={bundles}
           loading={bundlesLoading}
@@ -403,14 +381,12 @@ export default function Home() {
         </div>
       )}
 
-      {error && (
-        <div role="alert" className="text-xs font-medium text-[var(--cc-err)]">
-          {error}
-        </div>
-      )}
-
       {showDemo && (
-        <div className="flex flex-col gap-1.5 text-[11px] text-[var(--cc-text-muted)] leading-relaxed">
+        <footer className="mt-auto border-t border-[var(--cc-border)] pt-4 text-[11px] leading-relaxed text-[var(--cc-text-muted)]">
+          <p id="demo-data-disclaimer">Synthetic demo data. Duty estimates are illustrative; the authorised agent makes the final decision.</p>
+          <details className="mt-1.5">
+            <summary className="w-fit min-h-6 cursor-pointer font-medium text-[var(--cc-text)]">About demo data</summary>
+            <div className="mt-2 space-y-1.5">
           <p>
             Demo mode: the Case C demo loads an invoice, bill of lading and packing list for a seamless-pipe
             shipment (HS 7304) from India to Singapore; add the mill test certificate to reach a compliant
@@ -421,7 +397,9 @@ export default function Home() {
             contradicts the declared HS code. It also shows an anti-dumping warning and an indicative duty
             estimate. Every name, number and rate in the demo is invented or illustrative.
           </p>
-        </div>
+            </div>
+          </details>
+        </footer>
       )}
     </main>
   );

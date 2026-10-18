@@ -21,7 +21,7 @@ export function WorkflowStepper({
   const missingCount = assessment?.missing_evidence?.length ?? 0;
 
   // Step 1: Documents Staged
-  const step1Complete = docCount >= 3;
+  const step1Complete = docCount > 0;
   const step1Active = docCount > 0 && !step1Complete;
 
   // Step 2: AI Assessment
@@ -38,11 +38,11 @@ export function WorkflowStepper({
   const steps = [
     {
       num: 1,
-      title: "Documents Staged",
+      title: "Documents",
       detail: step1Complete
-        ? `${docCount} Docs Ready`
+        ? `${docCount} uploaded`
         : docCount > 0
-        ? `${docCount} Staged (Need ≥3)`
+        ? `${docCount} uploaded`
         : "Upload Trade Docs",
       complete: step1Complete,
       active: step1Active || (!step1Complete && docCount === 0),
@@ -50,11 +50,11 @@ export function WorkflowStepper({
     },
     {
       num: 2,
-      title: "AI Assessment",
+      title: "Assessment",
       detail: step2Active
-        ? "Analyzing Pipeline..."
+        ? "Analysis in progress"
         : step2Complete
-        ? `v${assessment?.iteration} Adjudicated`
+        ? `Iteration ${assessment?.iteration}`
         : "Ready to Analyze",
       complete: step2Complete,
       active: step2Active,
@@ -62,7 +62,7 @@ export function WorkflowStepper({
     },
     {
       num: 3,
-      title: "Issue Resolution",
+      title: "Resolve findings",
       detail: !step2Complete
         ? "Awaiting Run"
         : step3Complete
@@ -74,8 +74,8 @@ export function WorkflowStepper({
     },
     {
       num: 4,
-      title: "Declaration Ready",
-      detail: step4Complete ? "Compliant for Filing" : "Awaiting Compliance",
+      title: "Declaration review",
+      detail: step4Complete ? "Review and export" : "Awaiting assessment",
       complete: step4Complete,
       active: false,
       alert: false,
@@ -83,29 +83,29 @@ export function WorkflowStepper({
   ];
 
   return (
-    <nav
+    <section
       aria-label="Compliance Workflow Progress"
       className="bg-[var(--cc-surface-2)] border-b border-[var(--cc-border)] px-3 py-2 text-xs"
     >
-      <ol className="flex items-center justify-between gap-1 sm:gap-2 max-w-5xl mx-auto">
+      <ol className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-5xl mx-auto">
         {steps.map((s, idx) => (
-          <li key={s.num} className="flex-1 flex items-center gap-1.5 min-w-0">
+          <li key={s.num} aria-current={(isRunning ? s.num === 2 : docCount === 0 ? s.num === 1 : !assessment ? s.num === 2 : isCompliant ? s.num === 4 : s.num === 3) ? "step" : undefined} className="flex-1 flex items-center gap-1.5 min-w-0">
             <div
               className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold transition-colors ${
                 s.complete
                   ? "bg-[var(--cc-ok-bg)] text-[var(--cc-ok)] border border-[var(--cc-ok-bd)]"
                   : s.alert
-                  ? "bg-[var(--cc-warn-bg)] text-[var(--cc-warn)] border border-[var(--cc-warn-bd)] animate-pulse"
+                  ? "bg-[var(--cc-warn-bg)] text-[var(--cc-warn)] border border-[var(--cc-warn-bd)]"
                   : s.active
-                  ? "bg-[var(--cc-focus)] text-white shadow-2xs"
+                  ? "bg-[var(--cc-action)] text-white shadow-2xs"
                   : "bg-[var(--cc-surface)] text-[var(--cc-text-muted)] border border-[var(--cc-border)]"
               }`}
             >
               {s.complete ? "✓" : s.alert ? "!" : s.num}
             </div>
-            <div className="min-w-0 flex-1 hidden sm:block">
+            <div className="min-w-0 flex-1">
               <p
-                className={`text-[11px] font-semibold truncate ${
+                className={`text-xs font-semibold ${
                   s.complete
                     ? "text-[var(--cc-text)]"
                     : s.active || s.alert
@@ -115,7 +115,7 @@ export function WorkflowStepper({
               >
                 {s.title}
               </p>
-              <p className="text-[10px] text-[var(--cc-text-muted)] truncate">{s.detail}</p>
+              <p className="text-xs text-[var(--cc-text-muted)]">{s.detail}</p>
             </div>
             {idx < steps.length - 1 && (
               <div
@@ -127,6 +127,6 @@ export function WorkflowStepper({
           </li>
         ))}
       </ol>
-    </nav>
+    </section>
   );
 }

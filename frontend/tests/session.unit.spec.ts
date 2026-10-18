@@ -12,10 +12,34 @@ test.describe("demo session helpers", () => {
     }
   });
 
-  test("allows demo session sign-in for preset accounts in any mode", () => {
-    expect(demoSignIn("demo-cha@customs.com", "live")).toBe(true);
-    expect(demoSignIn("demo-cha@customs.com", "demo")).toBe(true);
-    expect(demoSignIn("demo-cha@customs.com", undefined)).toBe(true);
+  test("demo session sign-in is unavailable outside a browser", () => {
+    expect(demoSignIn("demo-cha@customs.com", "demo")).toBe(false);
+  });
+
+  test("allows browser demo sign-in in any mode and writes both session cookies", () => {
+    const previousWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+    const previousDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+    const cookies: string[] = [];
+    Object.defineProperty(globalThis, "window", { configurable: true, value: { location: { protocol: "https:" } } });
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: { set cookie(value: string) { cookies.push(value); } },
+    });
+    try {
+      for (const mode of ["live", "demo", undefined] as const) {
+        cookies.length = 0;
+        expect(demoSignIn("demo-cha@customs.com", mode)).toBe(true);
+        expect(cookies).toEqual([
+          "__session=mock-jwt-demo-cha@customs.com-LICENSED_CHA; path=/; max-age=86400; SameSite=Lax; Secure",
+          "cargoclear_session_token=mock-jwt-demo-cha@customs.com-LICENSED_CHA; path=/; max-age=86400; SameSite=Lax; Secure",
+        ]);
+      }
+    } finally {
+      if (previousWindow) Object.defineProperty(globalThis, "window", previousWindow);
+      else Reflect.deleteProperty(globalThis, "window");
+      if (previousDocument) Object.defineProperty(globalThis, "document", previousDocument);
+      else Reflect.deleteProperty(globalThis, "document");
+    }
   });
 
   test("keeps the three established demo identities", () => {

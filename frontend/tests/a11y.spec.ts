@@ -46,5 +46,6 @@ test.describe("CargoClear Workbench Accessibility (WCAG 2.2 AA)", () => {
     await page.keyboard.press("ArrowRight");
     const auditTab = page.locator("#tab-audit");
     await expect(auditTab).toHaveAttribute("aria-selected", "true");
+    await expect(auditTab).toBeFocused();
   });
 });

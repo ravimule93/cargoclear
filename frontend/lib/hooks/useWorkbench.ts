@@ -95,6 +95,7 @@ export function useWorkbench(bundleId: string): Workbench {
 
   // Highest iteration number the page data already reflects; SSE replays at or below it are not "new".
   const handledIterationRef = useRef<number | null>(null);
+  const pendingFromIterationRef = useRef<number | null>(null);
 
   // Initial load: bundle + latest assessment (404 -> not analysed yet) + iteration list, in parallel.
   useEffect(() => {
@@ -110,6 +111,7 @@ export function useWorkbench(bundleId: string): Workbench {
     setCorrections(null);
     setExtractions([]);
     handledIterationRef.current = null;
+    pendingFromIterationRef.current = null;
 
     (async () => {
       try {
@@ -181,7 +183,7 @@ export function useWorkbench(bundleId: string): Workbench {
 
   // A finished run supersedes any earlier run/upload error (e.g. a 409 raised while it was running).
   useEffect(() => {
-    if (streamIteration !== null) {
+    if (streamIteration !== null && (pendingFromIterationRef.current === null || streamIteration > pendingFromIterationRef.current)) {
       setActionError(null);
       setPendingRunId(null);
     }
@@ -293,14 +295,20 @@ export function useWorkbench(bundleId: string): Workbench {
 
   const run = stream.run;
   const streamRunning = run?.state === "RUNNING" || run?.state === "QUEUED";
-  const hasAssessment = assessment !== null && assessment.iteration >= currentIteration && currentIteration > 0;
-  // After POST /analyze the SSE status can lag by up to a poll interval; stay "running" until the
-  // stream reports a terminal state for the run we started or until an assessment is ready.
+  const hasNewAssessment = assessment !== null && pendingFromIterationRef.current !== null && assessment.iteration > pendingFromIterationRef.current;
+  // The preceding assessment does not complete a newly accepted reassessment.
+  // Keep feedback active while SSE/polling catches up with this particular run.
   const awaitingRun =
     pendingRunId !== null &&
-    !hasAssessment &&
+    !hasNewAssessment &&
     !(run?.run_id === pendingRunId && run.state !== "RUNNING" && run.state !== "QUEUED");
   const isRunning = streamRunning || awaitingRun || startingRun;
+
+  useEffect(() => {
+    if (pendingRunId && run?.run_id === pendingRunId && (run.state === "COMPLETE" || run.state === "ERROR")) {
+      setPendingRunId(null);
+    }
+  }, [pendingRunId, run?.run_id, run?.state]);
 
   // Active fallback polling: while a run is pending or active, poll bundle status every 2s.
   // This guarantees recovery even if SSE is buffered or disconnected by CDN proxies.
@@ -321,7 +329,7 @@ export function useWorkbench(bundleId: string): Workbench {
           if (cancelled) return;
           if (ass) {
             setFetchedAssessment(ass);
-            setPendingRunId(null);
+            if (pendingFromIterationRef.current === null || ass.iteration > pendingFromIterationRef.current) setPendingRunId(null);
           }
           if (iters && iters.length > 0) {
             setFetchedIterations(iters);
@@ -340,6 +348,7 @@ export function useWorkbench(bundleId: string): Workbench {
 
   const runAnalysis = useCallback(async () => {
     setActionError(null);
+    pendingFromIterationRef.current = currentIteration;
     setStartingRun(true);
     try {
       const started =
@@ -350,10 +359,11 @@ export function useWorkbench(bundleId: string): Workbench {
     } finally {
       setStartingRun(false);
     }
-  }, [bundleId, runMode]);
+  }, [bundleId, runMode, currentIteration]);
 
   const recompute = useCallback(async () => {
     setActionError(null);
+    pendingFromIterationRef.current = currentIteration;
     setStartingRun(true);
     try {
       const started = await api.recompute(bundleId);
@@ -363,7 +373,7 @@ export function useWorkbench(bundleId: string): Workbench {
     } finally {
       setStartingRun(false);
     }
-  }, [bundleId]);
+  }, [bundleId, currentIteration]);
 
   // One refresh and at most one run action per upload batch; only auto-reassess once an
   // assessment exists (iteration 0 waits for the user to press "Run analysis").

@@ -8,6 +8,9 @@ test.describe("Processed pages", () => {
     await page.getByTestId("run-button").click();
     await expect(page.getByTestId("status-pill")).toContainText("Material Contradiction", { timeout: 30_000 });
 
+    await page.getByRole("button", { name: "View PDF", exact: true }).click();
+    await expect(page.getByLabel(/^Page 1 of \d+: case_d_mtc_test_cert\.pdf$/)).toBeVisible({ timeout: 15_000 });
+
     const link = page.getByTestId("model-view-link");
     await expect(link).toBeVisible();
     await expect(link).toHaveText("What the model saw");

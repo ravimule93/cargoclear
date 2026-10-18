@@ -52,7 +52,7 @@ In one terminal:
 
 ```bash
 cd backend
-APP_MODE=demo .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8080
+APP_MODE=demo AUTH_ENABLED=true .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8080
 ```
 
 In another:
@@ -62,7 +62,7 @@ cd frontend
 API_BASE=http://127.0.0.1:8080 npm run dev
 ```
 
-Open `http://localhost:3000`, choose **Start Case C demo** (or **Start Case D demo (India import)**, described below), then:
+Open `http://localhost:3000` and sign in, or select an approved demo preset. Then choose **Start Case C demo** (or **Start Case D demo (India import)**, described below):
 
 1. Confirm the fresh workbench contains three documents and no assessment.
 2. Select **Run analysis** and observe `MISSING_EVIDENCE`, including the Mill Test Certificate requirement.

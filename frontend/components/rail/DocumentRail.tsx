@@ -46,8 +46,10 @@ export function DocumentRail({
     }
 
     for (const check of checks) {
+      const counted = new Set<string>();
       for (const ev of check.evidence ?? []) {
-        if (!ev.doc) continue;
+        if (!ev.doc || counted.has(ev.doc)) continue;
+        counted.add(ev.doc);
         const current = map.get(ev.doc) || { material: 0, warn: 0, pass: 0 };
         if (check.severity === "MATERIAL") current.material += 1;
         else if (check.severity === "WARN") current.warn += 1;
@@ -76,6 +78,7 @@ export function DocumentRail({
               <button
                 type="button"
                 data-testid="document-item"
+                aria-current={isActive ? "true" : undefined}
                 onClick={() => onSelectDocument?.(doc.document_id)}
                 className={`text-left p-2.5 rounded-[var(--cc-radius)] border transition-all text-xs flex flex-col gap-1.5 cursor-pointer ${
                   isActive
@@ -89,12 +92,12 @@ export function DocumentRail({
                   </span>
                   {health && health.material > 0 && (
                     <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-[var(--cc-err-bg)] text-[var(--cc-err)] border border-[var(--cc-err-bd)] whitespace-nowrap">
-                      ● {health.material} Conflict{health.material > 1 ? "s" : ""}
+                      {health.material} material
                     </span>
                   )}
                   {health && health.material === 0 && health.warn > 0 && (
                     <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-[var(--cc-warn-bg)] text-[var(--cc-warn)] border border-[var(--cc-warn-bd)] whitespace-nowrap">
-                      ▲ {health.warn} Gap
+                      {health.warn} warning{health.warn === 1 ? "" : "s"}
                     </span>
                   )}
                   {health && health.material === 0 && health.warn === 0 && health.pass > 0 && (
@@ -137,6 +140,7 @@ export function DocumentRail({
                         Reclassify Document Type
                       </span>
                       <select
+                        aria-label={`Correct document type for ${doc.filename}`}
                         value={targetType}
                         onChange={(e) => setTargetType(e.target.value as DeclarableDocumentType)}
                         disabled={reclassifySubmitting}
@@ -189,7 +193,7 @@ export function DocumentRail({
                               setReclassifySubmitting(false);
                             }
                           }}
-                          className="rounded bg-[var(--cc-focus)] px-2 py-0.5 text-[10px] font-semibold text-white hover:brightness-90 disabled:opacity-50 cursor-pointer"
+                          className="rounded bg-[var(--cc-action)] px-2 py-0.5 text-[10px] font-semibold text-white hover:brightness-90 disabled:opacity-50 cursor-pointer"
                         >
                           {reclassifySubmitting ? "Saving..." : "Apply Type"}
                         </button>
@@ -229,7 +233,7 @@ export function DocumentRail({
                           setConfirming(null);
                           void onRemoveDocument(doc.document_id);
                         }}
-                        className="rounded-[var(--cc-radius)] bg-[var(--cc-err)] px-2 py-1 font-semibold text-white hover:brightness-90 disabled:opacity-50 cursor-pointer"
+                        className="rounded-[var(--cc-radius)] bg-[var(--cc-danger-action)] px-2 py-1 font-semibold text-white hover:brightness-90 disabled:opacity-50 cursor-pointer"
                       >
                         Remove file
                       </button>

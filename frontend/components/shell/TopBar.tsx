@@ -1,15 +1,17 @@
 "use client";
 
-import { ChangeEvent, useRef, useState } from "react";
+import { type ChangeEvent, lazy, Suspense, useRef, useState } from "react";
 import Link from "next/link";
 import { Bundle, Status, UserIdentity } from "@/lib/types";
-import type { StreamConnection } from "@/lib/hooks/useBundleStream";
+import type { StreamConnection, StreamRunState } from "@/lib/hooks/useBundleStream";
 import { useDeclaredType } from "@/lib/hooks/useDeclaredType";
 import { StatusPill } from "../assess/StatusPill";
-import { UploadStagingModal } from "../upload/UploadStagingModal";
 import { ModeBadge } from "./ModeBadge";
 import { ThemeToggle } from "./ThemeToggle";
 import { UserMenu } from "./UserMenu";
+import { AssessmentProgress } from "../assess/AssessmentProgress";
+
+const UploadStagingModal = lazy(() => import("../upload/UploadStagingModal").then((module) => ({ default: module.UploadStagingModal })));
 
 interface TopBarProps {
   bundle: Bundle;
@@ -17,6 +19,7 @@ interface TopBarProps {
   status: Status | null;
   user?: UserIdentity | null;
   isRunning?: boolean;
+  run?: StreamRunState | null;
   isUploading?: boolean;
   uploadProgress?: { current: number; total: number; filename?: string } | null;
   /** "Run analysis" until the first iteration exists, "Reassess" afterwards. */
@@ -39,6 +42,7 @@ export function TopBar({
   status,
   user,
   isRunning = false,
+  run,
   isUploading = false,
   uploadProgress = null,
   runMode,
@@ -52,6 +56,7 @@ export function TopBar({
   onToggleViewer,
 }: TopBarProps) {
   const [stagingOpen, setStagingOpen] = useState(false);
+  const [stagingRequested, setStagingRequested] = useState(false);
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const declared = useDeclaredType(); // what the NEXT file is, if the person says (one file; cleared by every upload)
@@ -87,9 +92,9 @@ export function TopBar({
           <span className="sm:hidden">← All</span>
         </Link>
         <Link
-          href="/"
+          href="/#new-bundle"
           className="hidden md:inline-flex rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-2 py-0.5 text-xs font-medium text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] transition-colors items-center gap-1"
-          title="Create a new bundle"
+          title="Open new-bundle setup"
         >
           <span>+ New</span>
         </Link>
@@ -145,8 +150,10 @@ export function TopBar({
         </div>
         <button
           type="button"
+          id="source-toggle"
           onClick={onToggleViewer}
           aria-pressed={viewerOpen}
+          aria-controls="panel-viewer"
           className="hidden rounded-[var(--cc-radius)] border border-[var(--cc-border-strong)] px-2.5 py-1 text-xs font-semibold text-[var(--cc-text)] hover:bg-[var(--cc-surface-2)] lg:inline-flex"
         >
           {viewerOpen ? "Hide PDF" : "View PDF"}
@@ -165,10 +172,12 @@ export function TopBar({
         />
         <button
           type="button"
+          id="add-documents-button"
           data-testid="classify-upload-button"
           disabled={isUploading}
           onClick={() => {
             setStagedFiles([]);
+            setStagingRequested(true);
             setStagingOpen(true);
           }}
           title="Open multi-file staging and document type classification modal"
@@ -183,7 +192,7 @@ export function TopBar({
           disabled={isRunning}
           aria-busy={isRunning}
           onClick={onRun}
-          className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-2.5 sm:px-3 py-1 text-xs font-semibold text-white shadow-xs hover:brightness-90 disabled:opacity-50 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+          className="rounded-[var(--cc-radius)] bg-[var(--cc-action)] px-2.5 sm:px-3 py-1 text-xs font-semibold text-white shadow-xs hover:brightness-90 disabled:opacity-50 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
         >
           {isRunning && (
             <span
@@ -196,17 +205,18 @@ export function TopBar({
         <UserMenu user={user} onLogin={onLogin} onLogout={onLogout} />
       </div>
 
-      <UploadStagingModal
+      {isRunning && <AssessmentProgress run={run} />}
+
+      {stagingRequested && <Suspense fallback={<p role="status" className="text-xs">Opening document upload…</p>}><UploadStagingModal
         bundleId={bundle.id}
         isOpen={stagingOpen}
         initialFiles={stagedFiles}
         existingDocuments={bundle.documents ?? []}
         onClose={() => setStagingOpen(false)}
         onUploaded={() => {
-          setStagingOpen(false);
           onRefresh?.();
         }}
-      />
+      /></Suspense>}
     </header>
   );
 }
