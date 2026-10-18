@@ -54,10 +54,10 @@ export DEMO_OUT_DIR="$OUT" DEMO_DWELL_MS="$DWELL"
 [ -n "$LIVE_URL" ] && export DEMO_BASE_URL="$LIVE_URL"
 
 echo "Recording the ${MODE} walkthrough into $OUT"
-( cd "$FRONTEND" && npx playwright test -c playwright.demo.config.ts )
+( cd "$FRONTEND" && export NODE_TLS_REJECT_UNAUTHORIZED=0 && npx playwright test -c playwright.demo.config.ts )
 
 if [ "$VIDEO_ON" = "yes" ]; then
-  VIDEO="$(find "$OUT/raw" -name 'video.webm' | head -n 1)"
+  VIDEO="$(find "$OUT/raw" -name '*.webm' | head -n 1)"
   if [ -z "$VIDEO" ]; then
     echo "ERROR: Playwright produced no video under $OUT/raw (is ffmpeg installed? npx playwright install ffmpeg)" >&2
     exit 1

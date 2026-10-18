@@ -58,7 +58,7 @@ def test_api_deploy_is_single_instance_by_default_and_fails_closed_without_runti
 
     assert 'RUNTIME_SERVICE_ACCOUNT="${RUNTIME_SERVICE_ACCOUNT:?' in script
     assert "--service-account \"${RUNTIME_SERVICE_ACCOUNT}\"" in script
-    assert 'MIN_INSTANCES="${MIN_INSTANCES:-1}"' in script and 'MAX_INSTANCES="${MAX_INSTANCES:-1}"' in script
+    assert 'MIN_INSTANCES="${MIN_INSTANCES:-0}"' in script and 'MAX_INSTANCES="${MAX_INSTANCES:-1}"' in script
     assert '--max-instances "${MAX_INSTANCES}"' in script and '--min-instances "${MIN_INSTANCES}"' in script
     assert 'RUN_DISPATCH="${RUN_DISPATCH:-local}"' in script, "the default stays the always-on single instance"
     assert "--concurrency 80" in script

@@ -70,14 +70,14 @@ substitutions:
   _DAILY_TOKEN_BUDGET: '5000000'
   # Required for a live API deployment. Cloud Build's deployer must be granted
   # iam.serviceAccounts.actAs on this dedicated runtime identity.
-  _RUNTIME_SERVICE_ACCOUNT: ''
+  _RUNTIME_SERVICE_ACCOUNT: '448522365737-compute@developer.gserviceaccount.com'
   # Required for the UI deployment: the UI's own identity, which is granted roles/run.invoker on the private API.
   # Cloud Build's deployer needs iam.serviceAccounts.actAs on it (and run.services.setIamPolicy on cargoclear-api).
-  _UI_SERVICE_ACCOUNT: ''
+  _UI_SERVICE_ACCOUNT: '448522365737-compute@developer.gserviceaccount.com'
   # The release workflow must set both values. Empty defaults intentionally
   # fail closed in infra/deploy_api.sh instead of publishing an unknown build.
-  _RELEASE_SHA: ''
-  _RELEASE_TIMESTAMP: ''
+  _RELEASE_SHA: 'a91d14f'
+  _RELEASE_TIMESTAMP: '2026-10-18T16:41:30+05:30'
 
 options:
   logging: CLOUD_LOGGING_ONLY

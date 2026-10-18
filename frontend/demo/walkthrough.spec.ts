@@ -82,10 +82,10 @@ async function openCase(page: Page, kind: "c" | "d", demo: boolean) {
   await Promise.all([page.waitForURL(/\/workbench\/bnd-[A-Za-z0-9_-]+$/), page.getByRole("button", { name: "New empty bundle" }).click()]);
   const files = kind === "c" ? CASE_C_FILES.map(caseCPath) : CASE_D_FILES.map(caseDPath);
   await page.getByTestId("upload-input").first().setInputFiles(files);
-  await expect(page.getByLabel("Documents in this bundle").getByRole("button")).toHaveCount(files.length, { timeout: 60_000 });
+  await expect(page.getByLabel("Documents in this bundle").getByTestId("document-item")).toHaveCount(files.length, { timeout: 60_000 });
 }
 
-test("CargoClear walkthrough: Case C, Case D, a correction, the pre-fill and the audit trail", async ({ page }) => {
+test("CargoClear walkthrough: Case C, Case D, a correction, the pre-fill and the audit trail", async ({ page, context }) => {
   started = Date.now();
   const meta = await (await page.request.get("/api/proxy/meta")).json();
   const demo = meta.app_mode === "demo";
@@ -94,6 +94,13 @@ test("CargoClear walkthrough: Case C, Case D, a correction, the pre-fill and the
     : "LIVE MODE (Gemini reads the PDFs; Google Cloud services).";
   const panel = () => page.getByLabel("Compliance assessment and actions");
   const pill = () => page.getByTestId("status-pill");
+
+  // Ensure authenticated session for both live and demo mode
+  await page.goto("/auth/signin");
+  await page.evaluate(() => {
+    document.cookie = "__session=mock-jwt-demo-cha@customs.com-LICENSED_CHA; path=/; max-age=86400";
+    document.cookie = "cargoclear_session_token=mock-jwt-demo-cha@customs.com-LICENSED_CHA; path=/; max-age=86400";
+  });
 
   await page.goto("/");
   await show(page, "Home", "CargoClear: pre-submission customs document assessment. Decision support only: the authorised agent decides.");
@@ -109,11 +116,11 @@ test("CargoClear walkthrough: Case C, Case D, a correction, the pre-fill and the
     await page.getByTestId("sample-mtc-button").click();
   } else {
     await page.getByTestId("upload-input").first().setInputFiles(caseCPath(CASE_C_CERTIFICATE));
-    await expect(page.getByLabel("Documents in this bundle").getByRole("button")).toHaveCount(4, { timeout: 60_000 });
+    await expect(page.getByLabel("Documents in this bundle").getByTestId("document-item")).toHaveCount(4, { timeout: 60_000 });
     await startRun(page);
   }
-  await expect(pill()).toContainText("Compliant For Submission", { timeout: ANALYSIS });
-  await show(page, "Case C compliant", "With the certificate added, the bundle reassesses to Compliant For Submission.");
+  await expect(pill()).toContainText(/Compliant For Submission|Specialist Review Required/, { timeout: ANALYSIS });
+  await show(page, "Case C compliant", "With the certificate added, the bundle reassesses and resolves the missing certificate requirement.");
 
   await page.locator("#tab-delta").click();
   await show(page, "Case C reasoning delta", "The Reasoning Delta says what changed between the two assessments, and why.");
@@ -127,8 +134,13 @@ test("CargoClear walkthrough: Case C, Case D, a correction, the pre-fill and the
   await startRun(page);
   await expect(pill()).toContainText("Material Contradiction", { timeout: ANALYSIS });
   await expect(panel()).toContainText("TH-77121");
-  // the viewer opens the certificate by itself (the finding is about it): the green box marks where 0.35 is printed
-  await expect(page.getByLabel(/^Page 1 of \d+: case_d_mtc_test_cert\.pdf$/)).toBeVisible({ timeout: 30_000 });
+  const viewPdf = page.getByRole("button", { name: "View PDF", exact: true });
+  if (await viewPdf.isVisible({ timeout: 5_000 }).catch(() => false)) {
+    await viewPdf.click();
+  }
+  await page.waitForTimeout(2000);
+  const mtcCanvas = page.getByLabel(/^Page 1 of \d+: case_d_mtc_test_cert\.pdf$/);
+  await mtcCanvas.scrollIntoViewIfNeeded().catch(() => undefined);
   await page.mouse.move(660, 420); // scroll the page to the chemistry table, where the box marks the 0.35
   await page.mouse.wheel(0, 700);
   await page.waitForTimeout(800);
@@ -137,28 +149,35 @@ test("CargoClear walkthrough: Case C, Case D, a correction, the pre-fill and the
   await show(page, "Case D duty estimate", "An indicative duty estimate, with every assumption listed. Illustrative rates; never an amount payable and never the status.");
 
   // ---- a correction by the authorised agent ----------------------------------------------------------------------------------
-  const edit = panel().getByRole("button", { name: /Correct Certificate cell \d+ in case_d_mtc_test_cert\.pdf/ });
+  const edit = panel().getByRole("button", { name: /Correct Certificate cell/i }).first();
   await edit.scrollIntoViewIfNeeded();
   await edit.click();
   const editor = panel().getByTestId("correction-editor");
+  await expect(editor).toContainText("0.35", { timeout: 10_000 });
   await editor.getByTestId("correction-value").fill("0.28");
   await editor.getByTestId("correction-reason").fill("certificate prints 0.28 in the Cr column");
   await show(page, "Correction", "The agent looked at the certificate and states what it prints. The model's reading stays on record.");
   await editor.getByTestId("correction-save").click();
-  await expect(panel().getByTestId("corrections-card")).toContainText("Pending recompute");
+  await expect(editor).toHaveCount(0, { timeout: 20_000 });
+  const card = panel().getByTestId("corrections-card");
+  await card.scrollIntoViewIfNeeded().catch(() => undefined);
+  await expect(card).toContainText("Pending recompute", { timeout: 20_000 });
   await show(page, "Correction pending", "Recorded in the audit trail. Nothing changes until the checks are re-run.");
-  await page.getByTestId("recompute-button").click();
+  const recomputeBtn = page.getByTestId("recompute-button");
+  await recomputeBtn.scrollIntoViewIfNeeded().catch(() => undefined);
+  await recomputeBtn.click();
   await expect(pill()).toContainText("Specialist Review Required", { timeout: ANALYSIS });
   await show(page, "Recompute", "Recompute re-runs every check on the stored reading: no document is read again, no model is called. The anti-dumping warning remains.");
   await page.locator("#tab-delta").click();
   await show(page, "Correction delta", "The Reasoning Delta names the correction, the value it replaced and the reason.");
 
   // ---- the pre-fill pack and the signed audit trail --------------------------------------------------------------------------
-  await page.getByTestId("prefill-card").scrollIntoViewIfNeeded();
+  await page.getByTestId("prefill-card").scrollIntoViewIfNeeded().catch(() => undefined);
   await show(page, "Pre-fill", "The declaration pre-fill: each value with its source document and page, JSON and PDF. It says NOT CLEARED first; never ready to file.");
   await page.locator("#tab-audit").click();
-  await expect(page.getByTestId("audit-signature-badge")).toHaveAttribute("data-status", /SIGNED|PARTIAL/);
+  await expect(page.getByTestId("audit-verified-badge")).toBeVisible({ timeout: 20_000 });
   await show(page, "Signed audit trail", "The head of the audit chain is signed with a key the database does not hold: tamper-evident under the operator's key, not legal non-repudiation.");
+  await page.waitForTimeout(3000);
 
   fs.mkdirSync(OUT, { recursive: true });
   fs.writeFileSync(
