@@ -19,11 +19,11 @@ from app.agents import extraction
 from app.core import mode
 from app.core.config import settings
 from app.domain.schemas import BBox, FieldRef, QuantityRef
-from tests.helpers import REPO_ROOT, load_script
+from tests.helpers import CASE_C_DIR, REPO_ROOT, load_script
 from tests.unit.extraction_fakes import FakeGenai, response
 
 script = load_script("live_smoke_extraction.py")
-CASE_C = REPO_ROOT / "fixtures" / "case_c"
+CASE_C = CASE_C_DIR
 PDFS = {path.read_bytes(): path.name for path in sorted(CASE_C.glob("*.pdf"))}
 
 

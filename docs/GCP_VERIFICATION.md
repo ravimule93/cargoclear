@@ -5,7 +5,7 @@ passes its tests against fakes, but none of it has run against a real project si
 the person who *has* credentials closes that gap, in an order that fails fast and tells you what is missing.
 
 Run it top to bottom. Each step says what a good result looks like and what to send back. Nothing here needs customer
-data: every document is the synthetic Case C bundle in `fixtures/case_c/`.
+data: every document is the synthetic Case C bundle in `samples/case_c/`.
 
 | Step | What | Tool | Proves |
 |---|---|---|---|
@@ -173,7 +173,7 @@ Phase 1 added a certificate table and sale terms to what Gemini is asked to read
 
    ```bash
    cd backend && APP_MODE=live .venv/bin/python ../scripts/live_smoke_extraction.py --overlay \
-       --docs ../fixtures/case_c/mtc_pipe_test_cert.pdf ../fixtures/case_d/case_d_mtc_test_cert.pdf --runs 3
+       --docs ../samples/case_c/mtc_pipe_test_cert.pdf ../samples/case_d/case_d_mtc_test_cert.pdf --runs 3
    ```
 
    It now gates the exit code on the specification, every heat number and **every chemistry and strength cell** (matched by
@@ -186,7 +186,7 @@ Phase 1 added a certificate table and sale terms to what Gemini is asked to read
    python3 scripts/live_e2e_hosted.py --base-url "$UI_URL" --expect-mode live --case d --runs 10
    ```
 
-   It creates a bundle with destination `IN`, uploads `fixtures/case_d/*.pdf`, runs ONE analysis and expects
+   It creates a bundle with destination `IN`, uploads `samples/case_d/*.pdf`, runs ONE analysis and expects
    `MATERIAL_CONTRADICTION` (M-001 naming heat TH-77121 and chromium 0.35), the invoice, specification, traceability and origin
    checks PASS, SEC-002 a WARN, an `ESTIMATED` valuation that lists its assumptions, and a verified audit chain. It also
    times the analysis; send back `live-e2e-report.json` (and ingest it: section 12).
@@ -391,7 +391,7 @@ python3 scripts/live_e2e_hosted.py --base-url "$UI_URL" --expect-mode live --cas
 python3 scripts/live_e2e_hosted.py --base-url "$UI_URL" --expect-mode live --case d --corrections --runs 10 --out live-e2e-report-dc.json
 # 2. the extraction accuracy of the real model (section 7.2; one report per setting you want to quote)
 cd backend && APP_MODE=live .venv/bin/python ../scripts/live_smoke_extraction.py --as-fixtures --runs 3 \
-    --docs ../fixtures/case_c/*.pdf ../fixtures/case_d/*.pdf && cd ..
+    --docs ../samples/case_c/*.pdf ../samples/case_d/*.pdf && cd ..
 # 3. record them (the model id is the stack's GEMINI_LIVE_MODEL: an e2e report cannot know it)
 python3 scripts/measured_results.py ingest live-e2e-report-c.json  --label hosted-case-c  --model <GEMINI_LIVE_MODEL> --note "<instance settings>"
 python3 scripts/measured_results.py ingest live-e2e-report-d.json  --label hosted-case-d  --model <GEMINI_LIVE_MODEL>

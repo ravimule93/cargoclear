@@ -51,7 +51,11 @@ CASE_D_DOCUMENTS = (
 # backend/app/api/v1/demo.py -> repo root is four levels above this file's directory.
 # The packaged fallback is copied with ``app/`` by the backend Dockerfile.
 # (the Case C directories keep their names: tests patch them; the other cases' directories sit next to them)
-_REPOSITORY_FIXTURE_DIR = Path(__file__).resolve().parents[4] / "fixtures" / "case_c"
+_REPOSITORY_FIXTURE_DIR = (
+    Path(__file__).resolve().parents[4] / "samples" / "case_c"
+    if (Path(__file__).resolve().parents[4] / "samples" / "case_c").is_dir()
+    else Path(__file__).resolve().parents[4] / "fixtures" / "case_c"
+)
 _PACKAGED_FIXTURE_DIR = Path(__file__).resolve().parents[2] / "fixtures" / "case_c"
 
 
@@ -66,7 +70,7 @@ router = APIRouter(tags=["demo"], dependencies=[Depends(_require_demo_mode)])
 
 
 def _fixture_dir(case: str = "case_c") -> Path:
-    """Where a case's sample PDFs are: $CASE_C_FIXTURE_DIR / $CASE_D_FIXTURE_DIR, else fixtures/<case>/, else the copy
+    """Where a case's sample PDFs are: $CASE_C_FIXTURE_DIR / $CASE_D_FIXTURE_DIR, else samples/<case>/, else fixtures/<case>/, else the copy
     packaged with the app."""
     override = os.environ.get(f"{case.upper()}_FIXTURE_DIR")
     if override:

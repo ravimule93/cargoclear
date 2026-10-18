@@ -29,7 +29,7 @@ Pillow>=11.1,<13
 pypdfium2>=4.30,<6
 
 # PDF generation: the declaration pre-fill summary (services/prefill_pdf.py) and the sample-PDF generator. KEEP EXACT: the
-# drift-guard test tests/unit/test_case_c_pdfs.py compares generated PDFs byte-for-byte with fixtures/*/*.pdf.
+# drift-guard test tests/unit/test_case_c_pdfs.py compares generated PDFs byte-for-byte with samples/*/*.pdf.
 reportlab==5.0.1
 
 # Utilities
