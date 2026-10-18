@@ -54,11 +54,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(errorUrl);
   }
 
-  // 2. Parse & Verify State parameter (cryptographic HMAC signature + expiry)
+  // 2. Parse & Verify State parameter (cryptographic HMAC signature + expiry). Only a signed state is accepted.
   let stateNonce = "";
   let oidcNonceFromState = "";
   let returnTo = "/";
-  let isHmacVerified = false;
 
   if (!state) {
     console.error("[oauth_callback] Missing state parameter");
@@ -77,7 +76,6 @@ export async function GET(request: NextRequest) {
         .digest("base64url");
 
       if (signature === expectedSig) {
-        isHmacVerified = true;
         const decoded = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf-8"));
         stateNonce = decoded.nonce || "";
         oidcNonceFromState = decoded.oidcNonce || "";
@@ -103,18 +101,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(errUrl);
       }
     } else {
-      // Legacy unsigned format (e.g. from tests or prior sessions)
-      const decoded = JSON.parse(Buffer.from(state, "base64url").toString("utf-8"));
-      stateNonce = decoded.nonce || "";
-      oidcNonceFromState = decoded.oidcNonce || "";
-      if (
-        decoded.returnTo &&
-        decoded.returnTo.startsWith("/") &&
-        !decoded.returnTo.startsWith("//") &&
-        !decoded.returnTo.includes(":")
-      ) {
-        returnTo = decoded.returnTo;
-      }
+      // The sign-in start route always signs the state; an unsigned one did not come from it.
+      console.error("[oauth_callback] Unsigned state parameter");
+      const errUrl = new URL("/auth/signin", origin);
+      errUrl.searchParams.set("error", "invalid_state");
+      return NextResponse.redirect(errUrl);
     }
   } catch (err) {
     console.error("[oauth_callback] Malformed OAuth state parameter:", err);
@@ -140,20 +131,11 @@ export async function GET(request: NextRequest) {
     cookieOidcNonce = parts[2];
   }
 
-  // If a cookie is present in the browser, verify it strictly matches the state nonce
-  if (cookieStateNonce && stateNonce && cookieStateNonce !== stateNonce) {
-    console.error("[oauth_callback] State CSRF mismatch: cookie !== param", {
-      cookie: cookieStateNonce,
-      param: stateNonce,
-    });
-    const errUrl = new URL("/auth/signin", origin);
-    errUrl.searchParams.set("error", "csrf_validation_failed");
-    return NextResponse.redirect(errUrl);
-  }
-
-  // If no cookie was found AND the state wasn't cryptographically signed, reject
-  if (!cookieStateNonce && !isHmacVerified) {
-    console.error("[oauth_callback] Missing CSRF cookie and unverified state parameter");
+  // OAuth state is a CSRF control, not merely a carrier for the return URL: the callback must be for the browser that started the
+  // sign-in flow. The start route sets BOTH cookies, so one of them is always here when the flow was really started in this browser
+  // (Firebase Hosting drops all but '__session'); no cookie, or another nonce, is refused. The HMAC on the state is a second check.
+  if (!cookieStateNonce || !stateNonce || cookieStateNonce !== stateNonce) {
+    console.error("[oauth_callback] State CSRF check failed", { cookiePresent: Boolean(cookieStateNonce), statePresent: Boolean(stateNonce) });
     const errUrl = new URL("/auth/signin", origin);
     errUrl.searchParams.set("error", "csrf_validation_failed");
     return NextResponse.redirect(errUrl);
@@ -260,37 +242,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(errUrl);
     }
 
-    // 5. Establish Genuine Authenticated Session
-    // Store the verified Google ID token directly in session cookies.
-    // The server-side BFF proxy (/api/proxy) forwards this token in X-CargoClear-User-Token,
-    // where the backend cryptographically validates it against Google's public JWKS certificates.
+    // 6. Establish the session. The API verifies this Google ID token itself; the cookies are HttpOnly so browser JavaScript cannot
+    // forge, read, or forward it directly. The server-side BFF proxy (/api/proxy) forwards it in X-CargoClear-User-Token.
     const targetUrl = new URL(returnTo, origin);
     const response = NextResponse.redirect(targetUrl);
 
-    // Set __session (required by Firebase Hosting CDN rewrites and server-side BFF proxy)
-    response.cookies.set("__session", idToken, {
+    const tokenCookie = {
       path: "/",
-      httpOnly: false,
+      httpOnly: true,
       secure: isSecure,
       sameSite: "lax",
-      maxAge: 86400 * 7, // 7 days
-    });
-
-    response.cookies.set("cargoclear_session_token", idToken, {
-      path: "/",
-      httpOnly: false,
-      secure: isSecure,
-      sameSite: "lax",
-      maxAge: 86400 * 7,
-    });
-
-    response.cookies.set("cargoclear_google_id_token", idToken, {
-      path: "/",
-      httpOnly: false,
-      secure: isSecure,
-      sameSite: "lax",
-      maxAge: 86400 * 7,
-    });
+      // Google ID tokens are short-lived. A stale cookie fails verification cleanly rather than creating a seven-day unverified session.
+      maxAge: 3600,
+    } as const;
+    // Firebase Hosting forwards __session through a rewrite. Retain the explicit name too for local/Cloud Run development, but both
+    // cookies are HttpOnly and contain the same short-lived Google ID token.
+    response.cookies.set("__session", idToken, tokenCookie);
+    response.cookies.set("cargoclear_google_id_token", idToken, tokenCookie);
 
     // Client-readable user identity attributes for navigation headers and avatar
     response.cookies.set("cargoclear_user_email", email, {

@@ -96,7 +96,7 @@ test("CargoClear walkthrough: Case C, Case D, a correction, the pre-fill and the
   const pill = () => page.getByTestId("status-pill");
 
   await page.goto("/");
-  await show(page, "Home", "CargoClear-JAPAC: pre-submission customs document assessment. Decision support only: the authorised agent decides.");
+  await show(page, "Home", "CargoClear: pre-submission customs document assessment. Decision support only: the authorised agent decides.");
 
   // ---- Case C -------------------------------------------------------------------------------------------------------------
   await openCase(page, "c", demo);

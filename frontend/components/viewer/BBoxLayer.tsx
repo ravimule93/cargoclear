@@ -10,6 +10,7 @@ export interface HighlightBox {
   h: number;
   severity: "PASS" | "WARN" | "MATERIAL" | "INFO";
   label?: string;
+  selected?: boolean;
 }
 
 interface BBoxLayerProps {
@@ -39,25 +40,28 @@ export function BBoxLayer({ width, height, boxes }: BBoxLayerProps) {
       {boxes.map((b) => {
         const color = SEVERITY_TOKEN[b.severity] || "var(--cc-info-bd)";
         const active = hovered === b.id;
+        const emphasized = active || b.selected;
 
         return (
           <div
             key={b.id}
+            data-selected-evidence={b.selected ? "true" : undefined}
             className="pointer-events-auto absolute"
             style={{
               left: `${b.x}px`,
               top: `${b.y}px`,
               width: `${b.w}px`,
               height: `${b.h}px`,
+              zIndex: active ? 5 : b.selected ? 4 : b.severity === "MATERIAL" ? 3 : b.severity === "WARN" ? 2 : 1,
             }}
           >
             <button
               type="button"
-              className="w-full h-full transition-opacity cursor-pointer focus:outline-none"
+              className="cc-highlight w-full h-full transition-opacity cursor-pointer focus:outline-none"
               style={{
-                outline: `${active ? 3 : 2}px solid ${color}`,
+                outline: `${emphasized ? 3 : 2}px solid ${color}`,
                 outlineOffset: 1,
-                background: active ? `color-mix(in srgb, ${color} 15%, transparent)` : "transparent",
+                background: emphasized ? `color-mix(in srgb, ${color} 15%, transparent)` : "transparent",
                 borderRadius: 4,
               }}
               onMouseEnter={() => setHovered(b.id)}

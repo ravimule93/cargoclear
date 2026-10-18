@@ -5,14 +5,20 @@ of any mode lays it over the extraction, and ``POST /bundles/{id}/recompute`` (a
 without reading the documents again.
 """
 
-from fastapi import APIRouter, Path
+from fastapi import APIRouter, Depends, Path
 
-from app.domain.schemas import CorrectionRecord, CorrectionRequest, CorrectionsResponse, RevertCorrectionRequest
+from app.domain.schemas import (
+    CorrectionRecord,
+    CorrectionRequest,
+    CorrectionsResponse,
+    RevertCorrectionRequest,
+)
+from app.gateway.authorization import require_authorized_bundle
 from app.gateway.errors import NotFoundError
 from app.repo import firestore
 from app.services import corrections
 
-router = APIRouter(tags=["corrections"])
+router = APIRouter(tags=["corrections"], dependencies=[Depends(require_authorized_bundle)])
 
 
 async def _require_bundle(bundle_id: str) -> None:

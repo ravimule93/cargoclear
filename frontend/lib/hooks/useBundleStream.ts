@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { AssessmentIteration, StatusEvent, StreamErrorEvent } from "../types";
+import { AUTHENTICATION_REQUIRED_MESSAGE } from "../errors";
 
 export interface StreamRunState {
   run_id?: string;
@@ -161,6 +162,7 @@ export function useBundleStream(bundleId: string | null): BundleStream {
     if (connection !== "polling" || !bundleId) return;
 
     let cancelled = false;
+    let authenticationRequired = false;
     let pollTimer: ReturnType<typeof setTimeout> | undefined;
 
     const poll = async () => {
@@ -171,6 +173,11 @@ export function useBundleStream(bundleId: string | null): BundleStream {
           headers: { Accept: "application/json" },
           cache: "no-store",
         });
+        if (statusRes.status === 401) {
+          authenticationRequired = true;
+          if (!cancelled) setError(AUTHENTICATION_REQUIRED_MESSAGE);
+          return;
+        }
         if (statusRes.ok && !cancelled) {
           const statusData = await statusRes.json();
           if (isStatusPayload(statusData)) {
@@ -190,6 +197,11 @@ export function useBundleStream(bundleId: string | null): BundleStream {
           headers: { Accept: "application/json" },
           cache: "no-store",
         });
+        if (assessRes.status === 401) {
+          authenticationRequired = true;
+          if (!cancelled) setError(AUTHENTICATION_REQUIRED_MESSAGE);
+          return;
+        }
         if (assessRes.ok && !cancelled) {
           const assessData = await assessRes.json();
           if (isIterationPayload(assessData)) {
@@ -199,7 +211,7 @@ export function useBundleStream(bundleId: string | null): BundleStream {
       } catch (err) {
         console.debug("[BundleStream] Polling cycle error:", err);
       } finally {
-        if (!cancelled) {
+        if (!cancelled && !authenticationRequired) {
           // Poll faster (2000ms) while running/queued, slower (5000ms) when idle
           const interval = run?.state === "RUNNING" || run?.state === "QUEUED" ? 2000 : 5000;
           pollTimer = setTimeout(poll, interval);

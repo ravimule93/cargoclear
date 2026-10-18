@@ -1,18 +1,27 @@
 # CargoClear-JAPAC
 
+> **Google Cloud AI Builder Cup 2026 Submission**  
+> **Team:** CargoClear (`Ravi Mule`, `Nikhil Pande`)  
+> **Live Web App:** [https://cargoclear-app.web.app](https://cargoclear-app.web.app) | **API:** [https://cargoclear-api-448522365737.asia-south1.run.app](https://cargoclear-api-448522365737.asia-south1.run.app)  
+> **Submission Dossier:** [`submission/SUBMISSION_DOSSIER.md`](submission/SUBMISSION_DOSSIER.md) | **Submission Package:** [`submission/README.md`](submission/README.md)
+
 CargoClear is a pre-submission, evidence-oriented customs assessment workbench for JAPAC trade bundles. It is **decision support only**: it does not submit to government portals, make legal determinations, collect or pay duty, or replace the authorised Custom House Agent. It does give an **indicative duty estimate** (an assessable value and the duties on it, with every assumption listed); that estimate is information, never an amount payable and never the assessment status.
 
 ## What is implemented
 
-- A Next.js workbench for upload, assessment, PDF evidence viewing, Reasoning Delta, and the hash-verified audit chain.
-- A FastAPI pipeline that preprocesses PDFs, extracts evidence, performs deterministic checks, grounds HS requirements, and creates immutable assessment iterations.
-- Deterministic checks beyond weights and HS codes: invoice arithmetic (quantity × price, totals, currency), the **Mill Test Certificate against the declaration** (alloy status under HS Chapter 72 Note 1, carbon equivalent, chemistry and strength limits of the certificate's own standard, heat-number traceability to the packing list), country-of-origin consistency, and anti-dumping / circumvention flags. The rules come from curated tables in `backend/app/reference/` (labelled `demo-curated`, unverified until a reviewer says otherwise: see its README).
-- Two demo journeys. **Case C** (India → Singapore): Invoice + Bill of Lading + Packing List give `MISSING_EVIDENCE`; adding the sample Mill Test Certificate reassesses to `COMPLIANT_FOR_SUBMISSION`. **Case D** (an import into India): all four documents are loaded and the certificate's chemistry (0.35 % chromium) contradicts the declared non-alloy HS code, giving `MATERIAL_CONTRADICTION`, an anti-dumping warning and an indicative duty estimate.
-- **Corrections by the authorised agent.** Edit a value the model read in place (on any evidence row); the correction is an audited, hash-chained entry (`FIELD_CORRECTED` / `FIELD_CONFIRMED` / `CORRECTION_REVERTED`) and changes nothing until **Recompute**, which re-runs every check on the stored extraction with no document read and no model call. A reassessment keeps the corrections; the Reasoning Delta names each one, the value it replaced and the reason.
-- **Declaration pre-fill pack.** The values of an assessment, with the document and page each came from, what the other documents say, what needs a person's eyes and what the declarant must still supply, as documented JSON and a printable PDF (`docs/PREFILL_PACK.md`). It says first when a bundle is not cleared and is never "ready to file"; it is not a government format.
-- **Scales past one instance, safely.** Who may analyse a bundle is a Firestore lease with a fence (two instances cannot both run it; a paused executor cannot write); with `RUN_DISPATCH=cloudtasks` each run is a Cloud Task executed inside a worker request, so scale-in cannot kill it and a dead executor's run is taken over. Rate limits can be shared by all instances. Default unchanged: one always-on instance. Design: `docs/SCALING_AND_INTEGRITY.md`.
-- **A signed audit trail.** After each completed assessment the head of the hash-chained audit trail is signed (Cloud KMS; a labelled throwaway key in demo mode). With a KMS key, a history rewritten consistently still fails verification (the demo key proves less and is refused where KMS is configured). Tamper-evident under the operator's key; not legal non-repudiation.
-- **Better page preparation.** A sideways scan is turned (even a crooked one), an optional reversible deskew straightens skewed pages while evidence boxes still land on the original page, the model's input can be 1-bit or grayscale (an A/B is tooled), and the page image the model was shown is kept and linked ("What the model saw").
+- **Tripartite Clearance Workbench**: Next.js 15 workbench with a 3-way layout switcher (`⊞ Split` side-by-side, `📄 Viewer` focus, `⚖️ Decision` focus), auto-hiding PDF view during analysis with automated focus scrolling to the live progress bar, SVG bounding box overlays, Reasoning Delta, and hash-verified audit chain.
+- **Commercial Auth & Multi-Tenancy**: Google Workspace SSO (OAuth 2.0 / OIDC) with cryptographic RSA token validation, plus commercial user registration/sign-in backed directly by Google Cloud Firestore (`users` collection & audit subcollection) with salted PBKDF2-HMAC-SHA256 password hashing.
+- **Document Staging & Classification**: Pre-upload customs document classification modal (`UploadStagingModal` portaled to document root at `z-[9999]`) enabling brokers to assign document types (`COMMERCIAL_INVOICE`, `BILL_OF_LADING`, `PACKING_LIST`, `MILL_TEST_CERTIFICATE`, `CERTIFICATE_OF_ORIGIN`) before ingestion.
+- **User Profile & Appearance Management**: Interactive user profile dropdown with tenant domain badge, customs role indicator, live sign-out action, and integrated 3-way theme switcher (`Light`, `Dark`, `System`).
+- **Executive KPI Dashboard**: Live landing page with real-time portfolio metrics (Compliance Rate, Flagged Contradictions, Average Assessment Latency, Indicative Duty Exposure) and direct bundle ingestion.
+- **A FastAPI pipeline**: Preprocesses PDFs, extracts evidence via Vertex AI Gemini 2.5 Flash, performs deterministic checks, grounds HS requirements, and creates immutable assessment iterations.
+- **Deterministic checks beyond weights and HS codes**: Invoice arithmetic (quantity × price, totals, currency), the **Mill Test Certificate against the declaration** (alloy status under HS Chapter 72 Note 1, carbon equivalent, chemistry and strength limits of the certificate's own standard, heat-number traceability to the packing list), country-of-origin consistency, and anti-dumping / circumvention flags. The rules come from curated tables in `backend/app/reference/` (labelled `demo-curated`, unverified until a reviewer says otherwise: see its README).
+- **Two demo journeys**: **Case C** (India → Singapore): Invoice + Bill of Lading + Packing List give `MISSING_EVIDENCE`; adding the sample Mill Test Certificate reassesses to `COMPLIANT_FOR_SUBMISSION`. **Case D** (an import into India): all four documents are loaded and the certificate's chemistry (0.35 % chromium) contradicts the declared non-alloy HS code, giving `MATERIAL_CONTRADICTION`, an anti-dumping warning and an indicative duty estimate.
+- **Corrections by the authorised agent**: Edit a value the model read in place (on any evidence row); the correction is an audited, hash-chained entry (`FIELD_CORRECTED` / `FIELD_CONFIRMED` / `CORRECTION_REVERTED`) and changes nothing until **Recompute**, which re-runs every check on the stored extraction with no document read and no model call. A reassessment keeps the corrections; the Reasoning Delta names each one, the value it replaced and the reason.
+- **Declaration pre-fill pack**: The values of an assessment, with the document and page each came from, what the other documents say, what needs a person's eyes and what the declarant must still supply, as documented JSON and a printable PDF (`docs/PREFILL_PACK.md`). It says first when a bundle is not cleared and is never "ready to file"; it is not a government format.
+- **Scales past one instance, safely**: Who may analyse a bundle is a Firestore lease with a fence (two instances cannot both run it; a paused executor cannot write); with `RUN_DISPATCH=cloudtasks` each run is a Cloud Task executed inside a worker request, so scale-in cannot kill it and a dead executor's run is taken over. Rate limits can be shared by all instances. Default unchanged: one always-on instance. Design: `docs/SCALING_AND_INTEGRITY.md`.
+- **A signed audit trail**: After each completed assessment the head of the hash-chained audit trail is signed (Cloud KMS; a labelled throwaway key in demo mode). With a KMS key, a history rewritten consistently still fails verification (the demo key proves less and is refused where KMS is configured). Tamper-evident under the operator's key; not legal non-repudiation.
+- **Better page preparation**: A sideways scan is turned (even a crooked one), an optional reversible deskew straightens skewed pages while evidence boxes still land on the original page, the model's input can be 1-bit or grayscale (an A/B is tooled), and the page image the model was shown is kept and linked ("What the model saw").
 - Demo extraction is deliberately synthetic and filename-keyed. It does **not** read the sample PDFs. Live mode uses GCS, Firestore, BigQuery, and Gemini instead.
 
 ## What may be claimed, and the numbers
@@ -52,7 +61,7 @@ In one terminal:
 
 ```bash
 cd backend
-APP_MODE=demo .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8080
+APP_MODE=demo AUTH_ENABLED=true .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8080
 ```
 
 In another:
@@ -62,7 +71,7 @@ cd frontend
 API_BASE=http://127.0.0.1:8080 npm run dev
 ```
 
-Open `http://localhost:3000`, choose **Start Case C demo** (or **Start Case D demo (India import)**, described below), then:
+Open `http://localhost:3000` and sign in, or select an approved demo preset. Then choose **Start Case C demo** (or **Start Case D demo (India import)**, described below):
 
 1. Confirm the fresh workbench contains three documents and no assessment.
 2. Select **Run analysis** and observe `MISSING_EVIDENCE`, including the Mill Test Certificate requirement.
@@ -94,10 +103,11 @@ npm run build
 
 - **Backend API**: `https://cargoclear-api-448522365737.asia-south1.run.app`
 - **Frontend UI**: `https://cargoclear-app.web.app` (or `https://cargoclear-ui-448522365737.asia-south1.run.app`)
-- **API configuration**: Deployed with `--max-instances 10`, `--min-instances 1`, `--concurrency 80`, a 300-second request timeout, and CPU always allocated.
-- **UI configuration**: Runs with Next.js BFF proxy routing `/api/proxy/...` directly to the backend API, preserving same-origin semantics for both HTTP requests and SSE event streams, with dual cookie handling (`__session` and `cargoclear_session_token`) for Firebase Hosting CDN rewrites.
-- **Live GCP Integrations**: BigQuery vector search on tariff dataset `cargoclear-hackathon:ahtn`, Firestore hash-chained audit logging, GCS PDF storage (`cargoclear-raw-pdfs`), and multimodal extraction with Vertex AI `gemini-2.5-flash`.
+- **API configuration**: Deployed with `--max-instances 1`, `--min-instances 0` (scale-to-zero enabled for zero idle cost), a 300-second request timeout, and CPU startup boost.
+- **UI configuration**: Runs with Next.js BFF proxy routing `/api/proxy/...` directly to the backend API, preserving same-origin semantics for both HTTP requests and SSE event streams, with dual cookie handling (`__session` and `cargoclear_session_token`) for Firebase Hosting CDN rewrites, deployed with `--min-instances 0` (scale-to-zero).
+- **Live GCP Integrations**: BigQuery vector search on tariff dataset `cargoclear-hackathon:ahtn`, Firestore native database for commercial users and hash-chained audit logging, GCS PDF storage (`cargoclear-raw-pdfs`), and multimodal extraction with Vertex AI `gemini-2.5-flash`.
 - **Prompt-Injection Guard**: Prompt-injection guard tested and verified across synthetic fixtures and attack variants ([docs/INJECTION_TEST.md](docs/INJECTION_TEST.md), [docs/MEASURED_RESULTS.md](docs/MEASURED_RESULTS.md)).
 - See [docs/01_analysis_and_roadmap.md](docs/01_analysis_and_roadmap.md) for the verified roadmap, [docs/HOW_TO_RUN_AND_DEMO.md](docs/HOW_TO_RUN_AND_DEMO.md) for the operational walkthrough, and [docs/GCP_VERIFICATION.md](docs/GCP_VERIFICATION.md) for verification procedures.
+- **Verification boundary**: Nothing in this repository has been verified against a real project since these changes without following [docs/GCP_VERIFICATION.md](docs/GCP_VERIFICATION.md).
 
 Do not run Docker, Cloud Build, `gcloud`, or deployment commands without authorised project access. See [docs/HOW_TO_RUN_AND_DEMO.md](docs/HOW_TO_RUN_AND_DEMO.md) for the operational walkthrough and [docs/FAQ_ONBOARDING.md](docs/FAQ_ONBOARDING.md) for boundaries and troubleshooting.

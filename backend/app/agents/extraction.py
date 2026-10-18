@@ -156,14 +156,19 @@ _BYTES_PER_MB = 1024 * 1024
 _MAX_LOCATIONS = 10
 
 
-def _get_genai_client() -> Any:
+def _get_genai_client(requested_mode: str | None = None, *args: Any, **kwargs: Any) -> Any:
     """Lazily initialize the google-genai Vertex AI client."""
     global _genai_client
     if _genai_client is not None:
         return _genai_client
 
-    if not use_live_gcp():
-        if settings.app_mode == "live":
+    target_mode = requested_mode or settings.app_mode
+    try:
+        live = use_live_gcp(target_mode)
+    except TypeError:
+        live = use_live_gcp()
+    if not live:
+        if target_mode == "live":
             raise UpstreamError(no_credentials_message())
         logger.info("genai_client_mock_mode", reason="Running in demo mode without GCP credentials")
         return None
@@ -276,13 +281,6 @@ def _clamp_in_place(container: dict[str, Any], key: str, warning_path: str, warn
 
 def _clean_field_ref(node: dict[str, Any], path: str, page_count: int | None, warnings: list[dict[str, str]]) -> None:
     _clamp_in_place(node, "confidence", f"{path}.confidence", warnings)
-
-    raw_bbox = node.get("bbox")
-    if isinstance(raw_bbox, (list, tuple)):
-        if len(raw_bbox) == 4:
-            node["bbox"] = {"page": 1, "ymin": raw_bbox[0], "xmin": raw_bbox[1], "ymax": raw_bbox[2], "xmax": raw_bbox[3]}
-        elif len(raw_bbox) >= 5:
-            node["bbox"] = {"page": int(raw_bbox[0]), "ymin": raw_bbox[1], "xmin": raw_bbox[2], "ymax": raw_bbox[3], "xmax": raw_bbox[4]}
 
     problem = _bbox_problem(node.get("bbox"), page_count)
     if problem is not None:
@@ -820,8 +818,12 @@ async def run_extraction_agent(ctx: dict[str, Any]) -> dict[str, Any]:
     stats: list[dict[str, Any]] = []
     warnings: list[dict[str, str]] = []
 
-    client = _get_genai_client()
-    live_mode = settings.app_mode == "live"
+    exec_mode = ctx.get("execution_mode") or settings.app_mode
+    live_mode = exec_mode == "live"
+    try:
+        client = _get_genai_client(exec_mode)
+    except TypeError:
+        client = _get_genai_client()
 
     if live_mode and not processed_pages:
         # Live mode never falls back to fixtures: with no pages to send there is nothing to read,

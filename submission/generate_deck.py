@@ -56,11 +56,11 @@ def main():
             tf = shape.text_frame
             for p in tf.paragraphs:
                 if "Team name:" in p.text:
-                    p.text = "Team name: [TEAM NAME — REQUIRED] (CargoClear Team)"
+                    p.text = "Team name: CargoClear"
                     p.font.size = Pt(16)
                     p.font.bold = True
                 elif "Team leader name:" in p.text:
-                    p.text = "Team leader name: [TEAM LEADER — REQUIRED]"
+                    p.text = "Team leader name: Ravi Mule (Team Member: Nikhil Pande)"
                     p.font.size = Pt(16)
                     p.font.bold = True
                 elif "Problem Statement:" in p.text:
@@ -127,6 +127,9 @@ def main():
     s5 = prs.slides[4]
     tf5 = add_content_box(s5, Inches(0.8), Inches(1.8), Inches(11.5), Inches(5.2))
     features = [
+        ("Tripartite Clearance Layout Switcher", "3-way layout switcher (Split, Viewer focus, Decision focus), auto-hiding PDF view during analysis with automated focus scrolling to live progress bar."),
+        ("Pre-Upload Document Staging & Classification", "Portaled classification modal (z-[9999]) enabling customs brokers to categorize document types prior to ingestion."),
+        ("Commercial Registration & Corporate Auth", "Google Workspace SSO plus Cloud Firestore commercial registration with salted PBKDF2-HMAC-SHA256 password hashing and audit trails."),
         ("Multimodal Ingestion & PDF Normalization", "Processes multi-page trade bundles with page-level coordinate mapping and thumbnail generation."),
         ("Prompt Injection Defense", "Sandboxed extraction prompt and rigid Pydantic JSON schema that resist prompt-injection attempts inside vendor invoices."),
         ("Cross-Document Discrepancy Engine", "Automated cross-check of gross/net weights (1% tolerance), invoice references, ports, and Incoterm consistency."),
@@ -137,10 +140,10 @@ def main():
         ("Cryptographic Tamper-Evident Ledger", "SHA-256 hash-chained iterations with ECDSA key signatures recording all agent actions and verdicts.")
     ]
     p0 = tf5.paragraphs[0]
-    style_paragraph(p0, "Comprehensive Trade Assessment Feature Suite:", size=16, bold=True, color=RGBColor(15, 23, 42), space_after=6)
+    style_paragraph(p0, "Comprehensive Trade Assessment Feature Suite:", size=16, bold=True, color=RGBColor(15, 23, 42), space_after=4)
     for f_title, f_desc in features:
         p = tf5.add_paragraph()
-        style_paragraph(p, f"• {f_title}: {f_desc}", size=12, space_after=5)
+        style_paragraph(p, f"• {f_title}: {f_desc}", size=10.5, space_after=3)
 
     # -------------------------------------------------------------
     # SLIDE 6: Process Flow Diagram
@@ -245,11 +248,11 @@ def main():
     style_paragraph(p0, "Serverless Pay-Per-Use Cost Model (Zero Idle Costs):", size=16, bold=True, color=RGBColor(15, 23, 42), space_after=6)
 
     costs = [
-        ("Cloud Run Frontend & API Services", "Runs on Google Cloud Run with scale-to-zero. Baseline free tier covers 2 million requests/month. Projected cost for production pilot: ~$15.00 – $25.00 / month."),
+        ("Cloud Run Frontend & API Services", "Deployed with --min-instances 0 (scale-to-zero), delivering $0.00 idle compute cost. Monthly compute for 5,000 assessments falls within Cloud Run Free Tier (2M requests/mo free). Projected compute: $0.00 – $2.00 / month."),
         ("Google Gemini 2.5 Flash Inference", "Pricing: $0.075 / 1M input tokens, $0.30 / 1M output tokens. An average 4-document trade bundle consumes ~4,500 input tokens and ~1,800 output tokens. Cost per bundle assessment: ~$0.00088 (< 0.1¢). For 5,000 monthly shipments: ~$4.40 / month."),
-        ("Cloud Storage & Firestore Ledger", "Document storage (10 MB/shipment) + Firestore read/write operations for audit ledger. Projected cost: ~$5.00 – $10.00 / month."),
+        ("Cloud Storage & Firestore Native Ledger", "Document storage (10 MB/shipment) + Firestore native user registration and audit ledger read/writes. Projected cost: ~$5.00 – $10.00 / month."),
         ("BigQuery Reference Queries", "Tariff schedule lookups cached in-memory with BigQuery vector search. Projected cost: ~$2.00 – $5.00 / month."),
-        ("Total Estimated Monthly Operating Cost", "Estimated total for 5,000 full shipment bundle assessments: ~$26.40 – $44.40 / month (less than $0.01 per clearance assessment!).")
+        ("Total Estimated Monthly Operating Cost", "Estimated total for 5,000 full shipment bundle assessments: ~$11.40 – $21.40 / month (less than $0.005 per clearance assessment!).")
     ]
     for cost_cat, cost_val in costs:
         p = tf10.add_paragraph()
@@ -264,11 +267,11 @@ def main():
     style_paragraph(p0, "Live Prototype Capabilities & Visual Verification:", size=16, bold=True, color=RGBColor(15, 23, 42), space_after=6)
 
     snapshots = [
-        ("1. Commercial SSO & Tenant Dashboard", "Google Workspace SSO integration, role-based licensing (Licensed CHA, Operator, Auditor), tenant scoping, and recent bundles table with status pills."),
-        ("2. Interactive 3-Pane Clearance Workbench", "Multi-document bundle view with side-by-side high-resolution PDF rendering, document switcher, and live upload progress."),
-        ("3. Visual Evidence Grounding & Bounding Boxes", "Direct coordinate overlays on trade documents highlighting discrepancies (e.g. invoice gross weight vs. packing list weight) and chemistry mismatches."),
-        ("4. Tariff Valuation & Anti-Dumping Calculation", "Itemized duty calculation card detailing BCD, Social Welfare Surcharge, and Anti-Dumping Duties with legal notification citations."),
-        ("5. Human-in-the-Loop Corrections & Audit Trail", "Authorized override modal with instant zero-model recomputation and cryptographically signed SHA-256 audit log timeline.")
+        ("1. Commercial Auth & Tenant Dashboard", "Google Workspace SSO plus Cloud Firestore commercial registration (salted PBKDF2-HMAC-SHA256 password hashing), user profile menu with 3-way theme controls, and recent bundles table."),
+        ("2. Tripartite Clearance Workbench", "Next.js 15 workbench with 3-way layout switcher (Split, Viewer focus, Decision focus), auto-hiding PDF view during analysis with automated focus scrolling to live progress bar."),
+        ("3. Pre-Upload Staging & Classification", "Portaled document classification modal (z-[9999]) enabling customs brokers to categorize document types prior to ingestion."),
+        ("4. Visual Evidence Grounding & Bounding Boxes", "Direct coordinate overlays on trade documents highlighting discrepancies (e.g. invoice gross weight vs. packing list weight) and chemistry mismatches."),
+        ("5. Tariff Valuation, In-Place Override & Audit Ledger", "Itemized duty calculation card (BCD, SWS, ADD), authorized override modal with instant zero-model recomputation, and cryptographically signed SHA-256 audit log timeline.")
     ]
     for snap_title, snap_desc in snapshots:
         p = tf11.add_paragraph()
@@ -324,11 +327,11 @@ def main():
             tf14 = shape.text_frame
             for p in tf14.paragraphs:
                 if "GitHub Public Repository" in p.text:
-                    p.text = "GitHub Public Repository: [GITHUB REPOSITORY URL — REQUIRED] (https://github.com/ravimule93/cargoclear)"
+                    p.text = "GitHub Public Repository: https://github.com/ravimule93/cargoclear (Branch: improvement-plan)"
                     p.font.size = Pt(16)
                     p.font.bold = True
                 elif "Demo Video Link" in p.text:
-                    p.text = "Demo Video Link (3 Minutes): [DEMO VIDEO LINK — REQUIRED]"
+                    p.text = "Demo Video Link (3 Minutes): [DEMO VIDEO LINK — Insert URL here] (Narrative script in submission dossier)"
                     p.font.size = Pt(16)
                     p.font.bold = True
                 elif "Final Product Link" in p.text:

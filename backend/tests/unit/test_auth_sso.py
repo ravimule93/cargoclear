@@ -2,10 +2,10 @@
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
-from app.core.config import settings
+from app.core.config import Settings, settings
 from app.domain.auth import UserIdentity
-from app.gateway.auth import get_current_user
 from app.main import create_app
 
 
@@ -104,6 +104,125 @@ def test_auth_enabled_requires_bearer_token(monkeypatch):
     assert resp_with_token.json()["tenant_id"] == "customs.com"
 
 
+def test_live_mode_refuses_mock_tokens_and_service_only_requests(monkeypatch):
+    """A private API refuses direct bearer, service-only callers, and non-preset mock tokens, while accepting preset demo users via the BFF."""
+    monkeypatch.setattr(settings, "auth_enabled", True)
+    monkeypatch.setattr(settings, "app_mode", "live")
+
+    app = create_app()
+    client = TestClient(app)
+
+    unauthorized_mock_token = "mock-jwt-attacker@customs.com-LICENSED_CHA"
+    mock_direct_bearer = client.post(
+        "/api/v1/bundles",
+        json={"reference": "TEST-LIVE-MOCK", "destination_country": "SG"},
+        headers={"Authorization": f"Bearer {unauthorized_mock_token}"},
+    )
+    service_only = client.post(
+        "/api/v1/bundles",
+        json={"reference": "TEST-LIVE-SERVICE", "destination_country": "SG"},
+        headers={"Authorization": "Bearer service.identity.token"},
+    )
+    mock_cookie = client.post(
+        "/api/v1/bundles",
+        json={"reference": "TEST-LIVE-MOCK-COOKIE", "destination_country": "SG"},
+        headers={"Cookie": f"__session={unauthorized_mock_token}"},
+    )
+    mock_unauth_header = client.post(
+        "/api/v1/bundles",
+        json={"reference": "TEST-LIVE-UNAUTH", "destination_country": "SG"},
+        headers={"X-CargoClear-User-Token": unauthorized_mock_token},
+    )
+
+    for response in (mock_direct_bearer, service_only, mock_cookie, mock_unauth_header):
+        assert response.status_code == 401
+
+    # Preset demo accounts forwarded via the BFF proxy header succeed in live mode
+    preset_token = "mock-jwt-demo-cha@customs.com-LICENSED_CHA"
+    mock_preset_meta = client.get(
+        "/api/v1/meta",
+        headers={"X-CargoClear-User-Token": preset_token},
+    )
+    assert mock_preset_meta.status_code == 200
+    assert mock_preset_meta.json()["user"] is not None
+    assert mock_preset_meta.json()["user"]["email"] == "demo-cha@customs.com"
+
+
+def test_live_settings_require_a_real_identity_configuration():
+    """A deployment cannot accidentally start live mode with demo identity defaults."""
+    try:
+        Settings(_env_file=None, APP_MODE="live")
+    except ValidationError:
+        pass
+    else:  # pragma: no cover - this must remain fail-closed
+        raise AssertionError("live settings unexpectedly accepted demo identity defaults")
+
+    configured = Settings(
+        _env_file=None,
+        APP_MODE="live",
+        AUTH_ENABLED="true",
+        OAUTH_CLIENT_ID="test-client.apps.googleusercontent.com",
+    )
+    assert configured.auth_enabled is True
+
+
+def test_live_mode_does_not_expose_legacy_password_or_mock_token_routes(monkeypatch):
+    """Production uses Google SSO only; password routes cannot mint demo tokens."""
+    monkeypatch.setattr(settings, "auth_enabled", True)
+    monkeypatch.setattr(settings, "app_mode", "live")
+    client = TestClient(create_app())
+
+    for path, payload in (
+        ("/api/v1/auth/check?email=agent@customs.com", None),
+        (
+            "/api/v1/auth/signup",
+            {
+                "email": "agent@customs.com",
+                "password": "not-a-production-password",
+                "name": "Agent",
+            },
+        ),
+        (
+            "/api/v1/auth/signin",
+            {"email": "agent@customs.com", "password": "not-a-production-password"},
+        ),
+    ):
+        response = client.get(path) if payload is None else client.post(path, json=payload)
+        assert response.status_code == 404
+
+
+def test_bundle_resources_do_not_cross_tenant_boundaries(monkeypatch):
+    """Every bundle-derived route must conceal another tenant's data."""
+    monkeypatch.setattr(settings, "auth_enabled", False)
+    monkeypatch.setattr(settings, "app_mode", "demo")
+    client = TestClient(create_app())
+
+    created = client.post(
+        "/api/v1/bundles",
+        json={"reference": "TENANT-BOUNDARY", "destination_country": "SG"},
+        headers={"X-Test-User-Email": "agent@customs.com"},
+    )
+    assert created.status_code == 201
+    bundle_id = created.json()["id"]
+
+    other_tenant = {"X-Test-User-Email": "agent@dhl.com"}
+    protected_paths = (
+        f"/api/v1/bundles/{bundle_id}",
+        f"/api/v1/bundles/{bundle_id}/audit",
+        f"/api/v1/bundles/{bundle_id}/status",
+        f"/api/v1/bundles/{bundle_id}/extractions",
+        f"/api/v1/bundles/{bundle_id}/assessment",
+        f"/api/v1/bundles/{bundle_id}/iterations",
+        f"/api/v1/bundles/{bundle_id}/corrections",
+        f"/api/v1/bundles/{bundle_id}/prefill",
+        f"/api/v1/bundles/{bundle_id}/documents/not-a-document/file",
+    )
+    for path in protected_paths:
+        response = client.get(path, headers=other_tenant)
+        assert response.status_code == 404, path
+        assert response.json()["code"] == "NOT_FOUND"
+
+
 def test_domain_restriction_enforcement(monkeypatch):
     """When ALLOWED_EMAIL_DOMAINS is restricted, unauthorized domains return 403."""
     monkeypatch.setattr(settings, "auth_enabled", True)
@@ -195,18 +314,29 @@ def test_user_check_and_signup_flow():
 
 
 def test_service_account_caller_distinguished_from_end_user(monkeypatch):
-    """When Cloud Run IAM passes service account token, meta ignores it for end user unless X-CargoClear-User-Token is passed."""
+    """The Cloud Run IAM caller (a service account) is never a person; only the end-user token the BFF forwards is."""
     monkeypatch.setattr(settings, "auth_enabled", True)
     monkeypatch.setattr(settings, "app_mode", "live")
 
-    # Mock verify_bearer_token to return service account claims for the Authorization header
+    # The service identity and the person are told apart by their tokens; a live API verifies real Google tokens only
     sa_claims = {
         "email": "448522365737-compute@developer.gserviceaccount.com",
         "sub": "sa-12345",
         "iss": "https://accounts.google.com",
     }
+    user_claims = {
+        "email": "pandenikhil5@gmail.com",
+        "sub": "user-67890",
+        "iss": "https://accounts.google.com",
+        "email_verified": True,
+    }
     from app.gateway import auth
-    monkeypatch.setattr(auth, "verify_bearer_token", lambda token, client_id=None: sa_claims)
+
+    monkeypatch.setattr(
+        auth,
+        "verify_bearer_token",
+        lambda token, client_id=None: sa_claims if token == "google-iam-sa-token" else user_claims,
+    )
 
     app = create_app()
     client = TestClient(app)
@@ -217,15 +347,27 @@ def test_service_account_caller_distinguished_from_end_user(monkeypatch):
     assert res_unauth.status_code == 200
     assert res_unauth.json()["user"] is None
 
-    # 2. Authenticated request from proxy: carries Cloud Run SA token AND X-CargoClear-User-Token
-    headers_auth = {
-        "Authorization": "Bearer google-iam-sa-token",
-        "X-CargoClear-User-Token": "Bearer mock-jwt-pandenikhil5@gmail.com-LICENSED_CHA",
-    }
-    res_auth = client.get("/api/v1/meta", headers=headers_auth)
-    assert res_auth.status_code == 200
-    assert res_auth.json()["user"] is not None
-    assert res_auth.json()["user"]["email"] == "pandenikhil5@gmail.com"
+    # 2. Authenticated request from proxy: carries Cloud Run SA token AND the end user's token, bare or with a Bearer prefix
+    for forwarded in ("google-end-user-id-token", "Bearer google-end-user-id-token"):
+        headers_auth = {
+            "Authorization": "Bearer google-iam-sa-token",
+            "X-CargoClear-User-Token": forwarded,
+        }
+        res_auth = client.get("/api/v1/meta", headers=headers_auth)
+        assert res_auth.status_code == 200
+        assert res_auth.json()["user"] is not None
+        assert res_auth.json()["user"]["email"] == "pandenikhil5@gmail.com"
+
+    # 3. A demo token in the user header is not a session in live mode
+    res_mock = client.get(
+        "/api/v1/meta",
+        headers={
+            "Authorization": "Bearer google-iam-sa-token",
+            "X-CargoClear-User-Token": "Bearer mock-jwt-pandenikhil5@gmail.com-LICENSED_CHA",
+        },
+    )
+    assert res_mock.status_code == 200
+    assert res_mock.json()["user"] is None
 
 
 def test_verify_bearer_token_genuine_google_success(monkeypatch):

@@ -137,10 +137,10 @@ def test_the_packaged_copies_equal_the_repository_fixtures() -> None:
 
 def test_the_certificate_prints_its_heats_and_chemistry(generator: ModuleType) -> None:
     case_c = generator.render_pdf("mtc_pipe_test_cert.pdf")
-    for expected in (b"API 5L PSL2 GR.B", b"(H-24-0881)", b"(H-24-0882)", b"(0.18)", b"(0.95)", b"(310)"):
+    for expected in (b"API 5L PSL2 GR.B", b"(H-24-0881)", b"(H-24-0882)", b"(0.18)", b"(0.95)", b"(310)", b"(C \\(%\\))", b"(YS \\(MPa\\))"):
         assert expected in case_c, expected
     case_d = generator.render_pdf("case_d_mtc_test_cert.pdf")
-    for expected in (b"ASTM A106 GR B", b"(TH-77121)", b"(0.35)"):
+    for expected in (b"ASTM A106 GR B", b"(TH-77121)", b"(0.35)", b"(C \\(%\\))", b"(YS \\(MPa\\))"):
         assert expected in case_d, expected
 
 

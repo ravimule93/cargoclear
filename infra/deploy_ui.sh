@@ -60,6 +60,12 @@ PUBLIC_URL="${PUBLIC_URL}",\
 GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}",\
 NEXT_PUBLIC_APP_MODE="${NEXT_PUBLIC_APP_MODE}"
 
+# A deploy that silently falls back to demo mode is unsafe. This is deliberately
+# strict: the deployer needs private-API invoker permission for the assertion.
+UI_URL="$(gcloud run services describe cargoclear-ui --region "${REGION}" --project "${PROJECT_ID}" --format="value(status.url)")"
+IDENTITY_TOKEN="$(gcloud auth print-identity-token)"
+python3 scripts/verify_live_domain.py --ui-url "${UI_URL}" --api-url "${API_URL}" --identity-token "${IDENTITY_TOKEN}"
+
 # Automatically prune older container images from Artifact Registry, keeping only the active image
 echo "Pruning older cargoclear-ui container images from Artifact Registry..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

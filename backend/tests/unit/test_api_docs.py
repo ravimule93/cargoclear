@@ -80,10 +80,15 @@ async def test_the_module_level_app_serves_the_docs_in_demo_mode() -> None:
 
 
 def test_the_setting_resolves_like_the_brief_says() -> None:
+    live_identity = {
+        "APP_MODE": "live",
+        "AUTH_ENABLED": "true",
+        "OAUTH_CLIENT_ID": "test-client.apps.googleusercontent.com",
+    }
     assert Settings(_env_file=None).enable_api_docs is None
     assert Settings(_env_file=None).api_docs_enabled is True
-    assert Settings(_env_file=None, APP_MODE="live").api_docs_enabled is False
-    assert Settings(_env_file=None, APP_MODE="live", ENABLE_API_DOCS="true").api_docs_enabled is True
+    assert Settings(_env_file=None, **live_identity).api_docs_enabled is False
+    assert Settings(_env_file=None, **live_identity, ENABLE_API_DOCS="true").api_docs_enabled is True
     assert Settings(_env_file=None, APP_MODE="demo", ENABLE_API_DOCS="false").api_docs_enabled is False
 
 

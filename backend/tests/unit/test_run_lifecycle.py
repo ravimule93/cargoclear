@@ -191,10 +191,10 @@ async def test_consecutive_runs_get_consecutive_iteration_numbers(monkeypatch) -
 async def test_a_failed_run_does_not_burn_its_iteration_number(monkeypatch) -> None:
     async with api_client() as client:
         bundle_id = await create_bundle_with_documents(client, FILES)
-        explode(monkeypatch, "discrepancy", RuntimeError("boom"))
-        run_id = await orchestrator.start_run(bundle_id)
-        assert (await wait_for_run(bundle_id, run_id))["state"] == "ERROR"
-        monkeypatch.undo()
+        with monkeypatch.context() as patch:
+            explode(patch, "discrepancy", RuntimeError("boom"))
+            run_id = await orchestrator.start_run(bundle_id)
+            assert (await wait_for_run(bundle_id, run_id))["state"] == "ERROR"
 
         run_id = await orchestrator.start_run(bundle_id)
         assert (await wait_for_run(bundle_id, run_id))["state"] == "COMPLETE"
@@ -249,11 +249,10 @@ async def test_the_reap_lock_alone_keeps_four_concurrent_reapers_to_one_audit_ev
     async with api_client() as client:
         bundle_id = await create_bundle_with_documents(client, FILES)
         await seed_dead_run(bundle_id, age=300)
-        monkeypatch.setattr(firestore, "get_run_state", yielding(firestore.get_run_state))
-        monkeypatch.setattr(audit, "list_audit_events", yielding(audit.list_audit_events))
-
-        results = await asyncio.gather(*[orchestrator.reap_stale(bundle_id) for _ in range(4)])
-        monkeypatch.undo()
+        with monkeypatch.context() as patch:
+            patch.setattr(firestore, "get_run_state", yielding(firestore.get_run_state))
+            patch.setattr(audit, "list_audit_events", yielding(audit.list_audit_events))
+            results = await asyncio.gather(*[orchestrator.reap_stale(bundle_id) for _ in range(4)])
 
         assert results.count(True) == 1 and results.count(False) == 3
         assert len(await events_of(client, bundle_id, "ANALYSIS_FAILED")) == 1
@@ -521,15 +520,15 @@ async def test_cancelling_the_pipeline_task_ends_the_run_in_error_and_audits_it_
 async def test_after_a_cancelled_run_the_bundle_accepts_a_new_analysis_at_once(monkeypatch) -> None:
     async with api_client() as client:
         bundle_id = await create_bundle_with_documents(client, FILES)
-        stall(monkeypatch, "extract", 30)
-        before = set(orchestrator._RUNNING_TASKS)
-        run_id = await orchestrator.start_run(bundle_id)
-        task = new_task(before)
-        await wait_until(lambda: in_stage(bundle_id, run_id, "extract"))
-        task.cancel()
-        with pytest.raises(asyncio.CancelledError):
-            await task
-        monkeypatch.undo()
+        with monkeypatch.context() as patch:
+            stall(patch, "extract", 30)
+            before = set(orchestrator._RUNNING_TASKS)
+            run_id = await orchestrator.start_run(bundle_id)
+            task = new_task(before)
+            await wait_until(lambda: in_stage(bundle_id, run_id, "extract"))
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
 
         response = await client.post(f"/api/v1/bundles/{bundle_id}/analyze")
 
@@ -977,9 +976,9 @@ async def test_reaping_does_not_depend_on_the_audit_read_working(monkeypatch) ->
         async def broken(_bundle_id: str):
             raise OSError("audit read failed")
 
-        monkeypatch.setattr(audit, "list_audit_events", broken)
-        assert await orchestrator.reap_stale(bundle_id) is True
-        monkeypatch.undo()
+        with monkeypatch.context() as patch:
+            patch.setattr(audit, "list_audit_events", broken)
+            assert await orchestrator.reap_stale(bundle_id) is True
 
         [failed] = await events_of(client, bundle_id, "ANALYSIS_FAILED")
         assert (failed["iteration"], failed["payload"]["mode"]) == (0, "unknown")  # the started event could not be read
@@ -1094,9 +1093,10 @@ async def test_a_run_reaped_while_merely_slow_cannot_finish_afterwards(monkeypat
 async def test_a_reaped_run_that_wakes_up_after_a_newer_run_owns_the_bundle_leaves_the_newer_run_alone(monkeypatch) -> None:
     async with api_client() as client:
         bundle_id = await create_bundle_with_documents(client, FILES)
-        old_id, old_task, gate = await start_held_run(monkeypatch, bundle_id)
-        age_run(bundle_id, old_id)
-        monkeypatch.undo()  # the newer run is not held
+        with monkeypatch.context() as patch:
+            old_id, old_task, gate = await start_held_run(patch, bundle_id)
+            age_run(bundle_id, old_id)
+        # Only the local hold is removed; shared hermetic settings remain in force.
 
         new_id = await orchestrator.start_run(bundle_id)  # reaps the old run, claims the bundle
         assert (await wait_for_run(bundle_id, new_id))["state"] == "COMPLETE"
@@ -1299,12 +1299,12 @@ async def test_fail_run_records_the_error_even_when_the_run_state_cannot_be_read
         async def unreadable(_bundle_id: str, _run_id: str | None = None):
             raise OSError("store hiccup")
 
-        monkeypatch.setattr(firestore, "get_run_state", unreadable)
-        with capture_logs() as logs:
-            await orchestrator._fail_run(
-                bundle_id=bundle_id, run_id="run-dead", iteration=1, mode="full", stage="extract", exc=RuntimeError("real"),
-            )
-        monkeypatch.undo()
+        with monkeypatch.context() as patch:
+            patch.setattr(firestore, "get_run_state", unreadable)
+            with capture_logs() as logs:
+                await orchestrator._fail_run(
+                    bundle_id=bundle_id, run_id="run-dead", iteration=1, mode="full", stage="extract", exc=RuntimeError("real"),
+                )
 
         assert (await firestore.get_run_state(bundle_id, "run-dead"))["state"] == "ERROR"
         assert len(await events_of(client, bundle_id, "ANALYSIS_FAILED")) == 1

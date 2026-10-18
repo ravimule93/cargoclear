@@ -1,28 +1,51 @@
 /* =============================================================================
    Workbench grid layout
-   Three-column investigator layout (not a chat UI):
-     [DocumentRail | DocumentViewer | AssessmentPanel]
-     [          DeltaDrawer / AuditTimeline          ]
+   The assessment is the persistent decision workspace. The source PDF opens as
+   contextual reference above it instead of pushing the decision into a narrow
+   third column. The document rail and audit drawer remain independently usable.
    ============================================================================= */
 
 .cc-workbench {
   display: grid;
   height: 100dvh;
-  grid-template-columns: 260px minmax(0, 1fr) 360px;
+  grid-template-columns: 260px minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr) var(--cc-drawer-height, min(240px, 32vh));
   grid-template-areas:
-    "banner banner banner"
-    "top    top    top"
-    "rail   viewer assess"
-    "drawer drawer drawer";
+    "banner banner"
+    "top    top"
+    "rail   assess"
+    "drawer drawer";
   background: var(--cc-bg);
   color: var(--cc-text);
   overflow: hidden;
   transition: grid-template-rows 0.2s ease;
 }
+.cc-main-workspace { display: contents; }
 
 .cc-workbench[data-drawer-collapsed="true"] {
   --cc-drawer-height: 40px;
+}
+
+/*
+ * The decision workspace owns the screen. Opening source evidence deliberately
+ * does not reflow it back to the legacy three-column layout: the viewer layers
+ * over the right side as a dismissible reference panel instead.
+ */
+@media (min-width: 1024px) {
+  .cc-workbench[data-viewer-collapsed="true"] .cc-viewer { display: none; }
+  .cc-workbench:not([data-viewer-collapsed]) .cc-viewer {
+    grid-area: assess;
+    align-self: stretch;
+    justify-self: end;
+    z-index: 12;
+    width: var(--cc-source-width, 46%);
+    height: 100%;
+    border-left: 1px solid var(--cc-border);
+    box-shadow: -16px 0 28px rgba(18, 22, 28, 0.16);
+  }
+  .cc-workbench:not([data-viewer-collapsed]) .cc-assess {
+    margin-right: var(--cc-source-width, 46%);
+  }
 }
 
 .cc-banner {
@@ -67,6 +90,45 @@
   flex-wrap: wrap;
 }
 
+.cc-run-feedback {
+  grid-column: 1 / -1;
+  flex: 1 0 100%;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--cc-focus);
+  border-radius: var(--cc-radius);
+  background: var(--cc-surface-2);
+}
+.cc-run-feedback-label { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: 12px; font-weight: 600; }
+.cc-run-feedback-label > :first-child { min-width: 0; }
+.cc-run-feedback-label > :last-child { flex-shrink: 0; color: var(--cc-focus); font-variant-numeric: tabular-nums; }
+.cc-run-feedback-track { height: 6px; margin-top: 6px; overflow: hidden; border-radius: 999px; background: var(--cc-border); }
+.cc-run-feedback-fill { height: 100%; background: var(--cc-action); transition: width 180ms ease; }
+.cc-run-feedback-indeterminate { animation: cc-run-pulse 1s ease-in-out infinite alternate; }
+@keyframes cc-run-pulse { from { opacity: .45; } to { opacity: 1; } }
+
+/*
+ * Keep navigation and actions together, with case context on its own row so
+ * neither overlaps at desktop widths. Run feedback spans the header beneath
+ * both rows, outside all independently scrolling review panels.
+ */
+@media (min-width: 1280px) {
+  .cc-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    flex-wrap: nowrap;
+    min-height: 56px;
+  }
+  .cc-bundle-context {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-width: 0;
+    white-space: normal;
+  }
+  .cc-top-actions { margin-left: 0; grid-column: 2; grid-row: 1; }
+}
+
 .cc-rail {
   grid-area: rail;
   border-right: 1px solid var(--cc-border);
@@ -88,10 +150,51 @@
 .cc-assess {
   grid-area: assess;
   border-left: 1px solid var(--cc-border);
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--cc-surface);
   min-width: 0;
 }
+
+.cc-decision-summary {
+  top: 0;
+  z-index: 10;
+  container-type: inline-size;
+}
+.cc-decision-summary-content { display: grid; gap: 12px; }
+.cc-decision-prefill { min-width: 0; scroll-margin-top: 12px; }
+@container (min-width: 760px) {
+  .cc-decision-summary-content { grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.8fr); align-items: start; }
+}
+
+.cc-assessment-content { scroll-padding-top: calc(var(--cc-summary-height, 180px) + 12px); }
+.cc-assessment-content > * { flex-shrink: 0; }
+.cc-review-section { scroll-margin-top: 12px; }
+.cc-empty-state {
+  margin: auto;
+  width: min(100%, 520px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px 8px;
+}
+.cc-source-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--cc-border);
+  flex-shrink: 0;
+}
+.cc-source-heading h2 { font-size: 14px; font-weight: 600; margin-right: auto; }
+.cc-source-resize { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.cc-source-resize input { width: 56px; accent-color: var(--cc-action); }
+.cc-workbench :where(button, a, select, summary):not(.cc-highlight) { min-height: 28px; }
+.cc-workbench :where(button, select):not(.cc-highlight) { min-width: 24px; }
+.cc-workbench :where(input, select) { max-width: 100%; }
+.cc-viewer, .cc-assess, .cc-rail, .cc-drawer { min-height: 0; }
+.cc-drawer [role="tabpanel"][hidden] { display: none; }
 
 .cc-drawer {
   grid-area: drawer;
@@ -101,6 +204,11 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+/* A collapsed audit drawer is a deliberate, discoverable handle—not dead space. */
+.cc-workbench[data-drawer-collapsed="true"] .cc-drawer {
+  box-shadow: 0 -4px 12px rgba(18, 22, 28, 0.04);
 }
 
 /* Compact tabs bar: hidden on desktop, active on compact/mobile */
@@ -157,7 +265,7 @@
   color: var(--cc-text-muted);
 }
 .cc-tab-btn[aria-selected="true"] .cc-tab-badge {
-  background: var(--cc-focus);
+  background: var(--cc-action);
   color: #ffffff;
 }
 
@@ -166,7 +274,7 @@
    ============================================================================= */
 @media (max-width: 1279px) and (min-width: 1024px) {
   .cc-workbench {
-    grid-template-columns: 220px minmax(0, 1fr) 320px;
+    grid-template-columns: 220px minmax(0, 1fr);
   }
 }
 
@@ -183,6 +291,10 @@
       "tabs"
       "main";
   }
+  .cc-top-actions { width: 100%; margin-left: 0; flex-wrap: wrap; }
+  .cc-source-resize { display: none; }
+  .cc-decision-summary { position: relative; }
+  .cc-assessment-content { scroll-padding-top: 12px; }
 
   .cc-tabs {
     display: flex !important;
@@ -203,7 +315,7 @@
 
   /* Show panel matching active tab */
   .cc-workbench[data-tab="rail"]   .cc-rail   { display: block; }
-  .cc-workbench[data-tab="viewer"] .cc-viewer { display: block; }
+  .cc-workbench[data-tab="viewer"] .cc-viewer { display: flex; }
   .cc-workbench[data-tab="assess"] .cc-assess { display: block; }
   .cc-workbench[data-tab="drawer"] .cc-drawer { display: block; }
 
@@ -212,6 +324,17 @@
   .cc-workbench[data-tab=""] .cc-assess {
     display: block;
   }
+}
+
+@media (max-width: 479px) {
+  .cc-top { padding: 8px 12px; gap: 8px; }
+  .cc-tabs { padding: 0; }
+  .cc-tab-btn { flex: 1 1 0; min-width: 0; padding: 10px 6px; font-size: 11px; gap: 3px; }
+  .cc-tab-badge { display: none; }
+}
+
+@media (pointer: coarse) {
+  .cc-workbench :where(button, a, select, summary):not(.cc-highlight) { min-height: 40px; }
 }
 
 /* Short viewport heights: clamp drawer so viewer stays visible */

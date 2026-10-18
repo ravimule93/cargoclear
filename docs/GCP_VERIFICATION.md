@@ -264,6 +264,7 @@ for running more than one instance. Design: [SCALING_AND_INTEGRITY.md](SCALING_A
    export RUNTIME_SERVICE_ACCOUNT=cargoclear-sa@${PROJECT_ID}.iam.gserviceaccount.com
    bash infra/tasks/setup_queue.sh          # queue cargoclear-runs, cargoclear-tasks-sa, enqueue + act-as bindings
    bash infra/firestore/setup_ttl.sh        # TTL on ratelimits.expires_at
+   bash infra/storage/setup_artifact_retention.sh  # preview the approved 90-day evidence-artifact lifecycle
    ```
 3. **Deploy with dispatch** (the script refuses `MAX_INSTANCES` above 1 without it, sets a 1500 s request timeout, gives the tasks
    identity `roles/run.invoker` on the private API, and sets `API_URL` on a second revision):
@@ -289,6 +290,8 @@ for running more than one instance. Design: [SCALING_AND_INTEGRITY.md](SCALING_A
 6. **Shared limits:** with `RATE_LIMIT_BACKEND=firestore` (the default with cloudtasks) send 12 bundle creations in a minute through
    the UI from one address with `RATE_LIMIT_WRITES_PER_MINUTE=10`: the 11th is a 429 whichever instance serves it, and a
    `ratelimits` collection appears in Firestore (documents carry `expires_at`; the TTL policy removes them within about a day).
+   Apply the separately approved 90-day artifact lifecycle only after reviewing the dedicated bucket's existing rules:
+   `APPLY_RETENTION_POLICY=yes bash infra/storage/setup_artifact_retention.sh`. Audit records have no TTL while legal hold applies.
 
 **Two numbers to choose, with the data this gives you:** `RUN_STALE_AFTER_SECONDS` (lease TTL, 90) against the queue's
 `--min-backoff` (30 s) and attempts (5): a dead executor's run is taken over on the first delivery after its lease expired, so
@@ -302,6 +305,7 @@ export RUNTIME_SERVICE_ACCOUNT=cargoclear-sa@${PROJECT_ID}.iam.gserviceaccount.c
 bash infra/kms/setup_signing_key.sh              # key ring + EC P-256 key + signerVerifier on THAT key; prints SIGNING_KEY_VERSION
 export SIGNING_KEY_VERSION=<printed value>
 bash infra/deploy_api.sh
+bash infra/deploy_ui.sh  # also fails if /api/proxy/meta or private /version reports demo mode
 python3 scripts/live_e2e_hosted.py --base-url "$UI_URL" --expect-mode live --case d --expect-signer kms
 ```
 

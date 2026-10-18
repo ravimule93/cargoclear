@@ -19,20 +19,20 @@ import os
 from pathlib import Path
 
 import structlog
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import Response
 
 from app.api.v1.bundles import create_bundle
 from app.core.config import settings
+from app.domain.auth import UserIdentity
 from app.domain.schemas import BundleResponse, CreateBundleRequest
+from app.gateway.auth import get_current_user
 from app.gateway.errors import CargoClearError, NotFoundError
 from app.repo import firestore
 from app.services.documents import register_document
 from app.services.upload_checks import download_headers
 
 logger = structlog.get_logger(__name__)
-
-router = APIRouter(tags=["demo"])
 
 CASE_C_REFERENCE = "CASE-C-7304-DEMO"
 CASE_C_DESTINATION = "SG"
@@ -58,6 +58,11 @@ _PACKAGED_FIXTURE_DIR = Path(__file__).resolve().parents[2] / "fixtures" / "case
 def _require_demo_mode() -> None:
     if settings.app_mode != "demo":
         raise NotFoundError("Demo endpoints are only available when APP_MODE=demo.")
+
+
+# Router dependencies run before endpoint dependencies. Keep this first so a
+# live deployment answers 404 without attempting to authenticate a caller.
+router = APIRouter(tags=["demo"], dependencies=[Depends(_require_demo_mode)])
 
 
 def _fixture_dir(case: str = "case_c") -> Path:
@@ -95,14 +100,17 @@ def _read_fixture(filename: str, case: str = "case_c") -> bytes:
     status_code=201,
     summary="Create a Case C demo bundle preloaded with three sample PDFs",
 )
-async def create_case_c_demo() -> BundleResponse:
+async def create_case_c_demo(
+    current_user: UserIdentity = Depends(get_current_user),
+) -> BundleResponse:
     _require_demo_mode()
 
     # Read every file up-front so a missing fixture fails before a half-built bundle exists.
     payloads = {name: _read_fixture(name) for name in CASE_C_PRELOADED}
 
     bundle = await create_bundle(
-        CreateBundleRequest(reference=CASE_C_REFERENCE, destination_country=CASE_C_DESTINATION)
+        CreateBundleRequest(reference=CASE_C_REFERENCE, destination_country=CASE_C_DESTINATION),
+        current_user=current_user,
     )
     for name, data in payloads.items():
         await register_document(bundle.id, data=data, filename=name, iteration=0)
@@ -142,13 +150,16 @@ async def get_case_c_mtc() -> Response:
     status_code=201,
     summary="Create a Case D demo bundle (India import) with its four sample PDFs",
 )
-async def create_case_d_demo() -> BundleResponse:
+async def create_case_d_demo(
+    current_user: UserIdentity = Depends(get_current_user),
+) -> BundleResponse:
     _require_demo_mode()
 
     payloads = {name: _read_fixture(name, "case_d") for name in CASE_D_DOCUMENTS}
 
     bundle = await create_bundle(
-        CreateBundleRequest(reference=CASE_D_REFERENCE, destination_country=CASE_D_DESTINATION)
+        CreateBundleRequest(reference=CASE_D_REFERENCE, destination_country=CASE_D_DESTINATION),
+        current_user=current_user,
     )
     for name, data in payloads.items():
         await register_document(bundle.id, data=data, filename=name, iteration=0)

@@ -39,7 +39,8 @@ NO_CREDENTIALS_MESSAGE = (
 
 def _adc_file_exists() -> bool:
     """True if `gcloud auth application-default login` has written its credentials file (existence only)."""
-    config_dir = os.getenv("CLOUDSDK_CONFIG") or str(Path.home() / ".config" / "gcloud")
+    home = os.getenv("HOME") or str(Path.home())
+    config_dir = os.getenv("CLOUDSDK_CONFIG") or str(Path(home) / ".config" / "gcloud")
     return (Path(config_dir) / ADC_FILE_NAME).is_file()
 
 
@@ -79,8 +80,57 @@ def credential_source() -> str | None:
     return None
 
 
-def use_live_gcp() -> bool:
-    """Return True if live GCP services should be used."""
-    if settings.app_mode != "live":
+def use_live_gcp(requested_mode: str | None = None) -> bool:
+    """Return True if live GCP services should be used for the requested or active mode."""
+    mode = requested_mode or settings.app_mode
+    if mode != "live":
         return False
     return credential_source() is not None
+
+
+SUPPORTED_MODES = ("demo", "live")
+EXECUTION_MODE_HEADER = "x-cargoclear-execution-mode"
+EXECUTION_MODE_COOKIE = "cargoclear_execution_mode"
+
+
+def resolve_execution_mode(
+    requested: str | None = None,
+    header_val: str | None = None,
+    cookie_val: str | None = None,
+) -> str:
+    """Resolve active execution mode for a request or session.
+
+    Priority:
+    1. Explicit parameter (e.g. from POST /mode or API call).
+    2. Request header `x-cargoclear-execution-mode`.
+    3. Cookie `cargoclear_execution_mode`.
+    4. Default server setting (`settings.app_mode`).
+    """
+    candidate = (requested or header_val or cookie_val or settings.app_mode).strip().lower()
+    if candidate not in SUPPORTED_MODES:
+        from app.gateway.errors import ValidationError
+        raise ValidationError(
+            f"Invalid execution mode '{candidate}'. Supported modes: {list(SUPPORTED_MODES)}",
+            detail={"supported_modes": list(SUPPORTED_MODES), "received": candidate},
+        )
+    return candidate
+
+
+def get_mode_status(active_mode: str | None = None) -> dict[str, object]:
+    """Return observable runtime mode metadata, AI model info, and provider health."""
+    source = credential_source()
+    live_ok = source is not None
+    mode = active_mode or settings.app_mode
+
+    return {
+        "active_mode": mode,
+        "configured_mode": settings.app_mode,
+        "supported_modes": list(SUPPORTED_MODES),
+        "live_available": live_ok,
+        "credential_source": source,
+        "provider": "Google Cloud Vertex AI",
+        "model": settings.gemini_live_model,
+        "region": settings.gemini_live_location,
+        "live_error": None if live_ok else no_credentials_message(),
+    }
+

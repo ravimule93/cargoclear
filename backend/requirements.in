@@ -26,6 +26,7 @@ pdf2image==1.17.0
 opencv-python-headless>=4.10,<5
 numpy>=2.2,<3
 Pillow>=11.1,<13
+pypdfium2>=4.30,<6
 
 # PDF generation: the declaration pre-fill summary (services/prefill_pdf.py) and the sample-PDF generator. KEEP EXACT: the
 # drift-guard test tests/unit/test_case_c_pdfs.py compares generated PDFs byte-for-byte with fixtures/*/*.pdf.

@@ -283,7 +283,7 @@ def test_the_backend_has_no_outbound_http_client_and_no_route_files_or_pays() ->
     (Google's client libraries are the only network users), and no route is named for filing, submitting or paying."""
     offenders = []
     for path in sorted((REPO_ROOT / "backend" / "app").rglob("*.py")):
-        relative = str(path.relative_to(REPO_ROOT))
+        relative = path.relative_to(REPO_ROOT).as_posix()
         for name in sorted(_imports(path) & FORBIDDEN_IMPORTS):
             allowed = ALLOWED_USES.get((relative, name))
             if allowed is None:

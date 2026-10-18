@@ -5,6 +5,7 @@ import { openCaseDDemoWorkbench } from "./support/case-d";
 /** The declaration pre-fill pack, downloaded through the same proxy the browser uses for everything else. */
 test.describe("Declaration pre-fill", () => {
   test("a bundle that is not cleared gives a pack that says so, as JSON and as a PDF", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await openCaseDDemoWorkbench(page);
     await page.getByTestId("run-button").click();
     await expect(page.getByTestId("status-pill")).toContainText("Material Contradiction", { timeout: 30_000 });
@@ -12,6 +13,10 @@ test.describe("Declaration pre-fill", () => {
     const card = page.getByTestId("prefill-card");
     await expect(card).toBeVisible();
     await expect(card.getByTestId("prefill-caveat")).toContainText("Not cleared");
+    const cardBox = (await card.boundingBox())!;
+    const nextActionBox = (await page.getByTestId("next-action").boundingBox())!;
+    // At desktop widths the declaration actions sit beside the decision, not below the review queue.
+    expect(cardBox.x).toBeGreaterThan(nextActionBox.x + 180);
 
     const jsonHref = await card.getByTestId("prefill-json").getAttribute("href");
     const pdfHref = await card.getByTestId("prefill-pdf").getAttribute("href");

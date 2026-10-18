@@ -134,10 +134,12 @@ async def test_a_file_pdfinfo_cannot_open_fails_the_document_it_is_not_rendered_
     """Placeholder bytes pdfinfo cannot read: no cap and no pixel budget could be applied, so nothing is rendered (a renderer that would
     happily return 100 pages is never asked) and the document fails with the reason."""
     from app.gateway.errors import PipelineError
+    from app.services.upload_checks import PdfUnreadable
 
     asked: list[str] = []
     monkeypatch.setattr("pdf2image.convert_from_bytes", lambda _raw, **_kw: asked.append("bytes") or [Image.new("RGB", (40, 60), "white")] * 100)
     monkeypatch.setattr("pdf2image.convert_from_path", lambda _path, **_kw: asked.append("path") or [Image.new("RGB", (40, 60), "white")] * 100)
+    monkeypatch.setattr("app.services.upload_checks.read_pdf_facts", lambda *args, **kwargs: (_ for _ in ()).throw(PdfUnreadable()))
 
     with pytest.raises(PipelineError, match="could not be rendered .PdfUnreadable"):
         await preprocess.run({"raw_bytes": b"%PDF-1.4 x", "document_id": "doc-x"})

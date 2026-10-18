@@ -134,6 +134,7 @@
       "description": "Bounding box normalised to 0\u20131000. Origin is top-left of the page.\n\nGemini returns [ymin, xmin, ymax, xmax] as a flat list.\nWe store as a structured object for clarity and type safety.",
       "properties": {
         "page": {
+          "default": 1,
           "description": "1-indexed page number within the processed document",
           "title": "Page",
           "type": "integer"
@@ -156,7 +157,6 @@
         }
       },
       "required": [
-        "page",
         "ymin",
         "xmin",
         "ymax",

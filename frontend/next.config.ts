@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+export const createNextConfig = (environment = process.env.NODE_ENV): NextConfig => ({
+  // Bypass legacy immutable dev chunks, including browsers that do not support
+  // Clear-Site-Data. Next serves this local asset prefix without changing routes.
+  assetPrefix: environment === "development" ? "/_cc-dev-assets" : undefined,
   // Required for pdfjs-dist worker file serving
   webpack: (config) => {
     config.resolve.alias.canvas = false;
@@ -25,17 +28,20 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Static assets with content-hashed names can be cached permanently
+        // Only production assets are content-hashed. Development chunk names
+        // stay stable across edits and must not keep serving stale JS or CSS.
         source: "/_next/static/:path*",
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
+            value: environment === "production"
+              ? "public, max-age=31536000, immutable"
+              : "no-store, no-cache, must-revalidate, max-age=0",
           },
         ],
       },
     ];
   },
-};
+});
 
-export default nextConfig;
+export default createNextConfig();

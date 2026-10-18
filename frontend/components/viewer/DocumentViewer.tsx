@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 // The library itself is imported lazily inside the effects below.
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, RenderTask } from "pdfjs-dist";
 import type { DocumentRecord, TransformMetadataResponse } from "@/lib/types";
-import type { Highlight } from "@/lib/highlights";
+import type { Highlight, SourceRequest } from "@/lib/highlights";
 import { api } from "@/lib/api";
 import { mapBBoxToCanvas } from "@/lib/bbox";
 import { mapProcessedBBoxToOriginal } from "@/lib/transform-bbox";
@@ -21,6 +21,7 @@ interface DocumentViewerProps {
   iteration?: number | null;
   /** Whether the viewer tab is active in compact mode */
   isVisible?: boolean;
+  sourceRequest?: SourceRequest | null;
 }
 
 type LoadState = "idle" | "loading" | "ready" | "error";
@@ -50,11 +51,14 @@ export function DocumentViewer({
   highlights = [],
   iteration = null,
   isVisible = true,
+  sourceRequest = null,
 }: DocumentViewerProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
+  const [activated, setActivated] = useState(isVisible);
+  const [attempt, setAttempt] = useState(0);
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [numPages, setNumPages] = useState(0);
@@ -70,9 +74,19 @@ export function DocumentViewer({
 
   const activeDocument = documents.find((d) => d.document_id === activeDocumentId) ?? null;
 
+  useEffect(() => {
+    if (isVisible) setActivated(true);
+  }, [isVisible]);
+
+  useEffect(() => {
+    if (numPages > 0 && sourceRequest?.page) {
+      setPage(Math.min(numPages, Math.max(1, sourceRequest.page)));
+    }
+  }, [numPages, sourceRequest]);
+
   // Transform metadata is optional: missing or unavailable metadata preserves the existing overlay coordinates.
   useEffect(() => {
-    if (!activeDocumentId) {
+    if (!activated || !activeDocumentId) {
       setTransformMetadata({ status: "idle" });
       return;
     }
@@ -99,22 +113,19 @@ export function DocumentViewer({
     return () => {
       cancelled = true;
     };
-  }, [bundleId, activeDocumentId, activeDocument?.transform_meta_uri]);
+  }, [activated, bundleId, activeDocumentId, activeDocument?.transform_meta_uri]);
 
   // Robust container measurement: updates on mount, resize, and tab visibility changes
   useEffect(() => {
     const el = stageRef.current;
-    if (!el) return;
+    if (!el || !isVisible) return;
 
-    let rafId: number;
     const measure = () => {
       const rect = el.getBoundingClientRect();
       const w = Math.floor(rect.width);
       const h = Math.floor(rect.height);
       if (w > 0) {
         setContainerSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
-      } else {
-        rafId = requestAnimationFrame(measure);
       }
     };
 
@@ -137,7 +148,6 @@ export function DocumentViewer({
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", measure);
-      cancelAnimationFrame(rafId);
     };
   }, [isVisible]);
 
@@ -149,7 +159,7 @@ export function DocumentViewer({
     setCssSize({ w: 0, h: 0 });
     setError(null);
 
-    if (!activeDocumentId) {
+    if (!activated || !activeDocumentId) {
       setLoadState("idle");
       return;
     }
@@ -185,12 +195,12 @@ export function DocumentViewer({
       cancelled = true;
       void loading.task?.destroy();
     };
-  }, [bundleId, activeDocumentId]);
+  }, [activated, bundleId, activeDocumentId, attempt]);
 
   // Render current page: computes scale, applies devicePixelRatio, and renders onto canvas
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!pdf || !canvas || containerSize.w <= 0) return;
+    if (!pdf || !canvas || !isVisible || containerSize.w <= 0) return;
 
     let cancelled = false;
     const rendering: { task: RenderTask | null } = { task: null };
@@ -249,7 +259,7 @@ export function DocumentViewer({
       clearTimeout(timer);
       rendering.task?.cancel();
     };
-  }, [pdf, page, containerSize.w, containerSize.h, zoomMode, customScale]);
+  }, [pdf, page, containerSize.w, containerSize.h, zoomMode, customScale, isVisible]);
 
   const boxes: HighlightBox[] = useMemo(
     () => {
@@ -267,10 +277,28 @@ export function DocumentViewer({
           id: h.id,
           severity: h.severity,
           label: h.label,
+          selected: !!sourceRequest?.field && sourceRequest.field === h.field && (!sourceRequest.bbox || (
+            sourceRequest.bbox.xmin === h.bbox.xmin && sourceRequest.bbox.ymin === h.bbox.ymin &&
+            sourceRequest.bbox.xmax === h.bbox.xmax && sourceRequest.bbox.ymax === h.bbox.ymax
+          )),
         }));
     },
-    [highlights, activeDocumentId, page, cssSize, transformMetadata]
+    [highlights, activeDocumentId, page, cssSize, transformMetadata, sourceRequest]
   );
+
+  useEffect(() => {
+    if (!isVisible || !sourceRequest?.field || cssSize.w === 0) return;
+    const stage = stageRef.current;
+    const selected = stage?.querySelector('[data-selected-evidence="true"]');
+    if (!stage || !selected) return;
+    const box = selected.getBoundingClientRect();
+    const viewport = stage.getBoundingClientRect();
+    // Scroll only the PDF stage, never the surrounding workbench controls.
+    stage.scrollTo({
+      top: stage.scrollTop + box.top - viewport.top - stage.clientHeight / 2 + box.height / 2,
+      left: stage.scrollLeft + box.left - viewport.left - stage.clientWidth / 2 + box.width / 2,
+    });
+  }, [isVisible, sourceRequest, page, cssSize]);
 
   const hasDocument = documents.length > 0 && activeDocumentId !== null;
   const filename = activeDocument?.filename ?? activeDocumentId ?? "";
@@ -297,7 +325,7 @@ export function DocumentViewer({
   };
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden bg-[var(--cc-surface-2)]">
+    <div className="flex flex-col flex-1 min-h-0 w-full overflow-hidden bg-[var(--cc-surface-2)]">
       {/* Sticky Controls Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 px-3 py-1.5 bg-[var(--cc-surface)] border-b border-[var(--cc-border)] text-xs text-[var(--cc-text-muted)] shrink-0 z-10 w-full shadow-2xs">
         {/* Left: Pagination & Document Title */}
@@ -311,6 +339,7 @@ export function DocumentViewer({
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   className="px-2 py-0.5 rounded border border-[var(--cc-border)] disabled:opacity-40 hover:bg-[var(--cc-surface-2)] transition-colors cursor-pointer"
                   title="Previous page"
+                  aria-label="Previous page"
                 >
                   ◀
                 </button>
@@ -323,6 +352,7 @@ export function DocumentViewer({
                   onClick={() => setPage((p) => Math.min(numPages, p + 1))}
                   className="px-2 py-0.5 rounded border border-[var(--cc-border)] disabled:opacity-40 hover:bg-[var(--cc-surface-2)] transition-colors cursor-pointer"
                   title="Next page"
+                  aria-label="Next page"
                 >
                   ▶
                 </button>
@@ -351,16 +381,18 @@ export function DocumentViewer({
                 type="button"
                 onClick={handleZoomOut}
                 disabled={loadState !== "ready"}
-                className="px-1.5 py-0.5 text-xs font-bold rounded hover:bg-[var(--cc-surface)] text-[var(--cc-text)] disabled:opacity-40 cursor-pointer"
+                className="min-w-[24px] min-h-[24px] inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold rounded hover:bg-[var(--cc-surface)] text-[var(--cc-text)] disabled:opacity-40 cursor-pointer"
                 title="Zoom Out (−)"
+                aria-label="Zoom out"
               >
                 −
               </button>
               <button
                 type="button"
                 onClick={() => setZoomMode("fit-width")}
-                className="px-1.5 py-0.5 font-mono text-[10px] text-[var(--cc-text-muted)] min-w-[3.2rem] text-center hover:text-[var(--cc-text)] cursor-pointer"
+                className="min-h-[24px] inline-flex items-center justify-center px-1.5 py-0.5 font-mono text-[10px] text-[var(--cc-text-muted)] min-w-[3.2rem] text-center hover:text-[var(--cc-text)] cursor-pointer"
                 title="Click to reset to Fit Width"
+                aria-label="Reset zoom to fit width"
               >
                 {zoomMode === "fit-width"
                   ? "Fit W"
@@ -372,8 +404,9 @@ export function DocumentViewer({
                 type="button"
                 onClick={handleZoomIn}
                 disabled={loadState !== "ready"}
-                className="px-1.5 py-0.5 text-xs font-bold rounded hover:bg-[var(--cc-surface)] text-[var(--cc-text)] disabled:opacity-40 cursor-pointer"
+                className="min-w-[24px] min-h-[24px] inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold rounded hover:bg-[var(--cc-surface)] text-[var(--cc-text)] disabled:opacity-40 cursor-pointer"
                 title="Zoom In (+)"
+                aria-label="Zoom in"
               >
                 +
               </button>
@@ -386,7 +419,7 @@ export function DocumentViewer({
                 onClick={() => setZoomMode("fit-width")}
                 className={`px-1.5 py-0.5 text-[10px] font-medium rounded border transition-colors cursor-pointer ${
                   zoomMode === "fit-width"
-                    ? "bg-[var(--cc-focus)] text-white border-[var(--cc-focus)] font-semibold"
+                    ? "bg-[var(--cc-action)] text-white border-[var(--cc-focus)] font-semibold"
                     : "border-[var(--cc-border)] hover:bg-[var(--cc-surface-2)] text-[var(--cc-text-muted)]"
                 }`}
                 title="Fit to width of viewer"
@@ -398,7 +431,7 @@ export function DocumentViewer({
                 onClick={() => setZoomMode("fit-page")}
                 className={`px-1.5 py-0.5 text-[10px] font-medium rounded border transition-colors cursor-pointer ${
                   zoomMode === "fit-page"
-                    ? "bg-[var(--cc-focus)] text-white border-[var(--cc-focus)] font-semibold"
+                    ? "bg-[var(--cc-action)] text-white border-[var(--cc-focus)] font-semibold"
                     : "border-[var(--cc-border)] hover:bg-[var(--cc-surface-2)] text-[var(--cc-text-muted)]"
                 }`}
                 title="Fit entire page in view"
@@ -426,12 +459,19 @@ export function DocumentViewer({
                 className="pl-2 border-l border-[var(--cc-border)] font-semibold text-[11px] text-[var(--cc-focus)] hover:underline whitespace-nowrap"
                 title="The page image exactly as the extraction saw it (after orientation, straightening and the image mode)"
               >
-                Model view ↗
+                What the model saw
               </a>
             )}
           </div>
         )}
       </div>
+
+      {hasDocument && (
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs border-b border-[var(--cc-border)]">
+          <span>{sourceRequest?.field ? `Selected evidence: ${sourceRequest.field.replace(/_/g, " ")}` : "Source evidence and page highlights"}</span>
+          <a className="text-[var(--cc-focus)] underline" href={`/api/proxy/bundles/${encodeURIComponent(bundleId)}/documents/${encodeURIComponent(activeDocumentId!)}/file`} target="_blank" rel="noopener noreferrer">Open original PDF <span className="sr-only">(new tab)</span></a>
+        </div>
+      )}
 
       {/* Main Document Stage with 2D Scrollability */}
       <div
@@ -456,6 +496,7 @@ export function DocumentViewer({
         {hasDocument && loadState === "error" && (
           <div role="alert" className="text-xs text-[var(--cc-err)] my-auto p-4 text-center">
             Could not display {filename}: {error}
+            <button type="button" className="cc-button mt-3" onClick={() => setAttempt((value) => value + 1)}>Retry PDF</button>
           </div>
         )}
 

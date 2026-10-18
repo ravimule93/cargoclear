@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -14,7 +15,12 @@ smoke = load_script("live_smoke_extraction.py")
 make = load_script("make_degraded_scans.py")
 compare = load_script("compare_smoke_reports.py")
 
+needs_poppler = pytest.mark.skipif(
+    shutil.which("pdftoppm") is None, reason="poppler is not installed"
+)
 
+
+@needs_poppler
 def test_every_degradation_yields_a_one_page_image_pdf_with_the_same_page_size_as_a_clean_render() -> None:
     from pdf2image import convert_from_bytes
 
@@ -28,6 +34,7 @@ def test_every_degradation_yields_a_one_page_image_pdf_with_the_same_page_size_a
         assert pages[0].size == expected, how
 
 
+@needs_poppler
 def test_the_generator_writes_the_same_file_names_under_one_folder_per_degradation(tmp_path) -> None:
     code = make.main(["--out", str(tmp_path), "--docs", str(REPO_ROOT / "fixtures" / "case_c" / "packing_list.pdf"), "--only", "skew3", "blur"])
     assert code == 0
@@ -36,6 +43,7 @@ def test_the_generator_writes_the_same_file_names_under_one_folder_per_degradati
     assert (tmp_path / "skew3" / "packing_list.pdf").read_bytes() != (tmp_path / "blur" / "packing_list.pdf").read_bytes()
 
 
+@needs_poppler
 def test_a_degraded_copy_is_graded_by_its_name_but_only_when_asked(tmp_path) -> None:
     copy = tmp_path / "commercial_invoice.pdf"
     copy.write_bytes(make.degrade((REPO_ROOT / "fixtures" / "case_c" / "commercial_invoice.pdf").read_bytes(), "skew3"))

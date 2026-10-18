@@ -10,7 +10,8 @@ test.describe("Hero Case C Demo Workflow", () => {
     await expect(page.getByTestId("demo-banner")).toContainText(
       "extraction uses synthetic fixtures keyed on filename, not a real document reading"
     );
-    await expect(page.getByLabel("Compliance assessment and actions")).toContainText("No assessment yet");
+    await expect(page.getByRole("heading", { name: "Your documents are ready for assessment" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Assess these documents" })).toBeVisible();
 
     // The Case C evidence is created by the demo endpoint, not a pre-existing hardcoded bundle.
     const rail = page.getByLabel("Documents in this bundle");
@@ -31,6 +32,7 @@ test.describe("Hero Case C Demo Workflow", () => {
     const deltaTab = page.locator("#tab-delta");
     await deltaTab.click();
     await expect(deltaTab).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#panel-delta")).toBeVisible();
     await expect(page.locator("#panel-delta")).not.toBeEmpty();
 
     const auditTab = page.locator("#tab-audit");

@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { evidencePath, pathLabel, readCell, type ExtractedDoc } from "@/lib/corrections";
-import type { AppliedCorrection, CheckResult, CorrectionRequest, CorrectionsResponse, DocumentRecord } from "@/lib/types";
+import type { AppliedCorrection, BBox, CheckResult, CorrectionRequest, CorrectionsResponse, DocumentRecord } from "@/lib/types";
 import { CorrectionEditor } from "./CorrectionEditor";
 
 interface CheckListProps {
   checks: CheckResult[];
   documents?: DocumentRecord[];
-  onSelectDocument?: (documentId: string) => void;
+  onSelectDocument?: (documentId: string, page?: number, field?: string, bbox?: BBox | null) => void;
   /** With these, an evidence row that shows one extracted value can be corrected in place. */
   extractions?: ExtractedDoc[];
   corrections?: CorrectionsResponse | null;
@@ -75,11 +75,7 @@ export function CheckList({
   };
 
   if (checks.length === 0) {
-    return (
-      <div className="text-xs text-[var(--cc-text-muted)] p-2">
-        No validation checks executed yet.
-      </div>
-    );
+    return null;
   }
 
   // Group checks into issues (MATERIAL/WARN) vs clean (PASS)
@@ -133,23 +129,23 @@ export function CheckList({
             <span className="font-bold text-[var(--cc-text)] text-[12px]">
               {friendlyTitle}
             </span>
-            <span className="font-mono text-[10px] text-[var(--cc-text-subtle)]">
+            <span className="font-mono text-xs text-[var(--cc-text-subtle)]">
               {check.check_id}
             </span>
           </div>
           <span
-            className={`px-2 py-0.5 rounded text-[10px] font-bold border tracking-wider uppercase whitespace-nowrap ${badgeColor}`}
+            className={`px-2 py-0.5 rounded text-xs font-bold border tracking-wider uppercase whitespace-nowrap ${badgeColor}`}
           >
             {check.severity}
           </span>
         </div>
 
-        <p className="text-[var(--cc-text-muted)] leading-relaxed text-[11px]">
+        <p className="text-[var(--cc-text-muted)] leading-relaxed text-xs">
           {check.message}
         </p>
 
         {assumptions.length > 0 && (
-          <div className="text-[11px] text-[var(--cc-text-muted)]">
+          <div className="text-xs text-[var(--cc-text-muted)]">
             <span className="font-semibold text-[var(--cc-text)]">Assumed:</span>
             <ul className="list-disc pl-4 mt-0.5">
               {assumptions.map((assumption, i) => (
@@ -160,7 +156,7 @@ export function CheckList({
         )}
 
         {check.rule_set && (
-          <details className="text-[10px] text-[var(--cc-text-subtle)]">
+          <details className="text-xs text-[var(--cc-text-subtle)]">
             <summary className="cursor-pointer">
               Rule set: <span className="font-mono font-semibold">{check.rule_set}</span> (not an official source unless stated)
             </summary>
@@ -168,11 +164,71 @@ export function CheckList({
           </details>
         )}
 
-        {/* Structured Evidence Comparison Breakdown */}
+        {/* Side-by-Side Comparison Box for multi-document discrepancy */}
+        {!isPass && evidenceList.length >= 2 && (
+          <div className="mt-1 rounded-md border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] p-2.5 flex flex-col gap-2 shadow-2xs">
+            <div className="flex items-center justify-between text-xs font-bold text-[var(--cc-text)]">
+              <span className="flex items-center gap-1.5">
+                <span>⚖️</span>
+                <span>Compared Documents:</span>
+              </span>
+              {check.delta !== null && check.delta !== undefined && (
+                <span className="font-mono text-xs text-[var(--cc-err)] bg-[var(--cc-err-bg)] px-1.5 py-0.5 rounded border border-[var(--cc-err-bd)] font-semibold">
+                  Discrepancy / Delta: {check.delta}
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {visibleEvidence.slice(0, 2).map((ev, evIdx) => {
+                const docRecord = ev.doc ? docMap.get(ev.doc) : null;
+                const docName = docRecord?.filename || ev.doc || "Document";
+                const docType = docRecord?.doc_type?.replace(/_/g, " ") || "";
+                const hasVal = ev.raw_value !== undefined && ev.raw_value !== null && String(ev.raw_value).trim() !== "";
+
+                return (
+                  <button
+                    type="button"
+                    key={`comp-card-${ev.doc}-${evIdx}`}
+                    disabled={!ev.doc}
+                    onClick={() => ev.doc && onSelectDocument?.(ev.doc, ev.page ?? undefined, ev.field, ev.bbox)}
+                    aria-label={ev.doc ? `Open ${docName}${ev.page ? `, page ${ev.page}` : ""}` : undefined}
+                    className={`p-2 rounded border text-xs flex flex-col gap-1 transition-all ${
+                      ev.doc ? "cursor-pointer text-left hover:border-[var(--cc-focus)] hover:shadow-xs" : "cursor-default text-left"
+                    } ${
+                      !hasVal
+                        ? "bg-[var(--cc-warn-bg)]/40 border-[var(--cc-warn-bd)]"
+                        : "bg-[var(--cc-surface-2)] border-[var(--cc-border)]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-xs text-[var(--cc-text-muted)]">
+                      <span className="font-bold text-[var(--cc-text)] truncate max-w-[130px] sm:max-w-[150px]">{docName}</span>
+                      {docType && <span className="uppercase text-xs px-1 bg-[var(--cc-surface)] rounded border border-[var(--cc-border)] shrink-0">{docType}</span>}
+                    </div>
+                    <div className="text-xs font-mono font-bold text-[var(--cc-text)]">
+                      {hasVal ? (
+                        <span>
+                          {String(ev.raw_value)} {ev.unit && !String(ev.raw_value).trim().endsWith(ev.unit.trim()) ? ev.unit : ""}
+                        </span>
+                      ) : (
+                        <span className="text-[var(--cc-warn)] italic">Field Omitted (Gap in {docName})</span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-[var(--cc-text-subtle)] mt-0.5">
+                      <span>{ev.field.replace(/_/g, " ")}</span>
+                      {ev.page && <span className="text-[var(--cc-focus)] font-medium">Page {ev.page} →</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Structured Evidence Breakdown */}
         {evidenceList.length > 0 && (
           <div className="mt-1 pt-2 border-t border-[var(--cc-border)]/60 flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--cc-text-subtle)]">
-              Compared Documents & Stated Evidence:
+            <span className="text-xs font-bold uppercase tracking-wider text-[var(--cc-text-subtle)]">
+              All Cited Evidence & Grounding:
             </span>
             <div className="flex flex-col gap-1.5">
               {visibleEvidence.map((ev, evIdx) => {
@@ -188,8 +244,7 @@ export function CheckList({
                 return (
                   <div key={`${ev.doc}:${ev.field}:${evIdx}`} className="flex flex-col gap-1">
                   <div
-                    onClick={() => ev.doc && onSelectDocument?.(ev.doc)}
-                    className={`p-1.5 rounded border text-[11px] flex flex-wrap sm:flex-nowrap items-center justify-between gap-1.5 sm:gap-2 transition-all ${
+                    className={`p-1.5 rounded border text-xs flex flex-wrap sm:flex-nowrap items-center justify-between gap-1.5 sm:gap-2 transition-all ${
                       ev.doc
                         ? "cursor-pointer hover:border-[var(--cc-focus)] hover:bg-[var(--cc-surface)]"
                         : ""
@@ -198,17 +253,25 @@ export function CheckList({
                         ? "border-[var(--cc-warn-bd)]/60 bg-[var(--cc-warn-bg)]/30 text-[var(--cc-warn)]"
                         : "border-[var(--cc-border)] bg-[var(--cc-surface)] text-[var(--cc-text)]"
                     }`}
-                    title={ev.doc ? `Click to view ${docName}` : undefined}
                   >
                     <div className="flex items-center gap-1.5 truncate min-w-0 flex-1">
                       <span aria-hidden="true" className="text-xs shrink-0">
                         {isGap ? "⚠️" : "📄"}
                       </span>
-                      <span className="font-semibold truncate">
-                        {docName}
-                      </span>
+                      {ev.doc ? (
+                        <button
+                          type="button"
+                          onClick={() => onSelectDocument?.(ev.doc, ev.page ?? undefined, ev.field, ev.bbox)}
+                          className="font-semibold truncate text-left hover:underline"
+                          aria-label={`Open ${docName}${ev.page ? `, page ${ev.page}` : ""}`}
+                        >
+                          {docName}
+                        </button>
+                      ) : (
+                        <span className="font-semibold truncate">{docName}</span>
+                      )}
                       {docType && (
-                        <span className="text-[9px] uppercase px-1 rounded bg-[var(--cc-surface-2)] text-[var(--cc-text-muted)] border border-[var(--cc-border)] shrink-0">
+                        <span className="text-xs uppercase px-1 rounded bg-[var(--cc-surface-2)] text-[var(--cc-text-muted)] border border-[var(--cc-border)] shrink-0">
                           {docType}
                         </span>
                       )}
@@ -216,19 +279,25 @@ export function CheckList({
 
                     <div className="flex flex-wrap items-center justify-end gap-1.5 text-right shrink-0">
                       {isGap ? (
-                        <span className="font-medium text-[10px] text-[var(--cc-warn)] italic">
-                          Field Omitted / Absent (Gap)
+                        <span className="font-medium text-xs text-[var(--cc-warn)] italic">
+                          Omitted in {docName} (Gap)
                         </span>
                       ) : (
-                        <span className="font-mono text-[11px] font-semibold text-[var(--cc-text)] bg-[var(--cc-surface-2)] px-1.5 py-0.5 rounded border border-[var(--cc-border)] max-w-[12rem] truncate" title={String(ev.raw_value)}>
+                        <span className="font-mono text-xs font-semibold text-[var(--cc-text)] bg-[var(--cc-surface-2)] px-1.5 py-0.5 rounded border border-[var(--cc-border)] max-w-[12rem] truncate" title={String(ev.raw_value)}>
                           {String(ev.raw_value)}
                         </span>
                       )}
-                      {ev.unit && !isGap && <span className="text-[10px] text-[var(--cc-text-muted)]">{ev.unit}</span>}
+                      {ev.unit && !isGap && !String(ev.raw_value).trim().endsWith(ev.unit.trim()) && <span className="text-xs text-[var(--cc-text-muted)]">{ev.unit}</span>}
                       {ev.page && (
-                        <span className="text-[10px] text-[var(--cc-text-subtle)]">
+                        <button
+                          type="button"
+                          onClick={() => ev.doc && onSelectDocument?.(ev.doc, ev.page ?? undefined, ev.field, ev.bbox)}
+                          disabled={!ev.doc}
+                          className="text-xs text-[var(--cc-focus)] underline disabled:no-underline disabled:text-[var(--cc-text-subtle)]"
+                          aria-label={ev.doc ? `Open ${docName}, page ${ev.page}` : undefined}
+                        >
                           p.{ev.page}
-                        </span>
+                        </button>
                       )}
                       {path && (
                         <button
@@ -240,7 +309,7 @@ export function CheckList({
                             e.stopPropagation();
                             setEditing(editing === editKey ? null : editKey);
                           }}
-                          className="rounded border border-[var(--cc-border-strong)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--cc-focus)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 cursor-pointer"
+                          className="rounded border border-[var(--cc-border-strong)] px-1.5 py-0.5 text-xs font-semibold text-[var(--cc-focus)] hover:bg-[var(--cc-surface-2)] disabled:opacity-50 cursor-pointer"
                         >
                           Edit
                         </button>
@@ -250,7 +319,7 @@ export function CheckList({
                   {state && (
                     <span
                       data-testid="correction-state"
-                      className={`self-start text-[10px] font-bold ${state.kind === "used" ? "text-[var(--cc-ok)]" : "text-[var(--cc-warn)]"}`}
+                      className={`self-start text-xs font-bold ${state.kind === "used" ? "text-[var(--cc-ok)]" : "text-[var(--cc-warn)]"}`}
                     >
                       {state.kind === "used" && `Corrected by the agent (model read ${state.entry.original_value ?? "nothing"})`}
                       {state.kind === "pending" && `Correction pending: ${state.entry.value ?? "(cleared)"}. Recompute to apply it.`}
@@ -274,7 +343,7 @@ export function CheckList({
                 <button
                   type="button"
                   onClick={() => setAllEvidence((prev) => ({ ...prev, [check.check_id]: !evidenceExpanded }))}
-                  className="self-start text-[10px] font-semibold text-[var(--cc-focus)] hover:underline cursor-pointer"
+                  className="self-start min-h-[24px] inline-flex items-center text-xs font-semibold text-[var(--cc-focus)] hover:underline cursor-pointer py-1"
                 >
                   {evidenceExpanded ? "Show fewer" : `Show all ${evidenceList.length} (${hiddenEvidence} more)`}
                 </button>
@@ -290,16 +359,16 @@ export function CheckList({
     <div className="flex flex-col gap-3">
       {/* Issues Requiring Action (Material Contradictions & Warnings) */}
       {issues.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[var(--cc-err)] uppercase tracking-wider flex items-center gap-1.5">
-              <span>⚠️ Discrepancies & Warnings ({issues.length})</span>
-            </span>
+        <details open className="group rounded-[var(--cc-radius)] border border-[var(--cc-border)] bg-[var(--cc-surface)]">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-2.5 text-xs font-bold text-[var(--cc-err)] uppercase tracking-wider">
+            <span>⚠️ Findings requiring attention ({issues.length})</span>
+            <span className="text-xs text-[var(--cc-text-muted)] group-open:hidden">Show</span>
+            <span className="hidden text-xs text-[var(--cc-text-muted)] group-open:inline">Hide</span>
+          </summary>
+          <div className="border-t border-[var(--cc-border)] p-2">
+            <ul className="flex flex-col gap-2" aria-label="Discrepancies and warnings">{issues.map((check, i) => renderCheckItem(check, i, "issue"))}</ul>
           </div>
-          <ul className="flex flex-col gap-2" aria-label="Discrepancies and warnings">
-            {issues.map((check, i) => renderCheckItem(check, i, "issue"))}
-          </ul>
-        </div>
+        </details>
       )}
 
       {/* Passed Checks (Accordion) */}
@@ -308,12 +377,13 @@ export function CheckList({
           <button
             type="button"
             onClick={() => setShowAllPass(!showAllPass)}
+            aria-expanded={showAllPass}
             className="flex items-center justify-between text-xs font-semibold text-[var(--cc-text-muted)] hover:text-[var(--cc-text)] p-1.5 rounded hover:bg-[var(--cc-surface-2)] transition-colors cursor-pointer"
           >
             <span className="flex items-center gap-1.5 text-[var(--cc-ok)]">
               <span>✓ Verified Rules ({passed.length})</span>
             </span>
-            <span className="text-[10px]">
+            <span className="text-xs">
               {showAllPass ? "▲ Hide verified" : `▼ Show (${passed.length} passed)`}
             </span>
           </button>

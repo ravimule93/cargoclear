@@ -22,7 +22,7 @@ export function MissingEvidenceCard({ item }: MissingEvidenceCardProps) {
         Required for HS <code className="font-mono font-semibold">{item.hs_code}</code> — {item.reason}
       </p>
       {item.regulation_ref && (
-        <div className="mt-2 text-[10px] opacity-75 font-mono">
+        <div className="mt-2 text-xs opacity-75 font-mono">
           Ref: {item.regulation_ref}
         </div>
       )}

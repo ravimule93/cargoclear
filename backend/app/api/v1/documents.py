@@ -4,18 +4,19 @@ import asyncio
 import weakref
 from typing import Annotated, Any
 
-from fastapi import APIRouter, File, Form, Path, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Path, Query, UploadFile
 from fastapi.responses import Response
 
 from app.core.config import settings
 from app.domain.schemas import DocumentDeletedResponse, DocumentResponse, TransformMetadataResponse
+from app.gateway.authorization import require_authorized_bundle
 from app.gateway.errors import NotFoundError, PayloadTooLargeError, ValidationError
 from app.repo import firestore
 from app.services import document_identity, orchestrator, relevance, storage
 from app.services.documents import register_document, remove_document
 from app.services.upload_checks import check_pdf, download_headers, shared_pdf_async
 
-router = APIRouter(tags=["documents"])
+router = APIRouter(tags=["documents"], dependencies=[Depends(require_authorized_bundle)])
 
 _ALLOWED_MIME = {"application/pdf", "application/octet-stream"}
 _CHUNK_BYTES = 1024 * 1024  # the upload is read one MiB at a time

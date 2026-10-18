@@ -19,9 +19,13 @@ test.describe("Case D: an India import whose certificate contradicts the declare
     await page.getByTestId("run-button").click();
     await expect(page.getByTestId("status-pill")).toContainText("Material Contradiction", { timeout: 30_000 });
 
-    // nothing was chosen, so the viewer opens the document the contradiction is about: the certificate, not the first in the rail
+    // Source is optional. Opening it preserves the automatic finding-document selection: the certificate, not the first in the rail.
     await expect(page.getByTitle("case_d_mtc_test_cert.pdf").first()).toBeVisible();
+    await expect(page.getByLabel(/^Page 1 of \d+: case_d_mtc_test_cert\.pdf$/)).not.toBeVisible();
+    await page.getByRole("button", { name: "View PDF", exact: true }).click();
     await expect(page.getByLabel(/^Page 1 of \d+: case_d_mtc_test_cert\.pdf$/)).toBeVisible({ timeout: 15_000 });
+    await page.getByRole("button", { name: "Close source PDF" }).click();
+    await expect(page.getByTestId("status-pill")).toContainText("Material Contradiction");
 
     const panel = page.getByLabel("Compliance assessment and actions");
     // the contradiction, in words a specialist can act on

@@ -8,12 +8,16 @@
    ============================================================================= */
 
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
-:root {
+:root,
+html.light {
+  color-scheme: light;
   /* --- Surfaces --- */
   --cc-bg:            #F4F6F9;
   --cc-surface:       #FFFFFF;
   --cc-surface-2:     #FAFBFC;
+  --cc-surface-3:     #EEF2F6;
   --cc-border:        #E3E7ED;   /* decorative only — no contrast req */
   --cc-border-strong: #6B7684;   /* 3.0:1 on white → allowed graphical boundary */
 
@@ -24,6 +28,10 @@
 
   /* --- Focus ring: 3:1 against every surface --- */
   --cc-focus:         #1A56DB;   /* 5.1:1 on white */
+  --cc-action:        #1A56DB;
+  --cc-action-text:   #FFFFFF;
+  --cc-danger-action: #B3261E;
+  --cc-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 16' fill='none' stroke='%234A5462' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 6 3-3 3 3M3 10l3 3 3-3'/%3E%3C/svg%3E");
 
   /* --- Status tokens ---
      -text:  ≥ 4.5:1 on white (for text labels)
@@ -52,15 +60,48 @@
 
   /* --- Spatial tokens --- */
   --cc-radius: 8px;
+  --cc-space-1: 4px;
+  --cc-space-2: 8px;
+  --cc-space-3: 12px;
+  --cc-space-4: 16px;
+  --cc-space-6: 24px;
+  --cc-body-size: 14px;
+  --cc-meta-size: 12px;
   --cc-shadow-1: 0 1px 2px rgba(18,22,28,.06), 0 1px 3px rgba(18,22,28,.10);
 }
 
-/* Dark mode — verified contrast ratios at same thresholds */
+/* Explicit dark theme via class on html or root */
+html.dark,
+:root.dark {
+  color-scheme: dark;
+  --cc-bg:            #0F1319;
+  --cc-surface:       #161B22;
+  --cc-surface-2:     #1C222B;
+  --cc-surface-3:     #252C37;
+  --cc-border:        #2A313B;
+  --cc-border-strong: #8B949E;  /* 3.2:1 on #161B22 */
+
+  --cc-text:          #E6EDF3;  /* 14.8:1 */
+  --cc-text-muted:    #B1BAC4;  /*  7.1:1 */
+  --cc-text-subtle:   #8B949E;  /*  4.5:1 */
+
+  --cc-focus:         #58A6FF;
+  --cc-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 16' fill='none' stroke='%23B1BAC4' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 6 3-3 3 3M3 10l3 3 3-3'/%3E%3C/svg%3E");
+
+  --cc-ok:      #4ADE80;  --cc-ok-bd:   #4ADE80;  --cc-ok-bg:   #0F2A1A;
+  --cc-warn:    #FBBF24;  --cc-warn-bd: #FBBF24;  --cc-warn-bg: #2E2205;
+  --cc-err:     #F87171;  --cc-err-bd:  #F87171;  --cc-err-bg:  #2E0F0F;
+  --cc-info:    #A78BFA;  --cc-info-bd: #A78BFA;  --cc-info-bg: #1E1533;
+}
+
+/* System dark preference fallback when no explicit light theme class is set */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
+    color-scheme: dark;
     --cc-bg:            #0F1319;
     --cc-surface:       #161B22;
     --cc-surface-2:     #1C222B;
+    --cc-surface-3:     #252C37;
     --cc-border:        #2A313B;
     --cc-border-strong: #8B949E;  /* 3.2:1 on #161B22 */
 
@@ -69,6 +110,7 @@
     --cc-text-subtle:   #8B949E;  /*  4.5:1 */
 
     --cc-focus:         #58A6FF;
+    --cc-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 16' fill='none' stroke='%23B1BAC4' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 6 3-3 3 3M3 10l3 3 3-3'/%3E%3C/svg%3E");
 
     --cc-ok:      #4ADE80;  --cc-ok-bd:   #4ADE80;  --cc-ok-bg:   #0F2A1A;
     --cc-warn:    #FBBF24;  --cc-warn-bd: #FBBF24;  --cc-warn-bg: #2E2205;
@@ -91,8 +133,80 @@ html {
   font-family: ui-sans-serif, system-ui, sans-serif;
   color: var(--cc-text);
   background: var(--cc-bg);
+  transition: background-color 160ms ease, color 160ms ease;
   -webkit-font-smoothing: antialiased;
 }
+
+body { margin: 0; }
+
+/* Keep native selection/keyboard behavior, with one consistently centered
+   chevron pair instead of platform-dependent arrows and text padding. */
+select:not([multiple]):not([size]),
+select[size="1"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: var(--cc-select-arrow);
+  background-repeat: no-repeat;
+  background-position: right 0.625rem center;
+  background-size: 0.75rem 1rem;
+  padding-inline-end: 2rem;
+}
+select:disabled { cursor: not-allowed; opacity: .55; }
+
+@media (forced-colors: active) {
+  select:not([multiple]):not([size]),
+  select[size="1"] {
+    -webkit-appearance: auto;
+    appearance: auto;
+    background-image: none;
+  }
+}
+
+.cc-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cc-space-2);
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--cc-border-strong);
+  border-radius: var(--cc-radius);
+  color: var(--cc-text);
+  background: var(--cc-surface);
+  font-size: var(--cc-meta-size);
+  font-weight: 600;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.cc-button:hover { background: var(--cc-surface-3); }
+.cc-button-primary {
+  background: var(--cc-action);
+  color: var(--cc-action-text);
+  border-color: var(--cc-action);
+}
+.cc-button-primary:hover { background: #1749b8; }
+.cc-button:disabled { opacity: .55; cursor: wait; }
+.cc-sign-out { border-color: var(--cc-err-bd); color: var(--cc-err); background: var(--cc-surface); cursor: pointer; }
+.cc-sign-out:hover { background: var(--cc-err-bg); }
+.cc-sign-out:focus-visible { outline: 2px solid var(--cc-err); outline-offset: 2px; }
+.cc-sign-out:active { background: var(--cc-danger-action); color: var(--cc-action-text); }
+#new-bundle { scroll-margin-top: 16px; }
+#new-bundle:target { outline: 2px solid var(--cc-focus); outline-offset: 4px; }
+.cc-eyebrow { font-size: var(--cc-meta-size); font-weight: 600; color: var(--cc-text-subtle); }
+
+.cc-skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  transform: translateY(-200%);
+  padding: 8px 12px;
+  background: var(--cc-surface);
+  color: var(--cc-focus);
+  border: 2px solid var(--cc-focus);
+  border-radius: var(--cc-radius);
+}
+.cc-skip-link:focus { transform: none; }
 
 /* Focus visible ring — keyboard accessible, 3:1 contrast */
 *:focus-visible {

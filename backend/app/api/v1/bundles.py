@@ -9,7 +9,8 @@ from fastapi import APIRouter, Depends, Query
 from app.domain.auth import UserIdentity
 from app.domain.schemas import BundleResponse, CreateBundleRequest
 from app.gateway.auth import get_current_user
-from app.gateway.errors import ConflictError, ForbiddenError, NotFoundError
+from app.gateway.authorization import get_authorized_bundle, require_authorized_bundle
+from app.gateway.errors import ConflictError
 from app.repo import firestore
 from app.services import audit, corrections, signing
 
@@ -105,19 +106,10 @@ async def list_bundles(
 async def get_bundle(
     bundle_id: str,
     current_user: UserIdentity = Depends(get_current_user),
+    bundle: dict[str, Any] = Depends(get_authorized_bundle),
 ) -> BundleResponse:
     """Retrieve an existing bundle with multi-tenant domain authorization."""
-    bundle = await firestore.get_bundle(bundle_id)
-    if bundle is None:
-        raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
-
-    # Multi-tenant scoping: if bundle has tenant_id and user is in a different tenant
     bundle_tenant = bundle.get("tenant_id")
-    if bundle_tenant and bundle_tenant != current_user.tenant_id and current_user.tenant_id != "*":
-        raise ForbiddenError(
-            f"Access denied: Bundle belongs to organization '{bundle_tenant}'.",
-            detail={"bundle_tenant": bundle_tenant, "user_tenant": current_user.tenant_id},
-        )
 
     return BundleResponse(
         id=bundle["id"],
@@ -137,20 +129,12 @@ async def get_bundle(
 )
 async def get_bundle_status(
     bundle_id: str,
-    current_user: UserIdentity = Depends(get_current_user),
+    _: None = Depends(require_authorized_bundle),
 ) -> dict[str, Any]:
-    """Retrieve current pipeline execution status and stage for a bundle."""
-    bundle = await firestore.get_bundle(bundle_id)
-    if bundle is None:
-        raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
+    """Retrieve current pipeline execution status and stage for a bundle.
 
-    bundle_tenant = bundle.get("tenant_id")
-    if bundle_tenant and bundle_tenant != current_user.tenant_id and current_user.tenant_id != "*":
-        raise ForbiddenError(
-            f"Access denied: Bundle belongs to organization '{bundle_tenant}'.",
-            detail={"bundle_tenant": bundle_tenant, "user_tenant": current_user.tenant_id},
-        )
-
+    Tenant isolation is the shared dependency's: a bundle of another organisation looks exactly like a bundle that does not exist.
+    """
     return await firestore.get_run_state(bundle_id)
 
 
@@ -159,12 +143,11 @@ async def get_bundle_status(
     "/bundles/{bundle_id}/audit",
     summary="Get cryptographic tamper-evident audit trail",
 )
-async def get_audit(bundle_id: str) -> dict[str, Any]:
+async def get_audit(
+    bundle_id: str,
+    _: None = Depends(require_authorized_bundle),
+) -> dict[str, Any]:
     """Retrieve audit events and cryptographic chain verification result."""
-    bundle = await firestore.get_bundle(bundle_id)
-    if bundle is None:
-        raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
-
     events = await audit.list_audit_events(bundle_id)
     verified, error_reason = audit.verify_audit_chain(events)
 
@@ -180,12 +163,12 @@ async def get_audit(bundle_id: str) -> dict[str, Any]:
     "/bundles/{bundle_id}/audit/sign",
     summary="Sign the current head of the audit chain now",
 )
-async def sign_audit_head(bundle_id: str) -> dict[str, Any]:
+async def sign_audit_head(
+    bundle_id: str,
+    _: None = Depends(require_authorized_bundle),
+) -> dict[str, Any]:
     """Signs the newest event (when a run could not, or after corrections made since): returns the signature summary.
     409 when signing is not configured. Signing a head that is already signed changes nothing."""
-    bundle = await firestore.get_bundle(bundle_id)
-    if bundle is None:
-        raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
     if signing.get_signer() is None:
         raise ConflictError("Audit signing is not configured for this service.", detail={"bundle_id": bundle_id})
     events = await audit.list_audit_events(bundle_id)
@@ -204,14 +187,11 @@ async def sign_audit_head(bundle_id: str) -> dict[str, Any]:
 async def get_extractions(
     bundle_id: str,
     iteration: int | None = Query(default=None, description="Optional iteration number"),
+    _: None = Depends(require_authorized_bundle),
 ) -> list[dict[str, Any]]:
     """Retrieve extraction JSON snapshots for spatial provenance overlays.
 
     What the model read, with the corrections that iteration used laid on: a corrected field carries ``corrected: true`` and
     ``original_value``. The stored record itself is never changed.
     """
-    bundle = await firestore.get_bundle(bundle_id)
-    if bundle is None:
-        raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
-
     return await corrections.effective_extraction(bundle_id, iteration=iteration)

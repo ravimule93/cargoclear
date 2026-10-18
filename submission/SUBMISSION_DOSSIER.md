@@ -9,8 +9,9 @@
 
 | Item | Details |
 |---|---|
-| **Team Name** | `[TEAM NAME — REQUIRED]` *(Working Title: CargoClear Team)* |
-| **Team Leader Name** | `[TEAM LEADER — REQUIRED]` |
+| **Team Name** | **CargoClear** |
+| **Team Leader Name** | **Ravi Mule** |
+| **Team Member Name** | **Nikhil Pande** |
 | **Problem Statement** | Cross-border trade documentation is fragmented, prone to human discrepancy errors, and highly vulnerable to misdeclared tariff classifications, resulting in 3–7 day port clearance delays, severe customs penalties, and missed trade remedy duties. Customs House Agents (CHAs) lack an automated, intelligent pre-submission assessment workbench to reconcile multi-document trade packages with cryptographic auditability before filing declarations to authorities. |
 
 ---
@@ -65,6 +66,10 @@ CargoClear solves this challenge by combining:
 | **Metallurgical Chemistry Matching** | Domain Rules | **Implemented and verified** | Verified against Chapter 73 HS rules (HS 7304 vs 7306 alloy chemistry thresholds). |
 | **Indicative Duty & Anti-Dumping Calculator** | Valuation | **Implemented and verified** | Computes CIF, BCD (7.5%), SWS (10%), and ADD ($543/MT under Notification 02/2022-Customs). |
 | **Interactive 3-Pane Workbench** | UX / UI | **Implemented and verified** | Document switcher, high-res PDF.js viewer with SVG bbox overlays, assessment panel. |
+| **Tripartite Layout Switcher & Auto-Focus** | UX / UI | **Implemented and verified** | 3-way layout switcher (`⊞ Split`, `📄 Viewer`, `⚖️ Decision`), auto-hiding PDF view during analysis with automated focus scrolling to the live progress bar. |
+| **Pre-Upload Document Staging & Classification** | Ingestion | **Implemented and verified** | `UploadStagingModal` portaled to `document.body` at `z-[9999]` for assigning document types prior to ingestion. |
+| **Commercial Registration & Corporate Tenancy** | Identity | **Implemented and verified** | Firestore-backed user registration and sign-in with PBKDF2-HMAC-SHA256 salted password hashing, corporate tenancy, and session tokens. |
+| **User Profile & Theme Management** | UX / UI | **Implemented and verified** | User profile dropdown with tenant domain badge, role indicator, live sign-out action, and integrated 3-way appearance switcher (`Light`, `Dark`, `System`). |
 | **Server-Sent Events (SSE) Live Streaming** | Realtime | **Implemented and verified** | Live pipeline progress reporting with automatic fallback to polling on CDN timeout. |
 | **Human-in-the-Loop Corrections** | Operations | **Implemented and verified** | CHA field override with zero-model instant recomputation and audit logging. |
 | **Cryptographic SHA-256 Audit Ledger** | Compliance | **Implemented and verified** | Hash-chained iteration records signed with ECDSA P-256 keys written to Firestore. |
@@ -101,35 +106,43 @@ flowchart TD
 
 ## 6. Workbench Wireframes & Layout Architecture
 
-The user interface follows a responsive 3-pane layout optimized for high-density document comparison:
+The user interface follows a responsive tripartite layout with a 3-way layout switcher (`⊞ Split`, `📄 Viewer`, `⚖️ Decision`), workflow phase pills (`1. Draft`, `2. Check`, `3. Decision`), and automated focus transitions:
 
 ```
-+--------------------------------------------------------------------------------------------------------+
-| 🛃 CargoClear  [← All Bundles] [Bundle: bnd-7cce1750009d] [To: IN] [Status: MATERIAL CONTRADICTION]  |
-+-------------------+----------------------------------------------------+-------------------------------+
-| DOCUMENT TRAY     | INTERACTIVE PDF VIEWER (PDF.JS)                    | ASSESSMENT & COMPLIANCE PANEL |
-|                   |                                                    |                               |
-| [📄 Invoice]      | +------------------------------------------------+ | Verdict:                      |
-|   invoice_03.pdf  | | COMMERCIAL INVOICE                             | | [⚠️ MATERIAL CONTRADICTION]   |
-|                   | | Invoice No: INV-2026-089                       | |                               |
-| [📄 Bill of Lading| | Total Gross Weight: 14,250.00 KGS              | | Compliance Findings (15):   |
-|   bol_03.pdf      | | +--------------------------------------------+ | | • W-001 Gross Weight (FAIL) |
-|                   | | | [BOX: 14,250.00 KGS] (Severity: MATERIAL)  | | |   Invoice: 14,250 kg        |
-| [📄 Packing List] | | +--------------------------------------------+ | |   Packing List: 14,200 kg   |
-|   packing_03.pdf  | | Incoterms: CIF Chennai Port                    | |                               |
-|                   | +------------------------------------------------+ | • H-002 HS Chemistry (FAIL)   |
-| [📄 Mill Test Cert|                                                    | |   Carbon: 0.32% > 0.25% max |
-|   mtc_pipe.pdf    | Zoom: [-] [100%] [+] | Page: [1] of [3]            | |                               |
-|                   |                                                    | Indicative Duty Calculation:  |
-| [+ Add Document]  |                                                    | • Assessable Value: $128,450  |
-|                   |                                                    | • Basic Customs Duty: $9,634  |
-|                   |                                                    | • Anti-Dumping Duty: $7,738   |
-|                   |                                                    |                               |
-|                   |                                                    | [Edit Field Correction]       |
-+-------------------+----------------------------------------------------+-------------------------------+
-| Live updates: ⚡ Polling active | Cryptographic Audit: SHA-256 e3b0c442... | User: agent@customs.com         |
-+--------------------------------------------------------------------------------------------------------+
++-------------------------------------------------------------------------------------------------------------------------+
+| 🛃 CargoClear  [← All Bundles] [bnd-7cce1750009d] [To: IN] [Phase: 2. Check] [LAYOUT: [⊞ Split] [📄 Viewer] [⚖️ Decision]] |
+|                                                                                [👤 Ravi Mule (CHA) ▾ | Theme: System]   |
++-------------------+----------------------------------------------------+------------------------------------------------+
+| DOCUMENT RAIL     | CENTER PDF VIEWER (PDF.JS CANVAS)                  | RIGHT DECISION & ASSESSMENT PANE (400px)       |
+| (240px wide)      | (Auto-hides during analysis; expands on focus)     | (Always accessible; auto-focuses progress bar) |
+|                   |                                                    |                                                |
+| [📄 Invoice]      | +------------------------------------------------+ | Verdict:                                       |
+|   invoice_03.pdf  | | COMMERCIAL INVOICE                             | | [⚠️ MATERIAL CONTRADICTION]                    |
+|                   | | Invoice No: INV-2026-089                       | |                                                |
+| [📄 Bill of Lading| | Total Gross Weight: 14,250.00 KGS              | | Compliance Findings (15 checks):             |
+|   bol_03.pdf      | | +--------------------------------------------+ | | • W-001 Gross Weight (FAIL)                  |
+|                   | | | [BBOX: 14,250.00 KGS] (Severity: MATERIAL) | | |   Invoice: 14,250 kg                         |
+| [📄 Packing List] | | +--------------------------------------------+ | |   Packing List: 14,200 kg                    |
+|   packing_03.pdf  | | Incoterms: CIF Chennai Port                    | |                                                |
+|                   | +------------------------------------------------+ | • H-002 Alloy Chemistry (FAIL)                 |
+| [📄 Mill Test Cert|                                                    | |   Chromium: 0.35% > 0.30% non-alloy max      |
+|   mtc_pipe.pdf    | Zoom: [-] [100%] [+] | Page: [1] of [3]            | |                                                |
+|                   |                                                    | Indicative Duty Exposure:                      |
+| [+ Add Document]  | [Classify & Upload Modal: z-[9999]]                | • Assessable Value (CIF): $128,450             |
+|   • Stage Type    |   Assign doc type before ingestion                 | • Basic Customs Duty (BCD 7.5%): $9,634        |
+|   • Dropzone      |                                                    | • Anti-Dumping Duty (ADD): $7,738              |
+|                   |                                                    |                                                |
+|                   |                                                    | [Edit Field Correction] [Instant Recompute]    |
++-------------------+----------------------------------------------------+------------------------------------------------+
+| Pipeline: [Progress: 100% Complete] | Audit Chain: Verified (SHA-256) | Head Signed (ECDSA P-256) | Region: asia-south1  |
++-------------------------------------------------------------------------------------------------------------------------+
 ```
+
+### Layout Switcher Modes:
+1. **`⊞ Split` (Default):** Balanced tripartite layout featuring the 240px document rail, dynamic flex PDF viewer canvas, and 400px sticky decision pane side-by-side.
+2. **`📄 Viewer` (Inspection Focus):** Collapses the decision pane and maximizes the PDF viewer across 100% of the workspace for in-depth visual inspection of high-density drawings and multi-column invoices.
+3. **`⚖️ Decision` (Adjudication Focus):** Maximizes the assessment, discrepancy checklist, indicative duty breakdown, and audit timeline for compliance officers making final clearance determinations.
+4. **Auto-Hide & Focus Automation:** When the user initiates **Run analysis** or **Auto-reassess**, the viewer automatically hides to surface the live assessment stream and smoothly scrolls the viewport to focus directly on the live pipeline progress bar.
 
 ---
 
@@ -182,11 +195,11 @@ flowchart LR
 
 | Resource | Usage Metric | Projected Monthly Cost |
 |---|---|---|
-| **Google Cloud Run (API & UI)** | Pay-per-use, scale-to-zero. Baseline free tier covers 2M requests. Estimated 10,000 requests/mo. | **$15.00 – $25.00** |
+| **Google Cloud Run (API & UI)** | Deployed with `--min-instances 0` (scale-to-zero). **Zero idle compute cost ($0.00)**. Google Cloud Run Free Tier provides 2M requests, 180,000 vCPU-sec, and 360,000 GiB-sec free monthly. For 5,000 monthly assessments (~10,000 requests), compute falls almost entirely within the free tier. | **$0.00 – $2.00** |
 | **Google Gemini 2.5 Flash** | $0.075 / 1M input tokens, $0.30 / 1M output tokens. 4-document bundle = ~4,500 input + 1,800 output tokens (~$0.00088 / assessment). 5,000 assessments/mo. | **$4.40** |
-| **Cloud Storage & Firestore** | 10 MB per shipment bundle + Firestore audit ledger reads/writes. | **$5.00 – $10.00** |
+| **Cloud Storage & Firestore** | 10 MB per shipment bundle + Firestore native user and audit ledger reads/writes. | **$5.00 – $10.00** |
 | **BigQuery Tariff Queries** | In-memory cached tariff schedules with BigQuery vector search. | **$2.00 – $5.00** |
-| **Total Estimated Operating Cost** | **5,000 complete customs bundle assessments per month** | **~$26.40 – $44.40 / mo** *(<$0.01 per shipment)* |
+| **Total Estimated Operating Cost** | **5,000 complete customs bundle assessments per month** | **~$11.40 – $21.40 / mo** *(<$0.005 per shipment)* |
 
 ---
 
@@ -221,31 +234,35 @@ flowchart LR
 
 ## 12. Submission Links Checklist
 
-- **GitHub Public Repository:** `[GITHUB REPOSITORY URL — REQUIRED]` *(https://github.com/ravimule93/cargoclear)*
-- **Demo Video Link (3 Minutes):** `[DEMO VIDEO LINK — REQUIRED]`
-- **Deployed Final Product URL:** `https://cargoclear-app.web.app` *(UI: https://cargoclear-ui-448522365737.asia-south1.run.app)*
-- **API Endpoint:** `https://cargoclear-api-448522365737.asia-south1.run.app`
+- **GitHub Public Repository:** [https://github.com/ravimule93/cargoclear](https://github.com/ravimule93/cargoclear) (branch: `improvement-plan`)
+- **Demo Video Link (3 Minutes):** `[DEMO VIDEO LINK — Insert YouTube / Google Drive / Loom URL here]` *(Structured narrative script provided below)*
+- **Deployed Final Web Application:** [https://cargoclear-app.web.app](https://cargoclear-app.web.app) (Firebase Hosting)
+- **Direct Cloud Run UI Service:** [https://cargoclear-ui-448522365737.asia-south1.run.app](https://cargoclear-ui-448522365737.asia-south1.run.app) (`minScale: 0`)
+- **Direct Cloud Run API Service:** [https://cargoclear-api-448522365737.asia-south1.run.app](https://cargoclear-api-448522365737.asia-south1.run.app) (`minScale: 0`)
 
 ---
 
 ## 13. Three-Minute Demo Video Script (0:00 – 3:00)
 
-### [0:00 – 0:30] The Problem & The Solution Hook
-- **Visual:** Split screen showing a cargo vessel delayed at port and an overwhelmed customs broker buried under stacks of commercial invoices, bills of lading, and mill test certificates.
-- **Narrator:** *"Every year, billions of dollars in global trade face costly port delays of 3 to 7 days due to documentation discrepancies and misdeclared tariffs. Customs House Agents must manually cross-check dozens of fields across multiple trade documents before filing declarations. Introducing CargoClear-JAPAC: an agentic AI pre-submission customs assessment workbench powered by Google Cloud and Gemini 2.5 Flash."*
+*Structured second-by-second narrative script designed for voiceover narration and live UI screen recording.*
 
-### [0:30 – 1:15] Ingestion, SSO & The 3-Pane Clearance Workbench
-- **Visual:** Screen recording of `https://cargoclear-app.web.app`. The user signs in via Google Workspace Single Sign-On, lands on the tenant dashboard, and selects the Case D India Import demo.
-- **Narrator:** *"Let's see CargoClear in action. After signing in through enterprise Single Sign-On, our licensed customs broker opens an import shipment bundle destined for India containing four critical documents: Commercial Invoice, Bill of Lading, Packing List, and a Mill Test Certificate. In just 24 seconds, our multimodal Gemini pipeline ingests, normalizes, and extracts every entity with page-level bounding boxes—all while our prompt-injection guard protects against malicious text hidden in vendor invoices."*
+### [0:00 – 0:30] Hook & Problem Statement
+- **Visual:** Split screen / B-roll of cargo vessels congested at port docks, followed by an overwhelmed customs broker reviewing paper trade documents with highlighted discrepancies.
+- **Narrator:** *"Every day, cross-border shipments face costly 3 to 7 day port clearance delays and demurrage penalties ranging from \$200 to \$800 per container. Why? Because customs brokers must manually cross-examine dozens of data points across Commercial Invoices, Bills of Lading, Packing Lists, and Mill Test Certificates before filing declarations. Introducing CargoClear: an agentic AI pre-submission customs assessment workbench powered by Google Cloud and Gemini 2.5 Flash."*
 
-### [1:15 – 2:05] Grounded Discrepancy & Metallurgy Verification
-- **Visual:** Close-up of the center PDF viewer. Clicking check `W-001` highlights the gross weight on the Invoice (14,250 kg) and the Packing List (14,200 kg). Then clicking check `H-002` navigates to the Mill Test Certificate showing Carbon content (0.32%) exceeding the 0.25% threshold for mild steel.
-- **Narrator:** *"Immediately, CargoClear flags a material contradiction. In check W-001, our deterministic rules engine identified a 50 kg weight discrepancy between the invoice and packing list, pinpointing the exact coordinates on the original PDF. More critically, check H-002 analyzes the laboratory Mill Test Certificate. The exporter declared this seamless pipe as standard mild steel, but the chemical analysis reveals 0.32% Carbon—exceeding the 0.25% legal threshold. This reclassifies the goods into an alloy category subject to anti-dumping duty."*
+### [0:30 – 1:15] Landing Page, Commercial Auth & 24s Analysis
+- **Visual:** Navigate to `https://cargoclear-app.web.app`. Show the Executive KPI Dashboard. Sign in seamlessly via Google Workspace SSO (or show the Commercial Registration screen backed by Firestore PBKDF2 hashing). Open **Case D demo (India import)**. Hit **Run analysis**.
+- **Action Highlight:** As analysis begins, the center PDF viewer smoothly auto-hides and the screen automatically focuses on the live pipeline progress bar as Server-Sent Events stream pipeline stages (Ingest → Preprocess → Extract → Reconcile → Synthesize).
+- **Narrator:** *"Logging into CargoClear via enterprise SSO or corporate credentials, the broker accesses their compliance workspace. We open an import shipment to India containing four documents. When we hit 'Run Analysis', our multimodal Gemini 2.5 Flash pipeline activates. Notice how the interface automatically focuses on the real-time pipeline progress. In just 24 seconds, the system extracts structured entities, verifies arithmetic, and evaluates tariff rules—while built-in prompt-injection guardrails protect against poisoned vendor text."*
 
-### [2:05 – 2:40] Indicative Duty Breakdown & Cryptographic Audit Ledger
-- **Visual:** The right panel displays the valuation card: Assessable Value CIF ($128,450), BCD 7.5%, SWS 10%, and Anti-Dumping Duty ($543/MT). The user scrolls down to the tamper-evident audit timeline showing SHA-256 hashes and ECDSA signatures.
-- **Narrator:** *"CargoClear doesn't just flag the error; it calculates the exact financial impact. Under India Customs Notification 02/2022, the platform transparently computes Basic Customs Duty, Social Welfare Surcharge, and the specific Anti-Dumping Duty. Furthermore, every finding and action is hashed and cryptographically signed into an immutable Firestore audit ledger, giving customs brokers foolproof proof of compliance."*
+### [1:15 – 2:05] Grounded Verification & Tripartite Layout Switcher
+- **Visual:** Analysis completes. Demonstrate the tripartite layout switcher in the top bar: click `⊞ Split` (side-by-side rail, PDF, and decision pane), `📄 Viewer` (full-width PDF inspection), and `⚖️ Decision` (adjudication focus). In `⊞ Split` mode, click check `W-001`. The center PDF viewer scrolls and highlights the gross weight discrepancy (14,250 kg on Invoice vs. 14,200 kg on Packing List) with SVG bounding boxes. Next, click check `H-002`.
+- **Narrator:** *"Immediately, CargoClear flags a Material Contradiction. Using our tripartite layout switcher, the broker can toggle between full PDF inspection, decision adjudication, or side-by-side split view. Clicking check W-001 draws SVG bounding boxes directly over the original PDF, showing an irreconcilable 50 kg weight discrepancy between the invoice and packing list. Even more critically, check H-002 evaluates the Mill Test Certificate. While the exporter declared mild steel, our metallurgy engine proves the steel contains 0.35% Chromium—exceeding the 0.30% non-alloy threshold under Chapter 72 Note 1. This legally reclassifies the cargo into an alloy category subject to anti-dumping duty."*
 
-### [2:40 – 3:00] Conclusion & Impact
-- **Visual:** Summary slide showing key metrics: 24.3s clearance, 100% discrepancy accuracy, $0.01 operating cost per shipment, and product links.
-- **Narrator:** *"With CargoClear, customs clearance is transformed from hours of stressful manual checking into seconds of verifiable, auditable precision. CargoClear: Clearing cargo with confidence. Thank you."*
+### [2:05 – 2:40] Indicative Duty Breakdown, Human Override & Audit Chain
+- **Visual:** Scroll to the **Indicative Duty Exposure** card showing CIF assessable value ($128,450), BCD 7.5%, SWS 10%, and Anti-Dumping Duty ($7,738 / \$543/MT). Click **Edit** on the Chromium field, adjust to `0.28%`, provide reason *"Lab re-test confirmed non-alloy"*, and click **Save & Recompute**. Observe instant (<1s) zero-model recomputation. Then open the **Audit Chain** tab to show the cryptographic SHA-256 hash chain and ECDSA P-256 digital signature badge (*"Chain Verified"*).
+- **Narrator:** *"CargoClear calculates the full financial exposure upfront: Basic Customs Duty, Social Welfare Surcharge, and \$7,738 in Anti-Dumping Duty under Notification 02/2022. If a discrepancy is an OCR anomaly or verified by supplementary lab re-test, the authorized broker can edit the value in place. Clicking 'Recompute' instantly re-evaluates all 15 rules in milliseconds without making a single redundant LLM call. Best of all, every action, override, and verdict is cryptographically hashed and signed with ECDSA keys into an immutable Firestore audit trail for absolute regulatory defensibility."*
+
+### [2:40 – 3:00] Serverless Scale-to-Zero Architecture & Conclusion
+- **Visual:** Closing slide highlighting Google Cloud serverless architecture, scale-to-zero config (`minScale: 0`), \$0.00 idle compute cost, and live application URLs.
+- **Narrator:** *"Built natively on Google Cloud Run with scale-to-zero, CargoClear incurs zero idle compute cost and processes each clearance assessment for less than half a cent. CargoClear: Transforming hours of manual customs checking into seconds of auditable precision. Clear cargo with confidence. Thank you."*
