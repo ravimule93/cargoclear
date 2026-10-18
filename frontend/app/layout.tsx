@@ -8,6 +8,11 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "CargoClear-JAPAC — Customs Document Assessment Workbench",
   description: "Pre-submission customs document assessment for cross-border trade. Decision support only: the authorised agent decides.",
+  icons: {
+    icon: [{ url: "/cargoclear-logo.webp", type: "image/webp" }],
+    shortcut: ["/cargoclear-logo.webp"],
+    apple: [{ url: "/cargoclear-logo.webp", type: "image/webp" }],
+  },
 };
 
 export default function RootLayout({

@@ -2,6 +2,7 @@
 
 import { type ChangeEvent, lazy, Suspense, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Bundle, Status, UserIdentity } from "@/lib/types";
 import type { StreamConnection, StreamRunState } from "@/lib/hooks/useBundleStream";
 import { useDeclaredType } from "@/lib/hooks/useDeclaredType";
@@ -77,7 +78,7 @@ export function TopBar({
           className="flex items-center gap-1.5 font-bold hover:opacity-85 transition-opacity"
           title="Return to Dashboard"
         >
-          <span aria-hidden="true" className="text-xl">🛃</span>
+          <Image src="/cargoclear-logo.webp" alt="" width={20} height={20} aria-hidden="true" className="rounded-md" />
           <span className="tracking-tight text-sm sm:text-base font-bold text-[var(--cc-text)]">
             CargoClear<span className="text-[var(--cc-focus)] font-semibold">-JAPAC</span>
           </span>

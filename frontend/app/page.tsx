@@ -209,7 +209,7 @@ export default function Home() {
       <header className="flex flex-col gap-4 border-b border-[var(--cc-border)] pb-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-[.15em] text-[var(--cc-text-subtle)]">JAPAC customs workspace</p>
-          <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold tracking-tight text-[var(--cc-text)]"><Image src="/icon.svg" alt="" width={28} height={28} aria-hidden="true" />CargoClear</h1>
+          <h1 className="mt-1 flex items-center gap-2 text-2xl font-bold tracking-tight text-[var(--cc-text)]"><Image src="/cargoclear-logo.webp" alt="" width={28} height={28} aria-hidden="true" className="rounded-md" />CargoClear</h1>
           <p className="mt-1 max-w-xl text-sm leading-relaxed text-[var(--cc-text-muted)]">Assess a trade-document bundle, resolve evidence gaps, and prepare a supported declaration.</p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
