@@ -141,7 +141,8 @@ def canonical_parameter(raw: str | None) -> str | None:
     """The canonical symbol of a printed column heading ("Manganese" -> "Mn", "Yield Strength" -> "YS"), or None."""
     if raw is None:
         return None
-    key = re.sub(r"[^A-Z0-9.]", "", str(raw).upper())
+    clean = re.sub(r"\([^)]*\)|\[[^\]]*\]", "", str(raw))
+    key = re.sub(r"[^A-Z0-9.]", "", clean.upper())
     return _PARAMETER_ALIASES.get(key) or _PARAMETER_ALIASES.get(key.replace(".", ""))
 
 

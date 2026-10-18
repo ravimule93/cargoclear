@@ -63,9 +63,10 @@ def test_strengths_are_converted_to_mpa() -> None:
 
 @pytest.mark.parametrize(
     ("printed", "canonical"),
-    [("C", "C"), ("Carbon", "C"), ("MN", "Mn"), ("Manganese", "Mn"), ("Sulphur", "S"), ("Sulfur", "S"), ("Cr", "Cr"),
-     ("Columbium", "Nb"), ("Cb", "Nb"), ("Aluminum", "Al"), ("B", "B"), ("YS", "YS"), ("Yield Strength", "YS"),
-     ("Rp0.2", "YS"), ("UTS", "UTS"), ("Tensile", "UTS"), ("Elongation", "EL")],
+    [("C", "C"), ("Carbon", "C"), ("C (%)", "C"), ("MN", "Mn"), ("Manganese", "Mn"), ("Mn (%)", "Mn"),
+     ("Sulphur", "S"), ("Sulfur", "S"), ("Cr", "Cr"), ("Columbium", "Nb"), ("Cb", "Nb"), ("Aluminum", "Al"),
+     ("B", "B"), ("YS", "YS"), ("Yield Strength", "YS"), ("YS (MPa)", "YS"), ("Yield Strength (MPa)", "YS"),
+     ("Rp0.2", "YS"), ("UTS", "UTS"), ("Tensile", "UTS"), ("UTS (MPa)", "UTS"), ("Elongation", "EL"), ("EL (%)", "EL")],
 )
 def test_column_headings_map_to_canonical_parameters(printed, canonical) -> None:
     assert canonical_parameter(printed) == canonical
