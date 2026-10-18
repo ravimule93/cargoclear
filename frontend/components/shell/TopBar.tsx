@@ -80,7 +80,7 @@ export function TopBar({
         >
           <Image src="/cargoclear-logo.webp" alt="" width={20} height={20} aria-hidden="true" className="rounded-md" />
           <span className="tracking-tight text-sm sm:text-base font-bold text-[var(--cc-text)]">
-            CargoClear<span className="text-[var(--cc-focus)] font-semibold">-JAPAC</span>
+            CargoClear
           </span>
         </Link>
         <span className="text-[var(--cc-text-muted)] opacity-30 select-none">/</span>

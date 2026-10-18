@@ -400,7 +400,7 @@ test("header home and list links remain distinct from New, which focuses setup w
   const fixture = await mockFeedback(page);
   await fixture.open();
   const header = page.getByRole("banner");
-  await expect(header.getByRole("link", { name: "CargoClear-JAPAC", exact: true })).toHaveAttribute("href", "/");
+  await expect(header.getByRole("link", { name: "CargoClear", exact: true })).toHaveAttribute("href", "/");
   await expect(header.getByRole("link", { name: "← All Bundles", exact: true })).toHaveAttribute("href", "/");
   const newBundle = header.getByRole("link", { name: "+ New", exact: true });
   await expect(newBundle).toHaveAttribute("href", "/#new-bundle");

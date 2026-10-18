@@ -6,7 +6,7 @@ import "@/styles/workbench.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "CargoClear-JAPAC — Customs Document Assessment Workbench",
+  title: "CargoClear — Customs Document Assessment Workbench",
   description: "Pre-submission customs document assessment for cross-border trade. Decision support only: the authorised agent decides.",
   icons: {
     icon: [{ url: "/cargoclear-logo.webp", type: "image/webp" }],
