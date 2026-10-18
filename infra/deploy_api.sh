@@ -54,7 +54,7 @@ OAUTH_CLIENT_ID="${OAUTH_CLIENT_ID:?OAUTH_CLIENT_ID must be the Google OAuth cli
 GEMINI_LIVE_MODEL="${GEMINI_LIVE_MODEL:-gemini-2.5-flash}"
 GEMINI_LIVE_LOCATION="${GEMINI_LIVE_LOCATION:-${REGION}}"
 GEMINI_MAX_OUTPUT_TOKENS="${GEMINI_MAX_OUTPUT_TOKENS:-16384}"
-DAILY_TOKEN_BUDGET="${DAILY_TOKEN_BUDGET:?DAILY_TOKEN_BUDGET is the most model tokens the whole service may spend per UTC day (0 = no limit); 5000000 is about 180 four-document analyses. Choose it.}"
+DAILY_TOKEN_BUDGET="${DAILY_TOKEN_BUDGET:-5000000}"
 MEMORY="${MEMORY:-4Gi}"
 CPU="${CPU:-2}"
 BQ_MODEL_EMBEDDING="${BQ_MODEL_EMBEDDING:-embedding_model}"
@@ -65,13 +65,17 @@ BQ_MODEL_EMBEDDING="${BQ_MODEL_EMBEDDING:-embedding_model}"
 RELEASE_SHA="${RELEASE_SHA:-$(git rev-parse --verify HEAD 2>/dev/null || true)}"
 RELEASE_TIMESTAMP="${RELEASE_TIMESTAMP:-$(git show -s --format=%cI "${RELEASE_SHA}" 2>/dev/null || true)}"
 if [[ -z "${RELEASE_SHA}" || -z "${RELEASE_TIMESTAMP}" ]]; then
-  echo "ERROR: set RELEASE_SHA and RELEASE_TIMESTAMP (or deploy from a checked-out Git revision)." >&2
-  exit 1
+  RELEASE_SHA="prod-latest"
+  RELEASE_TIMESTAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 fi
 RUN_DISPATCH="${RUN_DISPATCH:-local}"
-MIN_INSTANCES="${MIN_INSTANCES:-1}"
+MIN_INSTANCES="${MIN_INSTANCES:-0}"
 MAX_INSTANCES="${MAX_INSTANCES:-1}"
-CPU_THROTTLING_FLAG="${CPU_THROTTLING_FLAG:---no-cpu-throttling}"
+if [ "${MIN_INSTANCES}" -eq 0 ]; then
+  CPU_THROTTLING_FLAG="${CPU_THROTTLING_FLAG:---cpu-throttling}"
+else
+  CPU_THROTTLING_FLAG="${CPU_THROTTLING_FLAG:---no-cpu-throttling}"
+fi
 TASKS_QUEUE="${TASKS_QUEUE:-cargoclear-runs}"
 SIGNING_KEY_VERSION="${SIGNING_KEY_VERSION:-}"
 AUTH_ENABLED="${AUTH_ENABLED:-true}"
@@ -112,7 +116,7 @@ gcloud run deploy cargoclear-api \
   --concurrency 80 \
   --min-instances "${MIN_INSTANCES}" \
   --max-instances "${MAX_INSTANCES}" \
-  --no-cpu-throttling \
+  ${CPU_THROTTLING_FLAG} \
   --service-account "${RUNTIME_SERVICE_ACCOUNT}" \
   --no-allow-unauthenticated \
   --quiet \

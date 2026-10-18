@@ -41,6 +41,8 @@ steps:
       - 'PROJECT_ID=$PROJECT_ID'
       - 'REGION=$_REGION'
       - 'RUNTIME_SERVICE_ACCOUNT=$_RUNTIME_SERVICE_ACCOUNT'
+      - 'MIN_INSTANCES=$_MIN_INSTANCES'
+      - 'DAILY_TOKEN_BUDGET=$_DAILY_TOKEN_BUDGET'
       # Required: deploy_api.sh refuses an unidentifiable release. Supply both
       # substitutions from the release workflow rather than relying on a
       # Cloud Build source archive to contain a .git directory.
@@ -64,6 +66,8 @@ steps:
 
 substitutions:
   _REGION: asia-south1
+  _MIN_INSTANCES: '0'
+  _DAILY_TOKEN_BUDGET: '5000000'
   # Required for a live API deployment. Cloud Build's deployer must be granted
   # iam.serviceAccounts.actAs on this dedicated runtime identity.
   _RUNTIME_SERVICE_ACCOUNT: ''
