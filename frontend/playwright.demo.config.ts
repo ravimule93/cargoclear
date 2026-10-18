@@ -24,6 +24,7 @@ export default defineConfig({
   use: {
     baseURL,
     viewport: size,
+    ignoreHTTPSErrors: true,
     video: process.env.DEMO_VIDEO === "off" ? "off" : { mode: "on", size }, // video needs `npx playwright install ffmpeg`
     screenshot: "off",
     trace: "off",

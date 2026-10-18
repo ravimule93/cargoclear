@@ -59,6 +59,18 @@ gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
     --member="serviceAccount:${UI_SA_EMAIL}" \
     --role="roles/secretmanager.secretAccessor" || true
 
+# Enable Cloud Build to deploy Cloud Run services and actAs dedicated service accounts
+PROJECT_NUMBER="$(gcloud projects describe "${PROJECT_ID}" --format='value(projectNumber)' 2>/dev/null || true)"
+if [ -n "${PROJECT_NUMBER}" ]; then
+    CB_SA="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+    echo "Configuring Cloud Build Service Account (${CB_SA})..."
+    for ROLE in roles/run.admin roles/iam.serviceAccountUser; do
+        gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+            --member="serviceAccount:${CB_SA}" \
+            --role="${ROLE}" >/dev/null 2>&1 || true
+    done
+fi
+
 echo "=== [4/7] Creating GCS Bucket in ${REGION} ==="
 gsutil mb -l "${REGION}" "gs://${BUCKET_NAME}" || true
 
