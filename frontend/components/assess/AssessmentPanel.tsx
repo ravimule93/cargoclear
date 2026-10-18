@@ -55,8 +55,9 @@ function ActionErrorBanner({ error }: { error: string }) {
 }
 
 /** Keeps the verdict and the next work item visible while evidence is reviewed. */
-function DecisionSummary({ assessment, pending, isRunning, onRecompute, onAddDocuments }: {
+function DecisionSummary({ assessment, bundleId, pending, isRunning, onRecompute, onAddDocuments }: {
   assessment: AssessmentIteration;
+  bundleId: string;
   pending: number;
   isRunning: boolean;
   onRecompute?: () => void;
@@ -98,17 +99,24 @@ function DecisionSummary({ assessment, pending, isRunning, onRecompute, onAddDoc
 
   return (
     <section ref={summaryRef} className="cc-decision-summary -mx-4 -mt-4 border-b border-[var(--cc-border)] bg-[var(--cc-surface)] px-4 pb-3 pt-4 shadow-[0_5px_12px_rgba(18,22,28,.05)]" aria-labelledby="decision-summary-heading">
-      <div className="flex items-start justify-between gap-3">
+      <div className="cc-decision-summary-content">
         <div>
-          <p id="decision-summary-heading" className="text-xs font-bold uppercase tracking-[.12em] text-[var(--cc-text-subtle)]">Current decision</p>
-          <div className="mt-1"><StatusPill status={assessment.status} testId="decision-status-pill" /></div>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p id="decision-summary-heading" className="text-xs font-bold uppercase tracking-[.12em] text-[var(--cc-text-subtle)]">Current decision</p>
+              <div className="mt-1"><StatusPill status={assessment.status} testId="decision-status-pill" /></div>
+            </div>
+            <span className="rounded-md bg-[var(--cc-surface-2)] px-2 py-1 text-xs font-mono text-[var(--cc-text-muted)]">Iteration {assessment.iteration}</span>
+          </div>
+          <p className="mt-2 text-sm font-semibold leading-relaxed text-[var(--cc-text)]">{nextAction}</p>
+          <p className="mt-1 text-xs text-[var(--cc-text-muted)]">{material} material · {warnings} warning{warnings === 1 ? "" : "s"} · {gaps} document gap{gaps === 1 ? "" : "s"}</p>
+          <button type="button" className="cc-button cc-button-primary mt-3" data-testid="next-action" disabled={isRunning} onClick={handleAction}>{isRunning ? "Assessment in progress…" : actionLabel}</button>
+          {isRunning && <p className="mt-1 text-xs text-[var(--cc-text-muted)]">The decision above is the last completed assessment.</p>}
         </div>
-        <span className="rounded-md bg-[var(--cc-surface-2)] px-2 py-1 text-xs font-mono text-[var(--cc-text-muted)]">Iteration {assessment.iteration}</span>
+        <div id="declaration-prefill" tabIndex={-1} className="cc-decision-prefill">
+          <PrefillCard bundleId={bundleId} assessment={assessment} pendingCorrections={pending} />
+        </div>
       </div>
-      <p className="mt-2 text-sm font-semibold leading-relaxed text-[var(--cc-text)]">{nextAction}</p>
-      <p className="mt-1 text-xs text-[var(--cc-text-muted)]">{material} material · {warnings} warning{warnings === 1 ? "" : "s"} · {gaps} document gap{gaps === 1 ? "" : "s"}</p>
-      <button type="button" className="cc-button cc-button-primary mt-3" data-testid="next-action" disabled={isRunning} onClick={handleAction}>{isRunning ? "Assessment in progress…" : actionLabel}</button>
-      {isRunning && <p className="mt-1 text-xs text-[var(--cc-text-muted)]">The decision above is the last completed assessment.</p>}
     </section>
   );
 }
@@ -209,7 +217,7 @@ export function AssessmentPanel({
       tabIndex={-1}
       className="cc-assessment-content flex flex-col gap-4 p-4 h-full overflow-y-auto"
     >
-      <DecisionSummary assessment={assessment} pending={corrections?.pending ?? 0} isRunning={isRunning} onRecompute={onRecompute} onAddDocuments={onAddDocuments} />
+      <DecisionSummary assessment={assessment} bundleId={bundleId} pending={corrections?.pending ?? 0} isRunning={isRunning} onRecompute={onRecompute} onAddDocuments={onAddDocuments} />
       <WorkflowStepper
         documents={documents}
         assessment={assessment}
@@ -315,9 +323,6 @@ export function AssessmentPanel({
       )}
 
       {assessment.valuation && <ValuationCard valuation={assessment.valuation} />}
-      <div id="declaration-prefill" tabIndex={-1} className="cc-review-section">
-        <PrefillCard bundleId={bundleId} assessment={assessment} pendingCorrections={corrections?.pending ?? 0} />
-      </div>
       <CheckList checks={assessment.checks.filter((check) => check.severity === "PASS")} documents={documents} onSelectDocument={onSelectDocument} extractions={extractions} corrections={corrections} appliedCorrections={assessment.corrections ?? []} onCorrect={onCorrect} editingDisabled={isRunning} />
     </div>
   );

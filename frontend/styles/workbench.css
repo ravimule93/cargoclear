@@ -158,6 +158,12 @@
 .cc-decision-summary {
   top: 0;
   z-index: 10;
+  container-type: inline-size;
+}
+.cc-decision-summary-content { display: grid; gap: 12px; }
+.cc-decision-prefill { min-width: 0; scroll-margin-top: 12px; }
+@container (min-width: 760px) {
+  .cc-decision-summary-content { grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.8fr); align-items: start; }
 }
 
 .cc-assessment-content { scroll-padding-top: calc(var(--cc-summary-height, 180px) + 12px); }

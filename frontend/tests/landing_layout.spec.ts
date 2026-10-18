@@ -51,6 +51,7 @@ for (const theme of ["light", "dark"] as const) {
       const { protectedRequests } = await mockSignedOutHome(page);
       await page.goto("/");
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      await expect(page.getByRole("button", { name: new RegExp(`Switch to ${theme === "light" ? "dark" : "light"} theme`) })).toContainText(`Theme: ${theme === "light" ? "Light" : "Dark"}`);
       const task = primaryTask(page);
       const access = workspaceAccess(page);
       await expect(task).toBeVisible();
@@ -176,6 +177,9 @@ for (const label of PRESETS) {
     await workspaceAccess(page).getByRole("button", { name: label, exact: true }).click();
     await expect(workspaceAccess(page)).toHaveCount(0);
     await expect(primaryTask(page).getByTestId("destination-select")).toBeEnabled();
+    await expect(page.getByTestId("workspace-overview")).toBeVisible();
+    await expect(page.getByTestId("workspace-overview")).toContainText("Active consignments");
+    await expect(page.getByTestId("workspace-overview")).toContainText(/AI runtime/);
     await expect(page.getByRole("button", { name: "Start Case C demo", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Start Case D demo (India import)", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Recent cases", exact: true })).toBeVisible();

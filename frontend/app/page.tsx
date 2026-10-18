@@ -6,13 +6,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { api } from "@/lib/api";
 import { AUTHENTICATION_REQUIRED_MESSAGE, toErrorEnvelope } from "@/lib/errors";
+import { useExecutionMode } from "@/lib/hooks/useExecutionMode";
 import { useMeta } from "@/lib/hooks/useMeta";
 import { ModeBadge } from "@/components/shell/ModeBadge";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
 import { UserMenu } from "@/components/shell/UserMenu";
 import { StatusPill } from "@/components/assess/StatusPill";
 import { DEMO_ACCOUNTS, demoSignIn, signOut } from "@/lib/session";
-import type { Bundle } from "@/lib/types";
+import type { Bundle, ExecutionModeStatus } from "@/lib/types";
 
 type Pending = "empty" | "demo" | "demo-d" | null;
 
@@ -137,9 +138,61 @@ function RecentBundlesList({
   );
 }
 
+/** A compact, evidence-based landing overview. Bundle status is the latest recorded decision; assessment detail remains in each bundle. */
+function WorkspaceOverview({
+  bundles,
+  loading,
+  modeLoading,
+  activeMode,
+  modeStatus,
+}: {
+  bundles: Bundle[];
+  loading: boolean;
+  modeLoading: boolean;
+  activeMode: "demo" | "live";
+  modeStatus: ExecutionModeStatus | null;
+}) {
+  const ready = bundles.filter((bundle) => bundle.status === "COMPLIANT_FOR_SUBMISSION").length;
+  const needsAttention = bundles.length - ready;
+  const model = modeStatus?.model || "Gemini";
+  const runtime = modeLoading
+    ? "Checking AI runtime…"
+    : activeMode === "live"
+      ? `Live · ${model}`
+      : "Demo fixtures · no live Gemini call";
+  const metrics = [
+    { label: "Active consignments", value: loading ? "—" : String(bundles.length), detail: "Bundles in this workspace" },
+    { label: "Require action", value: loading ? "—" : String(needsAttention), detail: "Latest decision is not ready" },
+    { label: "Ready to submit", value: loading ? "—" : String(ready), detail: "Latest decision is compliant" },
+    { label: "AI runtime", value: runtime, detail: activeMode === "live" ? "Model responses appear in each assessed consignment." : "Run a demo case to view its assessment response." },
+  ];
+
+  return (
+    <section data-testid="workspace-overview" aria-labelledby="workspace-overview-heading" className="rounded-xl border border-[var(--cc-border)] bg-[var(--cc-surface)] p-4 shadow-[var(--cc-shadow-1)]">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[.12em] text-[var(--cc-text-subtle)]">Workspace summary</p>
+          <h2 id="workspace-overview-heading" className="mt-1 text-base font-semibold text-[var(--cc-text)]">Consignment and AI overview</h2>
+        </div>
+        <p className="text-xs text-[var(--cc-text-muted)]">Open a consignment to review its evidence and full model-supported decision.</p>
+      </div>
+      <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map((metric) => (
+          <div key={metric.label} className="min-w-0 rounded-lg border border-[var(--cc-border)] bg-[var(--cc-surface-2)] p-3">
+            <dt className="text-[11px] font-semibold uppercase tracking-wide text-[var(--cc-text-subtle)]">{metric.label}</dt>
+            <dd className="mt-1 truncate text-lg font-semibold text-[var(--cc-text)]" title={metric.value}>{metric.value}</dd>
+            <p className="mt-1 text-[11px] leading-relaxed text-[var(--cc-text-muted)]">{metric.detail}</p>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
 export default function Home() {
   const router = useRouter();
   const { meta, loading: metaLoading, error: metaError, retry: retryMeta } = useMeta();
+  const { activeMode, modeStatus, loading: modeLoading } = useExecutionMode();
   const [pending, setPending] = useState<Pending>(null);
   const [error, setError] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -205,7 +258,7 @@ export default function Home() {
   }, [meta]);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-5xl flex-col gap-6 px-4 py-5 sm:px-6 lg:py-8">
+    <main className="mx-auto flex min-h-dvh w-full max-w-[90rem] flex-col gap-6 px-4 py-5 sm:px-6 lg:py-8">
       <header className="flex flex-col gap-4 border-b border-[var(--cc-border)] pb-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-[.15em] text-[var(--cc-text-subtle)]">JAPAC customs workspace</p>
@@ -308,6 +361,16 @@ export default function Home() {
           </section>
         )}
         </div>
+      )}
+
+      {meta && (!meta.auth?.enabled || meta.user) && (
+        <WorkspaceOverview
+          bundles={bundles}
+          loading={bundlesLoading}
+          modeLoading={modeLoading}
+          activeMode={activeMode}
+          modeStatus={modeStatus}
+        />
       )}
 
       {showDemo && (

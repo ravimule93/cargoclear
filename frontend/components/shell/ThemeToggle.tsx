@@ -41,7 +41,7 @@ export function ThemeToggle({ className = "", showLabel = false }: ThemeTogglePr
       </span>
       {showLabel && (
         <span className="font-semibold">
-          {isDark ? "Dark" : "Light"}
+          Theme: {isDark ? "Dark" : "Light"}
         </span>
       )}
     </button>
