@@ -20,17 +20,18 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, Path
+from fastapi import APIRouter, Depends, Path
 from sse_starlette.sse import EventSourceResponse
 
 from app.core.config import settings
+from app.gateway.authorization import require_authorized_bundle
 from app.gateway.errors import NotFoundError
 from app.repo import firestore
 from app.services import orchestrator, run_events
 
 logger = structlog.get_logger(__name__)
 
-router = APIRouter(tags=["stream"])
+router = APIRouter(tags=["stream"], dependencies=[Depends(require_authorized_bundle)])
 
 # Seam for the poll sleep: tests replace it to observe the chosen interval and to end the stream. In production the
 # sleep is the fallback timer that races a wake-up from the orchestrator (see ``_pause``).

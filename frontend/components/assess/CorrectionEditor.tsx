@@ -38,7 +38,9 @@ export function CorrectionEditor({ documentId, documentName, path, current, onSu
   const unchanged = !clear && value.trim() === (current?.value ?? "") && (!showUnit || unit.trim() === (current?.unit ?? ""));
 
   useEffect(() => {
+    const returnTo = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     valueRef.current?.focus();
+    return () => { if (returnTo?.isConnected) returnTo.focus({ preventScroll: true }); };
   }, []);
 
   const loadedValue = current?.value ?? "";
@@ -70,7 +72,11 @@ export function CorrectionEditor({ documentId, documentName, path, current, onSu
     <form
       onSubmit={submit}
       onKeyDown={(e) => {
-        if (e.key === "Escape") onClose();
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!busy) onClose();
+        }
       }}
       onClick={(e) => e.stopPropagation()}
       data-testid="correction-editor"
@@ -109,6 +115,8 @@ export function CorrectionEditor({ documentId, documentName, path, current, onSu
               setValue(e.target.value);
             }}
             maxLength={500}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? `${id}-error` : undefined}
             autoComplete="off"
             className="rounded border border-[var(--cc-border-strong)] bg-[var(--cc-surface)] px-2 py-1 font-mono text-[11px] text-[var(--cc-text)] disabled:opacity-60"
           />
@@ -156,7 +164,7 @@ export function CorrectionEditor({ documentId, documentName, path, current, onSu
       )}
 
       {error && (
-        <div role="alert" data-testid="correction-error" className="text-[var(--cc-err)] font-medium">
+        <div id={`${id}-error`} role="alert" data-testid="correction-error" className="text-[var(--cc-err)] font-medium">
           {error}
         </div>
       )}
@@ -166,7 +174,7 @@ export function CorrectionEditor({ documentId, documentName, path, current, onSu
           type="submit"
           data-testid="correction-save"
           disabled={busy || current === null || (!clear && value.trim() === "")}
-          className="rounded bg-[var(--cc-focus)] px-3 py-1 font-semibold text-white hover:brightness-90 disabled:opacity-50 cursor-pointer"
+          className="rounded bg-[var(--cc-action)] px-3 py-1 font-semibold text-white hover:brightness-90 disabled:opacity-50 cursor-pointer"
         >
           {busy ? "Saving..." : unchanged ? "Confirm value" : "Save correction"}
         </button>

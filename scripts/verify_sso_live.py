@@ -41,7 +41,7 @@ def test_sso_live():
         if name == "cargoclear_oauth_state":
             found_oauth_state = True
 
-    assert found_session, "FAIL: __session cookie not set!"
+    assert not found_session, "FAIL: live OAuth initiation must not mint a session before Google verifies the user!"
     assert found_oauth_state, "FAIL: cargoclear_oauth_state not set!"
 
     loc = headers.get("Location")
@@ -51,9 +51,8 @@ def test_sso_live():
 
     state = qs.get("state", [""])[0]
     print(f"State param received: {state[:40]}...")
-    assert "." in state, "FAIL: State does not contain HMAC signature separator '.'"
-    payload_b64, sig = state.split(".", 1)
-    print(f"HMAC Signature length: {len(sig)}")
+    assert state, "FAIL: OAuth state is missing"
+    payload_b64 = state
 
     # Pad base64url if needed
     padded = payload_b64 + "=" * ((4 - len(payload_b64) % 4) % 4)
@@ -61,7 +60,7 @@ def test_sso_live():
     print(f"State decoded payload: nonce={payload_json.get('nonce')[:8]}..., returnTo={payload_json.get('returnTo')}, iat={payload_json.get('iat')}")
 
     # 2. Test callback security: Forged state should be rejected immediately
-    tampered_url = f"https://cargoclear-app.web.app/api/auth/callback/google?code=dummy_code&state={payload_b64}.FORGED_SIGNATURE"
+    tampered_url = "https://cargoclear-app.web.app/api/auth/callback/google?code=dummy_code&state=forged-state"
     tampered_req = urllib.request.Request(tampered_url, headers={"User-Agent": "Mozilla/5.0"})
     try:
         t_resp = no_redirect_opener.open(tampered_req)
@@ -72,7 +71,7 @@ def test_sso_live():
         t_loc = e.headers.get("Location")
 
     print(f"Tampered state callback status: {t_status}, Location: {t_loc}")
-    assert "error=csrf_validation_failed" in t_loc, f"Expected csrf_validation_failed, got {t_loc}"
+    assert "error=invalid_oauth_state" in t_loc, f"Expected invalid_oauth_state, got {t_loc}"
 
     print("\n--- ALL CHECKS PASSED: Live Firebase Hosting Google SSO Ready ---")
 

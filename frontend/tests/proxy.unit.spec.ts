@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
   CLIENT_IP_HEADER,
+  END_USER_TOKEN_HEADER,
   IdTokenSource,
   UpstreamAuthError,
   authMode,
@@ -112,7 +113,7 @@ test.describe("upstreamRequestHeaders", () => {
   });
 
   test("forwards only the allowlist; cookies, authorization and a spoofed client IP never pass", () => {
-    const headers = upstreamRequestHeaders(browser, { idToken: null, clientIp: null, requestId: "req-1" });
+    const headers = upstreamRequestHeaders(browser, { idToken: null, endUserToken: null, clientIp: null, requestId: "req-1" });
     expect(Object.fromEntries(headers)).toEqual({
       "content-type": "application/json",
       "content-length": "12",
@@ -125,11 +126,13 @@ test.describe("upstreamRequestHeaders", () => {
   test("adds the observed client IP and the service's own bearer token", () => {
     const headers = upstreamRequestHeaders(browser, {
       idToken: "id.token.value",
+      endUserToken: "user.id.token",
       clientIp: "203.0.113.9",
       requestId: "req-2",
     });
     expect(headers.get(CLIENT_IP_HEADER)).toBe("203.0.113.9");
     expect(headers.get("authorization")).toBe("Bearer id.token.value");
+    expect(headers.get(END_USER_TOKEN_HEADER)).toBe("user.id.token");
     expect(headers.get("cookie")).toBeNull();
   });
 });

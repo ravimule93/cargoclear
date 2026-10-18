@@ -35,7 +35,7 @@ export default defineConfig({
     : [
         {
           command:
-            "cd ../backend && APP_MODE=demo RATE_LIMIT_WRITES_PER_MINUTE=0 RATE_LIMIT_RUNS_PER_MINUTE=0 MAX_CONCURRENT_RUNS=0 .venv/bin/uvicorn app.main:app --port 8080",
+            "cd ../backend && APP_MODE=demo AUTH_ENABLED=false RATE_LIMIT_WRITES_PER_MINUTE=0 RATE_LIMIT_RUNS_PER_MINUTE=0 MAX_CONCURRENT_RUNS=0 .venv/bin/uvicorn app.main:app --port 8080",
           url: "http://localhost:8080/healthz",
           reuseExistingServer: true,
         },

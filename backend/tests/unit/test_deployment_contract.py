@@ -6,12 +6,33 @@ Cloud Build, or a network service.
 
 from __future__ import annotations
 
+import os
+import shutil
 from pathlib import Path
 
+import pytest
 import yaml
 
-
 ROOT = Path(__file__).resolve().parents[3]
+
+
+def find_bash() -> str | None:
+    found = shutil.which("bash")
+    if found:
+        return found
+    candidates = [
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Git" / "bin" / "bash.exe",
+        Path(os.environ.get("ProgramFiles", "C:\\Program Files")) / "Git" / "bin" / "bash.exe",
+        Path("C:/Program Files/Git/bin/bash.exe"),
+    ]
+    for c in candidates:
+        if c.is_file():
+            return str(c)
+    return None
+
+
+BASH = find_bash()
+needs_bash = pytest.mark.skipif(BASH is None, reason="bash is not installed")
 
 
 def test_cloud_build_deploys_scripts_from_repository_root_with_runtime_identity() -> None:
@@ -24,6 +45,10 @@ def test_cloud_build_deploys_scripts_from_repository_root_with_runtime_identity(
 
     assert "RUNTIME_SERVICE_ACCOUNT=$_RUNTIME_SERVICE_ACCOUNT" in steps["deploy-backend"]["env"]
     assert "_RUNTIME_SERVICE_ACCOUNT" in config["substitutions"]
+    assert "RELEASE_SHA=$_RELEASE_SHA" in steps["deploy-backend"]["env"]
+    assert "RELEASE_TIMESTAMP=$_RELEASE_TIMESTAMP" in steps["deploy-backend"]["env"]
+    assert "_RELEASE_SHA" in config["substitutions"]
+    assert "_RELEASE_TIMESTAMP" in config["substitutions"]
     assert "UI_SERVICE_ACCOUNT=$_UI_SERVICE_ACCOUNT" in steps["deploy-frontend"]["env"]
     assert "_UI_SERVICE_ACCOUNT" in config["substitutions"]
 
@@ -40,7 +65,19 @@ def test_api_deploy_is_single_instance_by_default_and_fails_closed_without_runti
     assert '--timeout "${REQUEST_TIMEOUT}"' in script and "REQUEST_TIMEOUT=300" in script
     assert "--no-cpu-throttling" in script
     assert 'APP_MODE="live"' in script
+    assert 'AUTH_ENABLED="true"' in script
+    assert 'OAUTH_CLIENT_ID="${OAUTH_CLIENT_ID}"' in script
     assert 'ENABLE_API_DOCS="false"' in script
+
+
+def test_api_deploy_requires_a_traceable_release_identity() -> None:
+    script = (ROOT / "infra" / "deploy_api.sh").read_text(encoding="utf-8")
+
+    assert 'RELEASE_SHA="${RELEASE_SHA:-$(git rev-parse --verify HEAD' in script
+    assert 'RELEASE_TIMESTAMP="${RELEASE_TIMESTAMP:-$(git show -s --format=%cI' in script
+    assert 'set RELEASE_SHA and RELEASE_TIMESTAMP' in script
+    assert 'RELEASE_SHA="${RELEASE_SHA}"' in script
+    assert 'RELEASE_TIMESTAMP="${RELEASE_TIMESTAMP}"' in script
 
 
 def test_more_than_one_instance_needs_dispatched_runs_and_a_request_timeout_longer_than_a_run() -> None:
@@ -86,6 +123,7 @@ def test_the_signing_key_is_an_ec_signing_key_in_the_data_residency_region_with_
     assert 'SIGNING_KEY_VERSION="${SIGNING_KEY_VERSION}"' in api
 
 
+@needs_bash
 def test_the_scaling_scripts_are_valid_shell() -> None:
     import subprocess
 
@@ -93,7 +131,7 @@ def test_the_scaling_scripts_are_valid_shell() -> None:
         "infra/deploy_api.sh", "infra/bootstrap.sh", "infra/tasks/setup_queue.sh", "infra/firestore/setup_ttl.sh",
         "infra/kms/setup_signing_key.sh", "infra/budget/setup_budget_alert.sh",
     ):
-        result = subprocess.run(["bash", "-n", str(ROOT / path)], capture_output=True, text=True)
+        result = subprocess.run([BASH, "-n", str(ROOT / path)], capture_output=True, text=True)
         assert result.returncode == 0, f"{path}: {result.stderr}"
 
 
@@ -154,6 +192,7 @@ def test_api_is_private_and_only_the_ui_identity_may_invoke_it() -> None:
     assert "cargoclear-ui-sa" in bootstrap
     # the proxy sends the header the API reads, and never forwards a browser-supplied copy of it
     assert 'CLIENT_IP_HEADER = "x-cargoclear-client-ip"' in proxy
+    assert 'END_USER_TOKEN_HEADER = "x-cargoclear-user-token"' in proxy
     assert "google-id-token" in proxy and "metadata.google.internal" in proxy
     assert "export async function GET" in route and "export async function POST" in route
     # no method beyond these; DELETE exists for removing one document of a bundle, and the route refuses it anywhere else
@@ -289,6 +328,7 @@ def test_the_budget_alert_script_is_an_alert_that_says_it_stops_nothing_and_has_
     assert '${#BUDGET_DISPLAY_NAME}" -gt 60' in script  # Google allows 60 characters
 
 
+@needs_bash
 def test_the_budget_alert_dry_run_prints_the_commands_and_calls_gcloud_never(tmp_path) -> None:
     """--dry-run is the only way this test runs the script, and a gcloud that fails the test if it is called stands in for the real one."""
     import os
@@ -298,10 +338,11 @@ def test_the_budget_alert_dry_run_prints_the_commands_and_calls_gcloud_never(tmp
     fake.mkdir()
     (fake / "gcloud").write_text(f"#!/bin/sh\necho called > {tmp_path}/gcloud-was-called\nexit 99\n")
     (fake / "gcloud").chmod(0o755)
-    env = {**os.environ, "PATH": f"{fake}:{os.environ['PATH']}", "PROJECT_ID": "demo-project", "BILLING_ACCOUNT_ID": "000000-000000-000000",
+    path_sep = ";" if os.name == "nt" else ":"
+    env = {**os.environ, "PATH": f"{fake}{path_sep}{os.environ.get('PATH', '')}", "PROJECT_ID": "demo-project", "BILLING_ACCOUNT_ID": "000000-000000-000000",
            "BUDGET_AMOUNT": "100USD", "BUDGET_PUBSUB_TOPIC": "projects/demo-project/topics/budget"}
 
-    result = subprocess.run(["bash", str(ROOT / "infra" / "budget" / "setup_budget_alert.sh"), "--dry-run"], capture_output=True, text=True, env=env)
+    result = subprocess.run([BASH, str(ROOT / "infra" / "budget" / "setup_budget_alert.sh"), "--dry-run"], capture_output=True, text=True, env=env)
 
     assert result.returncode == 0, result.stderr
     assert not (tmp_path / "gcloud-was-called").exists()
@@ -311,6 +352,7 @@ def test_the_budget_alert_dry_run_prints_the_commands_and_calls_gcloud_never(tmp
     assert "Dry run: nothing was created." in result.stdout
 
 
+@needs_bash
 def test_the_budget_alert_script_refuses_a_missing_amount_and_a_long_name(tmp_path) -> None:
     import os
     import subprocess
@@ -318,8 +360,8 @@ def test_the_budget_alert_script_refuses_a_missing_amount_and_a_long_name(tmp_pa
     base = {**os.environ, "PROJECT_ID": "p", "BILLING_ACCOUNT_ID": "000000-000000-000000"}
     script = str(ROOT / "infra" / "budget" / "setup_budget_alert.sh")
 
-    missing = subprocess.run(["bash", script, "--dry-run"], capture_output=True, text=True, env={k: v for k, v in base.items() if k != "BUDGET_AMOUNT"})
-    long_name = subprocess.run(["bash", script, "--dry-run"], capture_output=True, text=True,
+    missing = subprocess.run([BASH, script, "--dry-run"], capture_output=True, text=True, env={k: v for k, v in base.items() if k != "BUDGET_AMOUNT"})
+    long_name = subprocess.run([BASH, script, "--dry-run"], capture_output=True, text=True,
                                env={**base, "BUDGET_AMOUNT": "1USD", "BUDGET_DISPLAY_NAME": "x" * 61})
 
     assert missing.returncode != 0 and "BUDGET_AMOUNT" in missing.stderr

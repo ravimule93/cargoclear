@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api";
 import { toErrorEnvelope } from "../errors";
+import { demoUserFromCookie } from "../session";
 import type { Meta } from "../types";
 
 export interface MetaState {
@@ -33,52 +34,23 @@ function loadMeta(force: boolean): Promise<Meta> {
   return cached;
 }
 
-const DEFAULT_META: Meta = {
-  app_mode: "live",
-  data_source_policy: "live",
-  pipeline_engine: "native",
-  auth: {
-    enabled: true,
-    oauth_client_id: "448522365737-41s34pmlanitloca4vd4qesoefa060j9.apps.googleusercontent.com",
-    oauth_issuer: "https://accounts.google.com",
-    allowed_email_domains: ["*"],
-  },
-  user: undefined,
-};
-
 export function useMeta(): MetaState {
-  const [meta, setMeta] = useState<Meta | null>(DEFAULT_META);
-  const [loading, setLoading] = useState(false);
+  const [meta, setMeta] = useState<Meta | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     setError(null);
+    setLoading(true);
     loadMeta(attempt > 0)
       .then((value) => {
         if (cancelled) return;
         // If user is not yet populated in meta, read active session from cookie
-        if (value && !value.user && typeof document !== "undefined") {
-          const match = document.cookie.match(/(?:__session|cargoclear_session_token)=mock-jwt-([^;]+)/);
-          if (match && match[1]) {
-            const tokenPayload = decodeURIComponent(match[1]);
-            const parts = tokenPayload.split("-");
-            const role = parts.length > 1 ? parts[parts.length - 1] : "LICENSED_CHA";
-            const email = parts.length > 1 ? parts.slice(0, parts.length - 1).join("-") : tokenPayload;
-            const domain = email.includes("@") ? email.split("@")[1] : "customs.com";
-            value = {
-              ...value,
-              user: {
-                user_id: `usr-${email}`,
-                email,
-                name: email.split("@")[0].toUpperCase(),
-                tenant_id: domain,
-                role: role as any,
-                issuer: "https://accounts.google.com",
-              },
-            };
-          }
+        if (value?.app_mode === "demo" && !value.user && typeof document !== "undefined") {
+          const demoUser = demoUserFromCookie(document.cookie);
+          if (demoUser) value = { ...value, user: demoUser };
         }
         setMeta(value);
         setLoading(false);

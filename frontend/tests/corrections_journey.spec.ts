@@ -34,6 +34,10 @@ test.describe("Corrections by the authorised agent", () => {
   test("correct a certificate cell, recompute, and the verdict follows with the reason on record", async ({ page }) => {
     const panel = await analyseCaseD(page);
 
+    // Open the optional source before correcting it; recompute must preserve the document the agent is reviewing.
+    await page.getByRole("button", { name: "View PDF", exact: true }).click();
+    await expect(page.getByLabel(/^Page 1 of \d+: case_d_mtc_test_cert\.pdf$/)).toBeVisible({ timeout: 15_000 });
+
     // edit in place on the evidence row that shows the cell
     const edit = panel.getByRole("button", { name: /Correct Certificate cell \d+ in case_d_mtc_test_cert\.pdf/ });
     await expect(edit).toHaveCount(1);
@@ -68,6 +72,8 @@ test.describe("Corrections by the authorised agent", () => {
 
     // the Reasoning Delta names the correction, the value it replaced and the reason
     const delta = page.getByLabel("Reasoning delta and audit trail");
+    await page.getByRole("tab", { name: "Reasoning Delta", exact: true }).click();
+    await expect(page.locator("#panel-delta")).toBeVisible();
     await expect(delta).toContainText("Correction by the authorised agent");
     await expect(delta).toContainText("certificate prints 0.28 in the Cr column");
     await expect(delta).toContainText("0.35 %");

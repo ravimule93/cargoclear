@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import shutil
 from typing import Any
 
 import pytest
@@ -14,6 +15,10 @@ from app.gateway.errors import PayloadTooLargeError
 from app.repo import firestore
 from app.services import storage
 from tests.helpers import REPO_ROOT, api_client, case_c_pdf
+
+needs_poppler = pytest.mark.skipif(
+    shutil.which("pdftoppm") is None, reason="poppler is not installed"
+)
 
 GATING = REPO_ROOT / "backend" / "tests" / "fixtures" / "gating"
 KB = 1024
@@ -158,6 +163,7 @@ async def test_bytes_that_are_not_a_pdf_are_refused_whatever_the_name_says(data)
     assert bundle["documents"] == []
 
 
+@needs_poppler
 @pytest.mark.asyncio
 @pytest.mark.real_poppler
 async def test_a_pdf_that_needs_a_password_is_refused() -> None:
@@ -171,6 +177,7 @@ async def test_a_pdf_that_needs_a_password_is_refused() -> None:
     assert response.json()["message"] == "Password-protected PDFs are not supported."
 
 
+@needs_poppler
 @pytest.mark.asyncio
 @pytest.mark.real_poppler
 async def test_a_pdf_that_only_restricts_copying_opens_without_a_password_and_is_accepted() -> None:

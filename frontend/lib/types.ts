@@ -326,12 +326,26 @@ export interface RunResponse {
 
 export type AppMode = "demo" | "live";
 
+export interface ExecutionModeStatus {
+  active_mode: AppMode;
+  configured_mode: AppMode;
+  supported_modes: AppMode[];
+  live_available: boolean;
+  credential_source: string | null;
+  provider: string;
+  model: string;
+  region: string;
+  live_error: string | null;
+}
+
 export interface Meta {
   app_mode: AppMode;
+  configured_mode?: AppMode;
   data_source_policy: string;
   pipeline_engine?: string;
   auth?: AuthConfig;
   user?: UserIdentity;
+  mode_status?: ExecutionModeStatus;
 }
 
 

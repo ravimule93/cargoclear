@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import shutil
 from typing import Any
 
 import pytest
@@ -23,6 +24,10 @@ from app.services import audit, orchestrator, storage, token_usage
 from app.services.documents import register_document
 from tests.helpers import api_client, case_c_pdf, wait_for_run
 from tests.unit.extraction_fakes import case_c_gemini, first_page_of, response
+
+needs_poppler = pytest.mark.skipif(
+    shutil.which("pdftoppm") is None, reason="poppler is not installed"
+)
 
 PRELOADED = ("commercial_invoice.pdf", "bill_of_lading.pdf", "packing_list.pdf")
 MTC = "mtc_pipe_test_cert.pdf"
@@ -53,7 +58,7 @@ async def run(client: Any, bundle_id: str, action: str = "analyze") -> dict[str,
 def files_of(document_id: str) -> list[str]:
     """Every file under the local storage that belongs to this document, whatever the bundle."""
     root = storage._get_local_storage_dir()
-    return sorted(str(p.relative_to(root)) for p in root.rglob("*") if p.is_file() and document_id in p.parts)
+    return sorted(p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file() and document_id in p.parts)
 
 
 def digest_of(kwargs: dict[str, Any]) -> str:
@@ -318,6 +323,7 @@ async def test_the_record_is_removed_from_firestore_and_removing_it_twice_is_not
 # ---------------------------------------------------------------------------
 
 
+@needs_poppler
 @pytest.mark.asyncio
 async def test_the_record_the_files_and_the_kept_answers_of_the_document_are_removed() -> None:
     async with api_client() as client:

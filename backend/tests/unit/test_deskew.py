@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import io
 import math
+import shutil
 
 import numpy as np
 import pytest
@@ -18,6 +19,8 @@ from PIL import Image
 from app.core.config import settings
 from app.services import preprocess
 from tests.support import scans
+
+needs_poppler = pytest.mark.skipif(shutil.which("pdftoppm") is None, reason="poppler is not installed")
 
 ANGLES = (-8.0, -3.0, -0.8, 0.8, 3.0, 8.0)
 
@@ -224,6 +227,7 @@ def processed_image(result: dict) -> Image.Image:
     return Image.open(io.BytesIO(result["processed_pages"][0]["payload"]))
 
 
+@needs_poppler
 def test_with_deskew_on_the_recorded_affine_carries_a_processed_point_back_to_the_scan() -> None:
     angle = 5.0
     skewed = scans.skew(upright(), angle)
@@ -237,6 +241,7 @@ def test_with_deskew_on_the_recorded_affine_carries_a_processed_point_back_to_th
     assert mapped == pytest.approx(expected_marker_on_skewed_source(angle), abs=5.0)
 
 
+@needs_poppler
 def test_with_deskew_off_the_page_is_untouched_and_the_skew_is_only_reported() -> None:
     result = run_pdf(scans.skew(upright(), 5.0), preprocess_deskew=False)
     [meta] = result["transform_meta"]
@@ -248,6 +253,7 @@ def test_with_deskew_off_the_page_is_untouched_and_the_skew_is_only_reported() -
     ), "the model sees the page exactly as scanned"
 
 
+@needs_poppler
 @pytest.mark.parametrize(
     ("angle", "skipped"),
     [(0.1, "below_threshold"), (14.0, "above_limit")],
@@ -259,6 +265,7 @@ def test_a_skew_outside_the_trusted_range_is_not_corrected(angle, skipped) -> No
     assert meta["processed_to_source_affine"] == [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
 
 
+@needs_poppler
 @pytest.mark.parametrize("sideways", [90, 270])
 def test_a_page_scanned_sideways_and_tilted_is_normalized_straightened_and_mapped_back(sideways) -> None:
     angle = 4.0
@@ -280,6 +287,7 @@ def test_a_page_scanned_sideways_and_tilted_is_normalized_straightened_and_mappe
 # ---------------------------------------------------------------------------
 
 
+@needs_poppler
 def test_the_image_mode_decides_what_the_model_sees_and_is_recorded() -> None:
     page = scans.blurred(upright())  # blur leaves intermediate greys: the difference between the modes
     bw = run_pdf(page, page_image_mode="bw")

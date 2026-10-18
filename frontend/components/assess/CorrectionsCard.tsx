@@ -118,7 +118,7 @@ export function CorrectionsCard({ corrections, assessment, documents, isRunning,
             data-testid="recompute-button"
             disabled={isRunning}
             onClick={onRecompute}
-            className="rounded-[var(--cc-radius)] bg-[var(--cc-focus)] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-90 disabled:opacity-50 cursor-pointer"
+            className="rounded-[var(--cc-radius)] bg-[var(--cc-action)] px-3 py-1.5 text-xs font-semibold text-white hover:brightness-90 disabled:opacity-50 cursor-pointer"
           >
             {isRunning ? "Recomputing..." : "Recompute with corrections"}
           </button>

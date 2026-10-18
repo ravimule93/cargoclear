@@ -50,6 +50,7 @@ set -euo pipefail
 PROJECT_ID="${PROJECT_ID:?PROJECT_ID must identify the target GCP project}"
 REGION="${REGION:-asia-south1}"
 RUNTIME_SERVICE_ACCOUNT="${RUNTIME_SERVICE_ACCOUNT:?RUNTIME_SERVICE_ACCOUNT must be the dedicated Cloud Run runtime identity}"
+OAUTH_CLIENT_ID="${OAUTH_CLIENT_ID:?OAUTH_CLIENT_ID must be the Google OAuth client ID accepted for end-user sessions}"
 GEMINI_LIVE_MODEL="${GEMINI_LIVE_MODEL:-gemini-2.5-flash}"
 GEMINI_LIVE_LOCATION="${GEMINI_LIVE_LOCATION:-${REGION}}"
 GEMINI_MAX_OUTPUT_TOKENS="${GEMINI_MAX_OUTPUT_TOKENS:-16384}"
@@ -57,6 +58,16 @@ DAILY_TOKEN_BUDGET="${DAILY_TOKEN_BUDGET:?DAILY_TOKEN_BUDGET is the most model t
 MEMORY="${MEMORY:-4Gi}"
 CPU="${CPU:-2}"
 BQ_MODEL_EMBEDDING="${BQ_MODEL_EMBEDDING:-embedding_model}"
+# A judge must be able to tie the hosted result to a source revision. CI should
+# pass RELEASE_SHA explicitly; an interactive deployment derives it from the
+# checked-out repository. Refuse an unidentifiable deployment instead of
+# silently publishing an "unknown" build.
+RELEASE_SHA="${RELEASE_SHA:-$(git rev-parse --verify HEAD 2>/dev/null || true)}"
+RELEASE_TIMESTAMP="${RELEASE_TIMESTAMP:-$(git show -s --format=%cI "${RELEASE_SHA}" 2>/dev/null || true)}"
+if [[ -z "${RELEASE_SHA}" || -z "${RELEASE_TIMESTAMP}" ]]; then
+  echo "ERROR: set RELEASE_SHA and RELEASE_TIMESTAMP (or deploy from a checked-out Git revision)." >&2
+  exit 1
+fi
 RUN_DISPATCH="${RUN_DISPATCH:-local}"
 MIN_INSTANCES="${MIN_INSTANCES:-1}"
 MAX_INSTANCES="${MAX_INSTANCES:-1}"
@@ -109,9 +120,13 @@ gcloud run deploy cargoclear-api \
 AUTH_JWT_SECRET="auth-jwt-secret:latest" \
   --set-env-vars \
 APP_MODE="live",\
+AUTH_ENABLED="true",\
+OAUTH_CLIENT_ID="${OAUTH_CLIENT_ID}",\
 ENABLE_API_DOCS="false",\
 PROJECT_ID="${PROJECT_ID}",\
 REGION="${REGION}",\
+RELEASE_SHA="${RELEASE_SHA}",\
+RELEASE_TIMESTAMP="${RELEASE_TIMESTAMP}",\
 RAW_BUCKET="cargoclear-raw-pdfs",\
 FIRESTORE_DATABASE="(default)",\
 BQ_DATASET="ahtn",\

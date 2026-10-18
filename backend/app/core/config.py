@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     project_id: str = Field(default="cargoclear-hackathon", alias="PROJECT_ID")
     region: str = Field(default="asia-south1", alias="REGION")
 
+    # Release identity. Deployment supplies these values; ``unknown`` is deliberately
+    # conspicuous for local development and must never be used for a release claim.
+    release_sha: str = Field(default="unknown", alias="RELEASE_SHA")
+    release_timestamp: str = Field(default="unknown", alias="RELEASE_TIMESTAMP")
+
     # Credentials. Also read from .env (pydantic-settings reads .env into fields, not into os.environ):
     # app.core.mode treats it as present when it is in the process environment OR here, and exports it.
     google_application_credentials: str | None = Field(default=None, alias="GOOGLE_APPLICATION_CREDENTIALS")
@@ -168,7 +173,7 @@ class Settings(BaseSettings):
     )
 
     # Authentication & Multi-Tenancy (gateway/auth.py)
-    auth_enabled: bool = Field(default=False, alias="AUTH_ENABLED")
+    auth_enabled: bool = Field(default=True, alias="AUTH_ENABLED")
     oauth_client_id: str | None = Field(default=None, alias="OAUTH_CLIENT_ID")
     oauth_issuer: str = Field(default="https://accounts.google.com", alias="OAUTH_ISSUER")
     allowed_email_domains: str = Field(default="*", alias="ALLOWED_EMAIL_DOMAINS")
@@ -188,6 +193,10 @@ class Settings(BaseSettings):
                 f"RUN_STALE_AFTER_SECONDS ({self.run_stale_after_seconds:g}) must be at least 3 x "
                 f"RUN_HEARTBEAT_SECONDS ({self.run_heartbeat_seconds:g}) = {3 * self.run_heartbeat_seconds:g}"
             )
+        if self.app_mode == "live" and not self.auth_enabled:
+            raise ValueError("AUTH_ENABLED must be true when APP_MODE=live")
+        if self.app_mode == "live" and not self.oauth_client_id:
+            raise ValueError("OAUTH_CLIENT_ID must be configured when APP_MODE=live")
         return self
 
     @property

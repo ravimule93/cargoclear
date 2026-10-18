@@ -345,6 +345,8 @@ curl -i "${UI_URL}/api/proxy/meta"
 ```
 *Expected Result:* `HTTP/1.1 200 OK` with JSON payload `{ "app_mode": "live", "region": "asia-south1", ... }`.
 
+The standard UI deployment runs `scripts/verify_live_domain.py` after deployment. It checks public `/api/proxy/meta` and authenticated private `/version`, and fails if either reports demo mode.
+
 ### 3. Run Live E2E Case D Assessment:
 Navigate to the deployed UI in your browser or run:
 ```bash
@@ -410,7 +412,7 @@ Displays all bundles with their ID, reference code, status, tenant, and creation
 
 ### 2. Delete a single bundle (and its subcollections + GCS files):
 ```bash
-python scripts/clean_bundles.py --bundle bnd-c27d3d168ae0
+python scripts/clean_bundles.py --bundle bnd-c27d3d168ae0 --yes
 ```
 *(Add `--dry-run` to preview deletions beforehand).*
 
@@ -431,7 +433,7 @@ python scripts/clean_bundles.py --all
 # Or skip confirmation:
 python scripts/clean_bundles.py --all -y
 ```
-> **Safety Guarantee**: The cleanup script deletes only bundle documents, subcollections (`documents`, `iterations`, `audit`), and PDF storage objects. It **never** touches user authentication credentials or BigQuery tariff tables.
+> **Safety Guarantee**: The cleanup script requires `--yes` for every real deletion and accepts only CargoClear bundle IDs. It deletes only the bundle document, its owned subcollections (`documents`, `runs`, `iterations`, `extractions`, `audit`, `control`), and the matching PDF storage prefix. It **never** touches user authentication credentials or BigQuery tariff tables.
 
 ---
 

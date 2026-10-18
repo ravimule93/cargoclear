@@ -126,7 +126,8 @@ def collect_boxes(doc: ExtractedDocument) -> list[Box]:
     for heat in doc.heat_numbers:
         add("heat_numbers", heat)
     for result in doc.test_results:
-        add("test_results", result, label=result.parameter)  # a table cell prints its value; the column heading is its label
+        unit = f" ({result.unit})" if result.unit else ""
+        add("test_results", result, label=f"{result.parameter}{unit}")  # a table cell prints its value; the column heading is its label
     for item in doc.line_items:
         for name in LineItem.model_fields:
             add(name, getattr(item, name))

@@ -2,7 +2,9 @@ import { Status } from "@/lib/types";
 
 interface StatusPillProps {
   /** null = the bundle has not been assessed yet */
-  status: Status | null;
+  status: Status | string | null;
+  /** Omit for secondary summaries so the primary header remains the test/assistive anchor. */
+  testId?: string;
 }
 
 const TOKENS: Record<Status, { label: string; fg: string; bd: string; bg: string }> = {
@@ -46,7 +48,7 @@ const PENDING_TOKEN = {
   bg: "var(--cc-surface-2)",
 };
 
-export function StatusPill({ status }: { status: Status | string | null }) {
+export function StatusPill({ status, testId = "status-pill" }: StatusPillProps) {
   let token = NOT_ASSESSED;
   if (status && status in TOKENS) {
     token = TOKENS[status as Status];
@@ -58,8 +60,7 @@ export function StatusPill({ status }: { status: Status | string | null }) {
 
   return (
     <span
-      role="status"
-      data-testid="status-pill"
+      data-testid={testId}
       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold tracking-tight"
       style={{
         color: token.fg,

@@ -1,13 +1,15 @@
 """Assessment router — analyze, reassess, get assessment, list iterations."""
 
-from fastapi import APIRouter, Path
+from fastapi import APIRouter, Depends, Path, Request
 
+from app.core.mode import EXECUTION_MODE_COOKIE, EXECUTION_MODE_HEADER, resolve_execution_mode
 from app.domain.schemas import AssessmentIteration, RunResponse
+from app.gateway.authorization import require_authorized_bundle
 from app.gateway.errors import NotFoundError
 from app.repo import firestore
 from app.services import orchestrator
 
-router = APIRouter(tags=["assessment"])
+router = APIRouter(tags=["assessment"], dependencies=[Depends(require_authorized_bundle)])
 
 
 @router.post(
@@ -17,6 +19,7 @@ router = APIRouter(tags=["assessment"])
     summary="Start full assessment pipeline run",
 )
 async def analyze(
+    request: Request,
     bundle_id: str = Path(..., description="Target bundle ID"),
 ) -> RunResponse:
     """Initiates the six-stage assessment pipeline (plus its finalize step) in the background.
@@ -28,7 +31,11 @@ async def analyze(
     if bundle is None:
         raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
 
-    run_id = await orchestrator.start_run(bundle_id, mode="full")
+    exec_mode = resolve_execution_mode(
+        header_val=request.headers.get(EXECUTION_MODE_HEADER),
+        cookie_val=request.cookies.get(EXECUTION_MODE_COOKIE),
+    )
+    run_id = await orchestrator.start_run(bundle_id, mode="full", execution_mode=exec_mode)
 
     return RunResponse(
         run_id=run_id,
@@ -45,6 +52,7 @@ async def analyze(
     summary="Reassess after new evidence document is uploaded",
 )
 async def reassess(
+    request: Request,
     bundle_id: str = Path(..., description="Target bundle ID"),
 ) -> RunResponse:
     """Reruns the assessment pipeline against updated documents.
@@ -56,7 +64,11 @@ async def reassess(
     if bundle is None:
         raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
 
-    run_id = await orchestrator.start_run(bundle_id, mode="reassess")
+    exec_mode = resolve_execution_mode(
+        header_val=request.headers.get(EXECUTION_MODE_HEADER),
+        cookie_val=request.cookies.get(EXECUTION_MODE_COOKIE),
+    )
+    run_id = await orchestrator.start_run(bundle_id, mode="reassess", execution_mode=exec_mode)
 
     return RunResponse(
         run_id=run_id,
@@ -73,6 +85,7 @@ async def reassess(
     summary="Re-run the checks on the stored extraction, with the agent's corrections applied",
 )
 async def recompute(
+    request: Request,
     bundle_id: str = Path(..., description="Target bundle ID"),
 ) -> RunResponse:
     """Starts a ``recompute`` run: no document is read again and no model is called; the extraction of the latest
@@ -84,7 +97,11 @@ async def recompute(
     if bundle is None:
         raise NotFoundError(f"Bundle '{bundle_id}' not found.", detail={"bundle_id": bundle_id})
 
-    run_id = await orchestrator.start_run(bundle_id, mode="recompute")
+    exec_mode = resolve_execution_mode(
+        header_val=request.headers.get(EXECUTION_MODE_HEADER),
+        cookie_val=request.cookies.get(EXECUTION_MODE_COOKIE),
+    )
+    run_id = await orchestrator.start_run(bundle_id, mode="recompute", execution_mode=exec_mode)
 
     return RunResponse(
         run_id=run_id,

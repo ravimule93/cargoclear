@@ -16,3 +16,56 @@ export type DeclarableDocumentType = (typeof DECLARABLE_DOCUMENT_TYPES)[number][
 
 /** What the picker offers when the person says nothing: the file is sent without a declared type and the model decides. */
 export const NO_DECLARED_TYPE = "";
+
+/**
+ * Smart document type heuristic based on filename patterns.
+ * Returns suggested DeclarableDocumentType, or NO_DECLARED_TYPE if unknown.
+ */
+export function suggestDocumentType(filename: string): DeclarableDocumentType | "" {
+  const lower = filename.toLowerCase();
+  if (lower.includes("invoice") || lower.includes("inv")) return "COMMERCIAL_INVOICE";
+  if (
+    lower.includes("lading") ||
+    lower.includes("bol") ||
+    lower.includes("awb") ||
+    lower.includes("bill_of_lading") ||
+    lower.startsWith("bl") ||
+    lower.includes("b_l")
+  ) {
+    return "BILL_OF_LADING";
+  }
+  if (
+    lower.includes("packing") ||
+    lower.includes("pkg") ||
+    lower.includes("packing_list") ||
+    lower.startsWith("pl")
+  ) {
+    return "PACKING_LIST";
+  }
+  if (
+    lower.includes("mtc") ||
+    lower.includes("mill") ||
+    lower.includes("test_cert") ||
+    lower.includes("cert_of_test")
+  ) {
+    return "MILL_TEST_CERTIFICATE";
+  }
+  if (
+    lower.includes("coo") ||
+    lower.includes("origin") ||
+    lower.includes("certificate_of_origin")
+  ) {
+    return "CERTIFICATE_OF_ORIGIN";
+  }
+  if (lower.includes("phyto") || lower.includes("plant") || lower.includes("fumigation")) {
+    return "PHYTOSANITARY";
+  }
+  return NO_DECLARED_TYPE;
+}
+
+/** Format uppercase token into human-friendly label (e.g. COMMERCIAL_INVOICE -> Commercial Invoice) */
+export function formatDocType(type: string): string {
+  const match = DECLARABLE_DOCUMENT_TYPES.find((d) => d.value === type);
+  if (match) return match.label;
+  return type.replace(/_/g, " ");
+}

@@ -29,7 +29,7 @@ from app.gateway.errors import UpstreamError
 from app.services import storage
 
 SLOW = 0.3
-MIN_TICKS = 10  # 0.3 s at 10 ms is about 30; a blocked loop gives 0 or 1
+MIN_TICKS = 5  # 0.3 s at 10 ms; a blocked loop gives 0 or 1 (Windows sleep resolution is ~15.6ms)
 
 
 async def ticks_during(work: Awaitable[Any], interval: float = 0.01) -> tuple[Any, int]:

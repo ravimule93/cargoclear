@@ -322,7 +322,7 @@ async def idle_bundle(bundle_id: str, action: str) -> AsyncIterator[None]:
         yield
 
 
-async def start_run(bundle_id: str, mode: str = "full") -> str:
+async def start_run(bundle_id: str, mode: str = "full", execution_mode: str | None = None) -> str:
     """Claim the bundle and start the assessment pipeline (a background task here, or a Cloud Task for a worker).
 
     Enforces, atomically per bundle across instances (see the module docstring):
@@ -387,6 +387,7 @@ async def start_run(bundle_id: str, mode: str = "full") -> str:
                     "bundle_id": bundle_id,
                     "run_id": run_id,
                     "mode": mode,
+                    "execution_mode": execution_mode or settings.app_mode,
                     "iteration": iteration,
                     "fence": lease.fence,
                     "destination_country": bundle.get("destination_country", "SG"),
@@ -573,8 +574,27 @@ async def _preprocess_documents(ctx: dict[str, Any]) -> None:
             await storage.upload_processed_artifacts(bundle_id, doc_id, sub_res.get("processed_artifacts", []))
             if settings.persist_processed_pages:
                 # what the model is about to be shown, kept: "what did it see" must be answerable afterwards
+                pages_to_persist = sub_res.get("processed_pages", [])
+                if not any(p.get("mime") == "image/png" for p in pages_to_persist):
+                    try:
+                        import io
+                        import pypdfium2 as pdfium
+                        doc_pdf = pdfium.PdfDocument(raw_bytes)
+                        scale = 200.0 / 72.0
+                        rendered_img = doc_pdf[0].render(scale=scale).to_pil()
+                        buf = io.BytesIO()
+                        rendered_img.save(buf, format="PNG")
+                        pages_to_persist = [{
+                            "page": 1,
+                            "source_page": 1,
+                            "document_id": doc_id,
+                            "payload": buf.getvalue(),
+                            "mime": "image/png",
+                        }]
+                    except Exception:
+                        pass
                 uris = await storage.upload_processed_pages(
-                    bundle_id, doc_id, sub_res.get("processed_pages", []), ctx.get("iteration")
+                    bundle_id, doc_id, pages_to_persist, ctx.get("iteration")
                 )
                 if uris:
                     ctx["pages_iteration"] = ctx.get("iteration")  # recorded with the extraction: which assessment these pages belong to

@@ -85,25 +85,29 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
 
   try {
     const idToken = authMode() === "google-id-token" ? await idTokens.get(new URL(base).origin) : null;
+    // The service ID token proves this BFF may call the private API. The
+    // separate HttpOnly Google ID-token cookie identifies the human user; it
+    // is never readable by browser JavaScript and is never treated as the
+    // service Authorization token.
+    // Firebase Hosting forwards ONLY the '__session' cookie across its rewrite to Cloud Run, so that is where the token must be read from
+    // there. A value starting "oauth:" is the sign-in flow's state cookie (same name, ten minutes), never a token.
+    const endUserToken =
+      [
+        request.cookies.get("cargoclear_google_id_token")?.value,
+        request.cookies.get("__session")?.value,
+        request.cookies.get("cargoclear_session_token")?.value,
+      ].find((value): value is string => !!value && !value.startsWith("oauth:")) ?? null;
     const headers = upstreamRequestHeaders(request.headers, {
       idToken,
+      endUserToken,
       clientIp: clientIpFrom(request.headers, trustedProxyHops()),
       requestId,
     });
-
-    // Read active auth session from cookie if present and forward as dedicated end-user identity.
-    // Firebase Hosting CDN rewrites forward ONLY the '__session' cookie, so we check both.
-    const sessionToken =
-      request.cookies.get("__session")?.value ||
-      request.cookies.get("cargoclear_session_token")?.value;
-    if (sessionToken) {
-      headers.set("x-cargoclear-user-token", `Bearer ${sessionToken}`);
-    } else if (request.headers.get("x-cargoclear-user-token")) {
-      headers.set("x-cargoclear-user-token", request.headers.get("x-cargoclear-user-token")!);
-    }
-
-    if (sessionToken && !headers.has("authorization")) {
-      headers.set("authorization", `Bearer ${sessionToken}`);
+    if (!headers.has("x-cargoclear-execution-mode")) {
+      const modeCookie = request.cookies.get("cargoclear_execution_mode")?.value;
+      if (modeCookie === "demo" || modeCookie === "live") {
+        headers.set("x-cargoclear-execution-mode", modeCookie);
+      }
     }
 
     // POST only: DELETE (document remove) must not stream a body through duplex fetch.

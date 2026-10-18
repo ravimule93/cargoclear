@@ -163,6 +163,8 @@ pydantic-core==2.50.0
     # via pydantic
 pydantic-settings==2.15.0
     # via -r requirements.in
+pypdfium2==5.14.0
+    # via -r requirements.in
 python-dateutil==2.9.0.post0
     # via google-cloud-bigquery
 python-dotenv==1.2.4

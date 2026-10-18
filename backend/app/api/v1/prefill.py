@@ -7,12 +7,13 @@ see whether the trail has moved since.
 
 import asyncio
 
-from fastapi import APIRouter, Path, Query, Response
+from fastapi import APIRouter, Depends, Path, Query, Response
 
 from app.domain.prefill import PrefillPack
+from app.gateway.authorization import require_authorized_bundle
 from app.services import prefill, prefill_pdf
 
-router = APIRouter(tags=["prefill"])
+router = APIRouter(tags=["prefill"], dependencies=[Depends(require_authorized_bundle)])
 
 
 def _filename(pack: PrefillPack, extension: str) -> str:

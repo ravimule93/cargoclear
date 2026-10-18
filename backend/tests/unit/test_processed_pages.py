@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import shutil
 from types import SimpleNamespace
 
 import pytest
@@ -14,6 +15,10 @@ from app.repo import firestore
 from app.services import orchestrator, storage
 from tests.helpers import api_client, asgi_call, create_bundle_with_documents, wait_for_run
 from tests.support import scans
+
+needs_poppler = pytest.mark.skipif(
+    shutil.which("pdftoppm") is None or shutil.which("pdftotext") is None, reason="poppler is not installed"
+)
 
 
 def page(n: int, payload: bytes = b"png-bytes", mime: str = "image/png") -> dict:
@@ -107,6 +112,7 @@ def scan_files() -> dict[str, bytes]:
     }
 
 
+@needs_poppler
 @pytest.mark.asyncio
 async def test_a_run_keeps_what_the_model_was_shown_and_the_endpoint_serves_it() -> None:
     async with api_client() as client:
@@ -127,6 +133,7 @@ async def test_a_run_keeps_what_the_model_was_shown_and_the_endpoint_serves_it()
             assert image.mode == "1", "the default input is 1-bit"
 
 
+@needs_poppler
 @pytest.mark.asyncio
 async def test_each_assessment_keeps_its_own_pages_and_a_recompute_serves_the_pages_it_copied(monkeypatch) -> None:
     """"What the model saw" is per assessment: a later run with another image mode must not replace the answer for an earlier one."""
