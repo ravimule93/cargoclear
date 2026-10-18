@@ -112,8 +112,7 @@ screen for it yet.
 
 ## 4c-4. Saying what a file is when you upload it
 
-In the web app, the type menu beside **+ Add Document** (and above the upload box for a missing certificate) says what the **next** file is. A type
-labels one file, so choosing one limits the file dialog to one file, and the menu goes back to "Type: not stated" after every upload. Through the
+In the web app, click **Classify & Upload** (or use the document staging modal) to select or drag-and-drop a file and assign its customs document type before ingestion. A type labels one file, and the menu goes back to "Type: not stated" after every upload. Through the
 API it is the optional form field `declared_type` of `POST /api/v1/bundles/{id}/documents` (`COMMERCIAL_INVOICE`, `BILL_OF_LADING`,
 `PACKING_LIST`, `CERTIFICATE_OF_ORIGIN`, `PHYTOSANITARY` or `MILL_TEST_CERTIFICATE`; any other value is a 422). If the model reads the file as
 another type, the assessment carries a warning `T-001-<document>` that names both and says whether the declared type is still missing; the file
@@ -175,8 +174,8 @@ It starts backend and frontend development servers. It cannot run in an environm
 For an authorised Cloud Run deployment, the static configuration expects:
 
 - a **private** API: only the UI's service account may invoke it, and the UI's proxy sends a Google ID token (`API_AUTH_MODE=google-id-token`);
-- one API instance by default (`max-instances=1`, `RUN_DISPATCH=local`); a scale-out needs `RUN_DISPATCH=cloudtasks` and is untested on Google Cloud;
-- API/UI request timeouts of 300 seconds and API CPU retained for background work;
+- scale-to-zero enabled on both services (`--min-instances 0`, `--max-instances 1`, `RUN_DISPATCH=local`) providing $0.00 idle compute cost;
+- API/UI request timeouts of 300 seconds and API CPU retained during active execution;
 - runtime-only `API_BASE` supplied to the UI after the API service URL exists;
 - supplied `RUNTIME_SERVICE_ACCOUNT` and `UI_SERVICE_ACCOUNT`, with the deployer authorised to act as both;
 - live mode and API documentation disabled.
