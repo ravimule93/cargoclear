@@ -13,7 +13,7 @@ pytest.importorskip("reportlab")
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = REPO_ROOT / "scripts" / "generate_case_c_pdfs.py"
-COMMITTED_DIR = REPO_ROOT / "fixtures" / "case_c"
+COMMITTED_DIR = REPO_ROOT / "samples" / "case_c" if (REPO_ROOT / "samples" / "case_c").is_dir() else (REPO_ROOT / "fixtures" / "case_c")
 FILENAMES = [
     "commercial_invoice.pdf",
     "bill_of_lading.pdf",
@@ -99,7 +99,7 @@ def test_non_weight_values_print_without_a_unit(generator: ModuleType) -> None:
 # Case D (India import): same generator, its own committed set
 # ---------------------------------------------------------------------------
 
-CASE_D_DIR = REPO_ROOT / "fixtures" / "case_d"
+CASE_D_DIR = REPO_ROOT / "samples" / "case_d" if (REPO_ROOT / "samples" / "case_d").is_dir() else (REPO_ROOT / "fixtures" / "case_d")
 CASE_D_FILENAMES = [
     "case_d_commercial_invoice.pdf",
     "case_d_bill_of_lading.pdf",
@@ -126,12 +126,14 @@ def test_committed_case_d_pdfs_match_generator(generator: ModuleType, tmp_path: 
 
 
 def test_the_packaged_copies_equal_the_repository_fixtures() -> None:
-    """backend/app/fixtures is what the container image carries; fixtures/ is what the generator writes."""
+    """backend/app/fixtures is what the container image carries; samples/ is what the generator writes."""
     packaged = REPO_ROOT / "backend" / "app" / "fixtures"
+    sample_dir = REPO_ROOT / "samples"
+    repo_dir = sample_dir if (sample_dir / "case_c").is_dir() else (REPO_ROOT / "fixtures")
     for case, names in (("case_c", FILENAMES), ("case_d", CASE_D_FILENAMES)):
         for name in names:
-            assert (packaged / case / name).read_bytes() == (REPO_ROOT / "fixtures" / case / name).read_bytes(), (
-                f"{case}/{name}: copy backend/app/fixtures/{case}/ from fixtures/{case}/"
+            assert (packaged / case / name).read_bytes() == (repo_dir / case / name).read_bytes(), (
+                f"{case}/{name}: copy backend/app/fixtures/{case}/ from {repo_dir.name}/{case}/"
             )
 
 

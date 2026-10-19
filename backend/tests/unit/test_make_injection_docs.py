@@ -215,8 +215,9 @@ def test_generate_writes_each_variant_under_its_target_and_the_fixture_file_name
     ]
     assert all(p.name in CASE_D for p in written)  # the fixture's own name: live_smoke --as-fixtures grades by it
     assert all(p.read_bytes() == inj.render(inj.variant_named(p.parent.name), inj.target_named(p.parent.parent.name)) for p in written)
+    _case_d_dir = (REPO_ROOT / "samples" / "case_d") if (REPO_ROOT / "samples" / "case_d").is_dir() else (REPO_ROOT / "fixtures" / "case_d")
     for name in CASE_D:
-        assert (REPO_ROOT / "fixtures" / "case_d" / name).exists()
+        assert (_case_d_dir / name).exists()
 
 
 def test_main_writes_the_default_target_unless_told_otherwise(tmp_path: Path, capsys) -> None:

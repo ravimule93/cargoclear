@@ -53,8 +53,10 @@ def degrade(pdf: bytes, how: str) -> bytes:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Make degraded copies of the sample PDFs.")
     parser.add_argument("--out", type=Path, default=BACKEND_DIR / "data" / "degraded_scans")
+    sample_case_c = (REPO_ROOT / "samples" / "case_c") if (REPO_ROOT / "samples" / "case_c").is_dir() else (REPO_ROOT / "fixtures" / "case_c")
+    sample_case_d = (REPO_ROOT / "samples" / "case_d") if (REPO_ROOT / "samples" / "case_d").is_dir() else (REPO_ROOT / "fixtures" / "case_d")
     parser.add_argument("--docs", nargs="+", type=Path,
-                        default=sorted((REPO_ROOT / "fixtures" / "case_c").glob("*.pdf")) + sorted((REPO_ROOT / "fixtures" / "case_d").glob("*.pdf")))
+                        default=sorted(sample_case_c.glob("*.pdf")) + sorted(sample_case_d.glob("*.pdf")))
     parser.add_argument("--only", nargs="+", choices=sorted(DEGRADATIONS), help="only these degradations")
     args = parser.parse_args(argv)
 

@@ -26,11 +26,11 @@ LABELS = ("PROVEN", "STUBBED", "ASSUMED", "DELETED")
 ROW = re.compile(r"^\| (C-\d+) \| (.+?) \| (PROVEN|STUBBED|ASSUMED|DELETED) \| (.+?) \| (.+?) \|\s*$")
 
 OUTWARD = [
-    "README.md", "Product.md", "context.md",
+    "README.md",
     "docs/FAQ_ONBOARDING.md", "docs/HOW_TO_RUN_AND_DEMO.md", "docs/PREFILL_PACK.md", "docs/SCALING_AND_INTEGRITY.md",
     "docs/GCP_VERIFICATION.md", "backend/app/main.py", "backend/app/reference/README.md",
 ]
-HISTORICAL = ["docs/mvp_draft2_Product & Technical Specification.md", "docs/mvp_draft_2_Technical implementation plan.md"]
+HISTORICAL: list[str] = []
 
 
 def outward_files() -> list[Path]:
@@ -244,7 +244,7 @@ def test_the_readme_keeps_saying_nothing_was_verified_live_until_a_live_run_is_r
 
 
 def test_the_documents_that_quote_numbers_point_at_the_page_that_owns_them() -> None:
-    for name in ("README.md", "Product.md"):
+    for name in ("README.md",):
         text = (REPO_ROOT / name).read_text(encoding="utf-8")
         assert "docs/CLAIMS.md" in text and "docs/MEASURED_RESULTS.md" in text, f"{name} must point at the claim register and the measurements"
 

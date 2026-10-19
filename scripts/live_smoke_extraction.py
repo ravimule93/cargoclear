@@ -48,8 +48,8 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BACKEND_DIR = REPO_ROOT / "backend"
-CASE_C_DIR = REPO_ROOT / "fixtures" / "case_c"
-CASE_D_DIR = REPO_ROOT / "fixtures" / "case_d"
+CASE_C_DIR = (REPO_ROOT / "samples" / "case_c") if (REPO_ROOT / "samples" / "case_c").is_dir() else (REPO_ROOT / "fixtures" / "case_c")
+CASE_D_DIR = (REPO_ROOT / "samples" / "case_d") if (REPO_ROOT / "samples" / "case_d").is_dir() else (REPO_ROOT / "fixtures" / "case_d")
 FIXTURE_DIRS = (CASE_C_DIR, CASE_D_DIR)
 DEFAULT_OUT_DIR = BACKEND_DIR / "data" / "live_smoke"
 

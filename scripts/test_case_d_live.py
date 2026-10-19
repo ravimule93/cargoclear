@@ -25,7 +25,7 @@ def main():
     print(f"Created bundle: {bundle_id}")
 
     print("\n=== Step 2: Upload 4 Case D Documents ===")
-    fixtures_dir = "fixtures/case_d"
+    fixtures_dir = "samples/case_d" if os.path.isdir("samples/case_d") else "fixtures/case_d"
     files = [
         "case_d_commercial_invoice.pdf",
         "case_d_bill_of_lading.pdf",

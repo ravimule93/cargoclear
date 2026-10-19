@@ -66,10 +66,10 @@ from typing import Any
 import httpx
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-CASE_C_DIR = REPO_ROOT / "fixtures" / "case_c"
+CASE_C_DIR = (REPO_ROOT / "samples" / "case_c") if (REPO_ROOT / "samples" / "case_c").is_dir() else (REPO_ROOT / "fixtures" / "case_c")
 PRELOADED = ("commercial_invoice.pdf", "bill_of_lading.pdf", "packing_list.pdf")
 MTC = "mtc_pipe_test_cert.pdf"
-CASE_D_DIR = REPO_ROOT / "fixtures" / "case_d"
+CASE_D_DIR = (REPO_ROOT / "samples" / "case_d") if (REPO_ROOT / "samples" / "case_d").is_dir() else (REPO_ROOT / "fixtures" / "case_d")
 CASE_D_DOCUMENTS = (
     "case_d_commercial_invoice.pdf", "case_d_bill_of_lading.pdf", "case_d_packing_list.pdf", "case_d_mtc_test_cert.pdf",
 )

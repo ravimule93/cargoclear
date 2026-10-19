@@ -12,7 +12,7 @@ from app.main import app
 from app.repo import firestore
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-CASE_C_DIR = REPO_ROOT / "fixtures" / "case_c"
+CASE_C_DIR = REPO_ROOT / "samples" / "case_c" if (REPO_ROOT / "samples" / "case_c").is_dir() else (REPO_ROOT / "fixtures" / "case_c")
 
 TERMINAL_STATES = ("COMPLETE", "ERROR")
 

@@ -31,7 +31,7 @@ uv pip install --python .venv/bin/python -r requirements-dev.txt
 
 ## 3. Start the local demo
 
-To regenerate the sample PDFs after changing a fixture (then copy `fixtures/case_c` and `fixtures/case_d` to `backend/app/fixtures/`):
+To regenerate the sample PDFs after changing a fixture (then copy `samples/case_c` and `samples/case_d` to `backend/app/fixtures/`):
 
 ```bash
 backend/.venv/bin/python scripts/generate_case_c_pdfs.py
@@ -130,7 +130,7 @@ client can send the field (`DocumentRepository.upload(..., declaredType)`) but i
 ## 4e. The live-mode route: choose a destination and upload
 
 A live stack has no demo buttons. The same journeys run by hand: on `/` choose the **Destination** (Singapore for Case C, India for Case D),
-**New empty bundle**, then **Add Document** (or drop files) with `fixtures/case_c/*.pdf` or `fixtures/case_d/*.pdf`, and **Run analysis**. The top
+**New empty bundle**, then **Add Document** (or drop files) with `samples/case_c/*.pdf` or `samples/case_d/*.pdf`, and **Run analysis**. The top
 bar shows the destination ("To IN"). In demo mode the file names key the synthetic extraction, so the same upload reaches the same verdicts;
 `frontend/tests/destination_journey.spec.ts` does exactly this. With nothing chosen, the viewer opens the document the first material finding is about.
 

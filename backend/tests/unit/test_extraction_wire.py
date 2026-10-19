@@ -20,8 +20,9 @@ from app.domain.schemas import ExtractedDocument, LineItem
 from tests.helpers import REPO_ROOT
 from tests.unit.extraction_fakes import FakeGenai, always, ctx_for, response
 
+_BASE_DIR = (REPO_ROOT / "samples") if (REPO_ROOT / "samples" / "case_c").is_dir() else (REPO_ROOT / "fixtures")
 FIXTURES = sorted(
-    path for case in ("case_c", "case_d") for path in (REPO_ROOT / "fixtures" / case).glob("*.pdf")
+    path for case in ("case_c", "case_d") for path in (_BASE_DIR / case).glob("*.pdf")
 )
 
 
@@ -108,7 +109,7 @@ def test_a_faithful_answer_rebuilds_the_document_it_was_made_from(path: Path) ->
 
 
 def test_the_certificate_table_comes_back_row_for_row() -> None:
-    original = fixture_document(REPO_ROOT / "fixtures" / "case_d" / "case_d_mtc_test_cert.pdf")
+    original = fixture_document(_BASE_DIR / "case_d" / "case_d_mtc_test_cert.pdf")
     rebuilt, _ = wire.answer_to_document(wire.document_to_answer(original), page_count=1)
 
     assert len(rebuilt["test_results"]) == len(original.test_results) == 30
@@ -289,7 +290,7 @@ async def test_extraction_still_reads_a_document_shaped_answer(live) -> None:
 
 @pytest.mark.asyncio
 async def test_what_could_not_be_placed_reaches_the_run_as_a_warning(live) -> None:
-    original = fixture_document(REPO_ROOT / "fixtures" / "case_c" / "commercial_invoice.pdf")
+    original = fixture_document(_BASE_DIR / "case_c" / "commercial_invoice.pdf")
     faithful = wire.document_to_answer(original)
     faithful["fields"].append(cell("shoe_size", "9"))
     live(FakeGenai(always(response(faithful))))

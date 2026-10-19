@@ -9,7 +9,9 @@ from pathlib import Path
 import pytest
 
 from app.core.config import settings
-from tests.helpers import REPO_ROOT, load_script
+from tests.helpers import CASE_C_DIR, REPO_ROOT, load_script
+
+CASE_D_DIR = (REPO_ROOT / "samples" / "case_d") if (REPO_ROOT / "samples" / "case_d").is_dir() else (REPO_ROOT / "fixtures" / "case_d")
 
 smoke = load_script("live_smoke_extraction.py")
 make = load_script("make_degraded_scans.py")
@@ -24,7 +26,7 @@ needs_poppler = pytest.mark.skipif(
 def test_every_degradation_yields_a_one_page_image_pdf_with_the_same_page_size_as_a_clean_render() -> None:
     from pdf2image import convert_from_bytes
 
-    source = (REPO_ROOT / "fixtures" / "case_c" / "commercial_invoice.pdf").read_bytes()
+    source = (CASE_C_DIR / "commercial_invoice.pdf").read_bytes()
     clean = convert_from_bytes(source, dpi=200, fmt="png")[0]
     for how in make.DEGRADATIONS:
         pdf = make.degrade(source, how)
@@ -36,7 +38,7 @@ def test_every_degradation_yields_a_one_page_image_pdf_with_the_same_page_size_a
 
 @needs_poppler
 def test_the_generator_writes_the_same_file_names_under_one_folder_per_degradation(tmp_path) -> None:
-    code = make.main(["--out", str(tmp_path), "--docs", str(REPO_ROOT / "fixtures" / "case_c" / "packing_list.pdf"), "--only", "skew3", "blur"])
+    code = make.main(["--out", str(tmp_path), "--docs", str(CASE_C_DIR / "packing_list.pdf"), "--only", "skew3", "blur"])
     assert code == 0
     assert sorted(p.name for p in tmp_path.iterdir()) == ["blur", "skew3"]
     assert (tmp_path / "skew3" / "packing_list.pdf").read_bytes().startswith(b"%PDF")
@@ -46,7 +48,7 @@ def test_the_generator_writes_the_same_file_names_under_one_folder_per_degradati
 @needs_poppler
 def test_a_degraded_copy_is_graded_by_its_name_but_only_when_asked(tmp_path) -> None:
     copy = tmp_path / "commercial_invoice.pdf"
-    copy.write_bytes(make.degrade((REPO_ROOT / "fixtures" / "case_c" / "commercial_invoice.pdf").read_bytes(), "skew3"))
+    copy.write_bytes(make.degrade((CASE_C_DIR / "commercial_invoice.pdf").read_bytes(), "skew3"))
     stranger = tmp_path / "not_a_fixture.pdf"
     stranger.write_bytes(copy.read_bytes())
 
@@ -59,7 +61,7 @@ def test_a_degraded_copy_is_graded_by_its_name_but_only_when_asked(tmp_path) -> 
 
 
 def test_both_fixture_folders_are_graded_case_d_included() -> None:
-    [certificate] = smoke.load_documents([REPO_ROOT / "fixtures" / "case_d" / "case_d_mtc_test_cert.pdf"])
+    [certificate] = smoke.load_documents([CASE_D_DIR / "case_d_mtc_test_cert.pdf"])
     assert certificate.expected is not None and certificate.expected.doc_type == "MILL_TEST_CERTIFICATE"
     assert certificate.expected.heat_numbers, "the Case D certificate's heats are expectations too"
 

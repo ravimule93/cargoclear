@@ -6,7 +6,7 @@ A pre-submission trade-document assessment aid. It presents evidence, determinis
 
 ## What does it check besides weights?
 
-Invoice arithmetic, the certificate's chemistry against the declared HS code (alloy status under HS Chapter 72 Note 1, carbon equivalent, the certificate's own standard, heat-number traceability), origin consistency, and anti-dumping / circumvention flags. See `Product.md` ("What it checks").
+Invoice arithmetic, the certificate's chemistry against the declared HS code (alloy status under HS Chapter 72 Note 1, carbon equivalent, the certificate's own standard, heat-number traceability), origin consistency, and anti-dumping / circumvention flags. See `README.md` ("Key Differentiators").
 
 ## Where do the rules and rates come from, and are they official?
 
@@ -46,7 +46,7 @@ The viewer's **What the model saw** link opens the exact page image the extracti
 
 ## How do I run Case D when there are no demo buttons (a live stack)?
 
-On `/` choose **Destination: India (IN)**, press **New empty bundle**, add the four PDFs from `fixtures/case_d/`, and run the analysis. The destination decides
+On `/` choose **Destination: India (IN)**, press **New empty bundle**, add the four PDFs from `samples/case_d/`, and run the analysis. The destination decides
 which rules and duty structure apply, so a Case D bundle created with the Singapore default would not be assessed as an India import.
 
 ## What is the "Lowest reported confidence" figure?

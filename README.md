@@ -3,8 +3,7 @@
 > **Pre-Submission Multimodal Customs Assessment Workbench**  
 > **Google Cloud AI Builder Cup 2026 Submission** | Track: Intelligent Document Processing & Enterprise AI  
 > **Team:** CargoClear (`Ravi Mule`, `Nikhil Pande`)  
-> **Live Web App:** [https://cargoclear-app.web.app](https://cargoclear-app.web.app) | **API:** [https://cargoclear-api-448522365737.asia-south1.run.app](https://cargoclear-api-448522365737.asia-south1.run.app)  
-> **Submission Dossier:** [`submission/SUBMISSION_DOSSIER.md`](submission/SUBMISSION_DOSSIER.md) | **Submission Package:** [`submission/README.md`](submission/README.md)
+> **Live Web App:** [https://cargoclear-app.web.app](https://cargoclear-app.web.app) | **API:** [https://cargoclear-api-448522365737.asia-south1.run.app](https://cargoclear-api-448522365737.asia-south1.run.app)
 
 CargoClear is a pre-submission, evidence-oriented customs assessment workbench for JAPAC trade bundles. It is **decision support only**: it does not submit to government portals, make legal determinations, collect or pay duty, or replace the authorised Custom House Agent. It does give an **indicative duty estimate** (an assessable value and the duties on it, with every assumption listed); that estimate is information, never an amount payable and never the assessment status.
 
